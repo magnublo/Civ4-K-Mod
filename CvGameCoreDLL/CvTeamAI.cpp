@@ -4971,13 +4971,6 @@ int CvTeamAI::AI_noWarAttitudeProb(AttitudeTypes eAttitude) const
 	iProb = 0;
 	iCount = 0;
 
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      03/20/10                                jdog5000      */
-/*                                                                                              */
-/* War Strategy AI                                                                              */
-/************************************************************************************************/
-	int iVictoryStrategyAdjust = 0;
-
 	for (iI = 0; iI < MAX_PLAYERS; iI++)
 	{
 		if (GET_PLAYER((PlayerTypes)iI).isAlive())
@@ -4986,16 +4979,6 @@ int CvTeamAI::AI_noWarAttitudeProb(AttitudeTypes eAttitude) const
 			{
 				iProb += GC.getLeaderHeadInfo(GET_PLAYER((PlayerTypes)iI).getPersonalityType()).getNoWarAttitudeProb(eAttitude);
 				iCount++;
-
-				// In final stages of miltaristic victory, AI may turn on its friends!
-				if( GET_PLAYER((PlayerTypes)iI).AI_isDoVictoryStrategy(AI_VICTORY_CONQUEST4) )
-				{
-					iVictoryStrategyAdjust += 30;
-				}
-				else if( GET_PLAYER((PlayerTypes)iI).AI_isDoVictoryStrategy(AI_VICTORY_DOMINATION4) )
-				{
-					iVictoryStrategyAdjust += 20;
-				}
 			}
 		}
 	}
@@ -5003,13 +4986,7 @@ int CvTeamAI::AI_noWarAttitudeProb(AttitudeTypes eAttitude) const
 	if (iCount > 1)
 	{
 		iProb /= iCount;
-		iVictoryStrategyAdjust /= iCount;
 	}
-
-	iProb = std::max( 0, iProb - iVictoryStrategyAdjust );
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
 
 	return iProb;
 }
