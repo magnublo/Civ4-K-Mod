@@ -55,7 +55,7 @@
 #define RANDPLOT_NOT_CITY											(0x00000040)
 
 #ifdef _USRDLL
-#define MAX_CIV_PLAYERS												(18) // note: default is 18, some people like 48. They are not compatible
+#define MAX_CIV_PLAYERS												(48) // note: default is 18, some people like 48. They are not compatible
 #else
 #define MAX_CIV_PLAYERS												(CvGlobals::getInstance().getMaxCivPlayers())
 #endif
