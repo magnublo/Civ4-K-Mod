@@ -4964,54 +4964,31 @@ int CvTeamAI::AI_makePeaceRand() const
 
 int CvTeamAI::AI_noWarAttitudeProb(AttitudeTypes eAttitude) const
 {
-	int iProb;
-	int iCount;
-	int iI;
+    int iProb;
+    int iCount;
+    int iI;
 
-	iProb = 0;
-	iCount = 0;
+    iProb = 0;
+    iCount = 0;
 
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                      03/20/10                                jdog5000      */
-/*                                                                                              */
-/* War Strategy AI                                                                              */
-/************************************************************************************************/
-	int iVictoryStrategyAdjust = 0;
+    for (iI = 0; iI < MAX_PLAYERS; iI++)
+    {
+        if (GET_PLAYER((PlayerTypes)iI).isAlive())
+        {
+            if (GET_PLAYER((PlayerTypes)iI).getTeam() == getID())
+            {
+                iProb += GC.getLeaderHeadInfo(GET_PLAYER((PlayerTypes)iI).getPersonalityType()).getNoWarAttitudeProb(eAttitude);
+                iCount++;
+            }
+        }
+    }
 
-	for (iI = 0; iI < MAX_PLAYERS; iI++)
-	{
-		if (GET_PLAYER((PlayerTypes)iI).isAlive())
-		{
-			if (GET_PLAYER((PlayerTypes)iI).getTeam() == getID())
-			{
-				iProb += GC.getLeaderHeadInfo(GET_PLAYER((PlayerTypes)iI).getPersonalityType()).getNoWarAttitudeProb(eAttitude);
-				iCount++;
+    if (iCount > 1)
+    {
+        iProb /= iCount;
+    }
 
-				// In final stages of miltaristic victory, AI may turn on its friends!
-				if( GET_PLAYER((PlayerTypes)iI).AI_isDoVictoryStrategy(AI_VICTORY_CONQUEST4) )
-				{
-					iVictoryStrategyAdjust += 30;
-				}
-				else if( GET_PLAYER((PlayerTypes)iI).AI_isDoVictoryStrategy(AI_VICTORY_DOMINATION4) )
-				{
-					iVictoryStrategyAdjust += 20;
-				}
-			}
-		}
-	}
-
-	if (iCount > 1)
-	{
-		iProb /= iCount;
-		iVictoryStrategyAdjust /= iCount;
-	}
-
-	iProb = std::max( 0, iProb - iVictoryStrategyAdjust );
-/************************************************************************************************/
-/* BETTER_BTS_AI_MOD                       END                                                  */
-/************************************************************************************************/
-
-	return iProb;
+    return iProb;
 }
 
 
@@ -5715,7 +5692,7 @@ void CvTeamAI::AI_doWar()
 				(kGame.getSorenRandNum(iTotalWarRand, "AI Maximum War") <= iTotalWarThreshold))
 			{
 				int iNoWarRoll = kGame.getSorenRandNum(100, "AI No War");
-				iNoWarRoll = range(iNoWarRoll + (bAggressive ? 10 : 0) + (bFinancesProTotalWar ? 10 : 0) - (20*iGetBetterUnitsCount)/iNumMembers, 0, 99);
+				iNoWarRoll = range(iNoWarRoll + (bAggressive ? 10 : 0) + (bFinancesProTotalWar ? 10 : 0);
 
 				int iBestValue = 10; // K-Mod. I've set the starting value above zero just as a buffer against close-calls which end up being negative value in the near future.
 				TeamTypes eBestTeam = NO_TEAM;
