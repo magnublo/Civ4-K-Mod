@@ -21,6 +21,7 @@ jobs:
     timeout-minutes: 90
     env:
       VC2003_ROOT: C:\Program Files (x86)\Microsoft Visual C++ Toolkit 2003
+      BUILD_DEPS_URL: https://github.com/magnublo/Civ4-K-Mod/releases/download/build-deps/v1
       SDK_DEPS_REPO: FinalFrontierPlus/CvGameCoreDLL
       SDK_DEPS_REF: fc130b5ebaf13f9b989004332a4bf0ddd50cd172
 
@@ -58,16 +59,67 @@ jobs:
           if (-not (Test-Path $clPath)) {
             Write-Host "Installing VC++ Toolkit 2003..."
             $installer = Join-Path $env:RUNNER_TEMP "VCToolkitSetup.exe"
-            Invoke-WebRequest "http://kael.civfanatics.net/files/VCToolkitSetup.exe" -OutFile $installer
-            Start-Process -FilePath $installer -ArgumentList '/s /v"/qb"' -Wait
+            Invoke-WebRequest "$env:BUILD_DEPS_URL/VCToolkitSetup.exe" -OutFile $installer -UseBasicParsing
 
-            # The installer can take a while to complete all file writes.
-            Start-Sleep -Seconds 120
+            $fileSize = (Get-Item $installer).Length
+            Write-Host "Downloaded installer size: $fileSize bytes"
+            if ($fileSize -lt 1MB) {
+              throw "Downloaded installer is too small ($fileSize bytes). The host may be returning an error page instead of the binary."
+            }
+
+            Write-Host "Launching installer..."
+            $proc = Start-Process -FilePath $installer -ArgumentList '/s /v"/qb"' -Wait -PassThru
+            Write-Host "Installer bootstrap exit code: $($proc.ExitCode)"
+
+            # The bootstrapper may exit before msiexec finishes the real install.
+            # Poll for msiexec activity rather than using a fixed sleep.
+            $waited = 0
+            $maxWait = 300
+            do {
+              Start-Sleep -Seconds 10
+              $waited += 10
+              $msiProcs = Get-Process msiexec -ErrorAction SilentlyContinue
+              if ($msiProcs) {
+                Write-Host "msiexec still running... ($waited s elapsed)"
+              }
+            } while ($msiProcs -and $waited -lt $maxWait)
+
+            # Extra grace period for file-system flush after msiexec exits.
+            if (-not (Test-Path $clPath)) {
+              Start-Sleep -Seconds 15
+            }
           }
 
           if (-not (Test-Path $clPath)) {
+            Write-Host "::error::cl.exe not found after installation attempt."
+            Write-Host "--- Diagnostic info ---"
+            if (Test-Path $vcRoot) {
+              Write-Host "Install directory exists. Contents:"
+              Get-ChildItem $vcRoot -Recurse -Name | ForEach-Object { Write-Host "  $_" }
+            } else {
+              Write-Host "Install directory does NOT exist: $vcRoot"
+              # Check whether the installer placed files elsewhere
+              foreach ($alt in @(
+                "C:\Program Files\Microsoft Visual C++ Toolkit 2003",
+                "C:\Program Files (x86)\Microsoft Visual C++ Toolkit 2003"
+              )) {
+                if (Test-Path $alt) {
+                  Write-Host "Found alternative install at: $alt"
+                  Get-ChildItem $alt -Recurse -Name | ForEach-Object { Write-Host "  $_" }
+                }
+              }
+            }
+            # Dump the tail of the most recent MSI log for clues.
+            $msiLogs = Get-ChildItem $env:TEMP -Filter "MSI*.LOG" -ErrorAction SilentlyContinue |
+              Sort-Object LastWriteTime -Descending | Select-Object -First 3
+            foreach ($log in $msiLogs) {
+              Write-Host "`nMSI log ($($log.Name)):"
+              Get-Content $log.FullName -Tail 40 | ForEach-Object { Write-Host "  $_" }
+            }
             throw "VC++ Toolkit 2003 was not installed correctly. Expected compiler at: $clPath"
           }
+
+          Write-Host "VC++ Toolkit 2003 compiler found at: $clPath"
 
           $libDir = Join-Path $vcRoot "lib"
           New-Item -Path $libDir -ItemType Directory -Force | Out-Null
@@ -75,7 +127,7 @@ jobs:
           foreach ($lib in @("msvcrt.lib", "msvcrtd.lib", "msvcprt.lib")) {
             $target = Join-Path $libDir $lib
             if (-not (Test-Path $target)) {
-              Invoke-WebRequest "http://kael.civfanatics.net/files/$lib" -OutFile $target
+              Invoke-WebRequest "$env:BUILD_DEPS_URL/$lib" -OutFile $target -UseBasicParsing
             }
           }
 
