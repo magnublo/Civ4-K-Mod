@@ -16,6 +16,21 @@ This README is written for both:
 - `readme.txt`: original distribution instructions and high-level feature summary
 - `changelog.txt`: release history (current text says version 1.46)
 
+## Included Merge: Marathon Accelerated
+
+The Marathon Accelerated game-speed mod has been merged into this repository's K-Mod data files.
+
+Integrated behavior:
+- Marathon speed (`GAMESPEED_MARATHON`) keeps Marathon turn pacing, but uses accelerated production and research pacing from Marathon Accelerated:
+	- `iTrainPercent = 100`
+	- `iConstructPercent = 100`
+	- `iResearchPercent = 560`
+- Build Research (`PROCESS_RESEARCH`) is unlocked at `TECH_MYSTICISM` (instead of `TECH_ALPHABET`).
+
+Merged files are in:
+- `Assets/xml/GameInfo/CIV4GameSpeedInfo.xml`
+- `Assets/xml/GameInfo/CIV4ProcessInfo.xml`
+
 ## Quick Start (Players)
 
 From the included `readme.txt`:
