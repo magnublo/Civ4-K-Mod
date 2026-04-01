@@ -31,6 +31,14 @@ Merged files are in:
 - `Assets/xml/GameInfo/CIV4GameSpeedInfo.xml`
 - `Assets/xml/GameInfo/CIV4ProcessInfo.xml`
 
+## Gameplay XML Quick Reference
+
+- Corporation founding requirements are defined in:
+	- `Assets/xml/buildings/CIV4BuildingInfos.xml`
+	- Search for `BUILDING_CORPORATION_*` and edit that entry's `<PrereqTech>`.
+- Sid's Sushi (`BUILDING_CORPORATION_2`) uses:
+	- `<PrereqTech>TECH_MEDICINE</PrereqTech>` (matches original BtS behavior).
+
 ## Quick Start (Players)
 
 From the included `readme.txt`:
