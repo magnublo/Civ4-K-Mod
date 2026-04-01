@@ -34,28 +34,34 @@ Additional reference material:
 The following ideas are directly inherited from the CivFanatics/AppVeyor-era process:
 
 1. Use the legacy toolchain (VC++ Toolkit 2003) instead of modern MSVC for binary compatibility with the Civ4 DLL build ecosystem.
-2. Install the toolkit in automation with a silent installer invocation.
-3. Download the missing runtime library files into the toolkit lib directory.
-4. Build the DLL through nmake targets defined in the Civ4 makefile structure.
+2. Provision the toolkit and CRT libs (msvcrt.lib, msvcrtd.lib, msvcprt.lib) in CI.
+3. Build the DLL through nmake targets defined in the Civ4 makefile structure.
 
 ## What Was Adapted For This Repo
 
 The workflow is not a literal port of appveyor.yml. It was adapted to the current K-Mod repository and to GitHub Actions:
 
 1. CI platform migration:
-   - AppVeyor model -> GitHub Actions job on a Windows runner.
+   - AppVeyor model -> GitHub Actions job on a Windows runner (windows-2022).
 2. Build entrypoint alignment:
    - Uses this repository's existing nmake Release target from CvGameCoreDLL/Makefile.
-3. Dependency provisioning for this repo layout:
-   - K-Mod does not currently store Boost-1.32.0 and Python24 under CvGameCoreDLL/.
+3. VC++ Toolkit 2003 provisioning:
+   - The original InstallShield installer cannot run on modern Windows Server runners (blocked by OS version checks and Windows Installer policy).
+   - The toolkit files were extracted from the original installer's embedded MSI and packaged as a zip archive.
+   - The zip (`vc2003-toolkit.zip`) is hosted as a GitHub release asset on this repository under the `build-deps/v1` tag, along with the CRT libs (`msvcrt.lib`, `msvcrtd.lib`, `msvcprt.lib`).
+   - The workflow downloads and extracts the zip — no installer execution needed.
+4. Dependency provisioning for this repo layout:
+   - K-Mod does not store Boost-1.32.0 and Python24 under CvGameCoreDLL/.
    - Workflow fetches them when needed from FinalFrontierPlus/CvGameCoreDLL.
-4. Cache strategy:
-   - Cache the VC++ Toolkit 2003 install directory.
+5. Cache strategy:
+   - Cache the extracted VC++ Toolkit 2003 directory.
    - Cache Boost-1.32.0 and Python24 folders.
-   - This reduces repeated cold-start download and install cost.
-5. Windows SDK robustness:
-   - The job checks several SDK candidate paths before building and exports the selected path.
-6. Artifact handling:
+   - The toolkit install step is skipped entirely on cache hit.
+6. Windows SDK compatibility:
+   - The Civ4 Makefile expects a flat SDK layout (Include/windows.h, Lib/kernel32.lib, Bin/rc.exe).
+   - The workflow first checks for legacy SDK installs (v7.0A, v7.1, etc.).
+   - If none are found (typical on windows-2022 runners), it builds a shim directory from the Windows 10 SDK by flattening the versioned include/lib paths into the expected layout.
+7. Artifact handling:
    - Uploads built DLL and PDB artifacts.
    - Also stages a DLL copy into Assets for convenience in downstream workflows or manual download.
 
@@ -70,14 +76,16 @@ The workflow is not a literal port of appveyor.yml. It was adapted to the curren
 
 ## Known Risks and Maintenance Notes
 
-1. External host dependency:
-   - Kael-hosted binaries are external and could become unavailable.
-2. Runner image drift:
+1. Runner image drift:
    - Hosted runner filesystem and bundled SDKs may change over time.
-3. Legacy binary dependency source:
-   - Boost-1.32.0 and Python24 currently come from an external Civ4 repository snapshot.
+   - The Windows 10 SDK shim logic may need updating if Microsoft changes the SDK directory layout.
+2. Legacy binary dependency source:
+   - Boost-1.32.0 and Python24 currently come from an external Civ4 repository snapshot (FinalFrontierPlus/CvGameCoreDLL).
+3. Build dependency hosting:
+   - The VC++ Toolkit 2003 zip and CRT libs are hosted as GitHub release assets under the `build-deps/v1` tag on this repository.
+   - If the release is deleted or the repository changes ownership, the `BUILD_DEPS_URL` env var in the workflow must be updated.
 
-If any of those break, mirror artifacts in a stable location and update workflow URLs/paths accordingly.
+If any of those break, update the relevant URLs/paths in the workflow.
 
 ## Credits
 
