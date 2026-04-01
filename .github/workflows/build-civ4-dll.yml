@@ -63,7 +63,8 @@ jobs:
           function Write-Debug($msg) { if ($debug) { Write-Host "[DEBUG] $msg" } }
 
           if (-not (Test-Path $clPath)) {
-            Write-Host "Installing VC++ Toolkit 2003 via 7-Zip extraction..."
+            # --- Download installer ---
+            Write-Host "Installing VC++ Toolkit 2003..."
             $installer = Join-Path $env:RUNNER_TEMP "VCToolkitSetup.exe"
             Invoke-WebRequest "$env:BUILD_DEPS_URL/VCToolkitSetup.exe" -OutFile $installer -UseBasicParsing
 
@@ -73,129 +74,166 @@ jobs:
               throw "Downloaded installer is too small ($fileSize bytes). The host may be returning an error page instead of the binary."
             }
 
-            # --- Phase 1: Extract the InstallShield bootstrapper ---
-            $stage1 = Join-Path $env:RUNNER_TEMP "vc2003_stage1"
-            Write-Host "Phase 1: Extracting InstallShield bootstrapper..."
-            & 7z x $installer "-o$stage1" -y | Out-Null
-            Write-Debug "7z exit code (phase 1): $LASTEXITCODE"
-
-            if ($debug -and (Test-Path $stage1)) {
-              Write-Debug "Stage 1 contents:"
-              Get-ChildItem $stage1 -Recurse | ForEach-Object {
-                Write-Debug "  $($_.Length.ToString().PadLeft(12))  $($_.FullName)"
+            # --- Relax Windows Installer policy ---
+            # Exit code 1645 (ERROR_INSTALL_PACKAGE_REJECTED) on GitHub-hosted
+            # runners is caused by a Windows Installer policy that blocks old
+            # MSI packages. Disable it before running the installer.
+            Write-Host "Configuring Windows Installer policy..."
+            foreach ($regPath in @(
+              "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Installer",
+              "HKCU:\SOFTWARE\Policies\Microsoft\Windows\Installer"
+            )) {
+              if (-not (Test-Path $regPath)) {
+                New-Item -Path $regPath -Force | Out-Null
               }
+              # DisableMSI: 0 = Never disabled
+              Set-ItemProperty -Path $regPath -Name "DisableMSI" -Value 0 -Type DWord -Force
+              # AlwaysInstallElevated: allow elevated installs
+              Set-ItemProperty -Path $regPath -Name "AlwaysInstallElevated" -Value 1 -Type DWord -Force
+              Remove-ItemProperty -Path $regPath -Name "DisableUserInstalls" -ErrorAction SilentlyContinue
             }
 
-            # Find the MSI — it may be directly in stage1, or embedded inside the
-            # InstallShield payload blob (typically named '[0]' by 7z).
-            $msiFile = Get-ChildItem $stage1 -Filter "*.msi" -Recurse -ErrorAction SilentlyContinue |
-              Sort-Object Length -Descending | Select-Object -First 1
-
-            if (-not $msiFile) {
-              # The installer's embedded payload is extracted as '[0]' or a large
-              # unnamed blob. Try extracting every large file (>1MB) with 7z to
-              # find the MSI inside.
-              $blobs = Get-ChildItem $stage1 -Recurse -ErrorAction SilentlyContinue |
-                Where-Object { -not $_.PSIsContainer -and $_.Length -gt 1MB }
-              foreach ($blob in $blobs) {
-                Write-Host "Extracting nested payload: $($blob.Name) ($($blob.Length) bytes)..."
-                $blobExtract = Join-Path $env:RUNNER_TEMP "vc2003_blob_$($blob.Name)"
-                & 7z x $blob.FullName "-o$blobExtract" -y 2>&1 | Out-Null
-                Write-Debug "7z exit code (blob $($blob.Name)): $LASTEXITCODE"
-
-                if (Test-Path $blobExtract) {
-                  if ($debug) {
-                    Write-Debug "Blob '$($blob.Name)' contents:"
-                    Get-ChildItem $blobExtract -Recurse | ForEach-Object {
-                      Write-Debug "  $($_.Length.ToString().PadLeft(12))  $($_.FullName)"
-                    }
-                  }
-
-                  $msiFile = Get-ChildItem $blobExtract -Filter "*.msi" -Recurse -ErrorAction SilentlyContinue |
-                    Sort-Object Length -Descending | Select-Object -First 1
-                  if ($msiFile) { break }
-
-                  # Maybe the blob itself IS the MSI (just not named .msi).
-                  # Check if it extracted files that look like toolkit content.
-                  $directCl = Get-ChildItem $blobExtract -Filter "cl.exe" -Recurse -ErrorAction SilentlyContinue |
-                    Select-Object -First 1
-                  if ($directCl) {
-                    Write-Host "Found cl.exe directly inside blob '$($blob.Name)' — skipping MSI search."
-                    # Use blobExtract as stage2 directly.
-                    $stage2Override = $blobExtract
-                    break
-                  }
+            # Dump current policy state for diagnostics.
+            if ($debug) {
+              foreach ($regPath in @(
+                "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Installer",
+                "HKCU:\SOFTWARE\Policies\Microsoft\Windows\Installer"
+              )) {
+                if (Test-Path $regPath) {
+                  Write-Debug "Registry: $regPath"
+                  Get-ItemProperty $regPath | Format-List | Out-String | ForEach-Object { Write-Debug $_ }
                 }
               }
             }
 
-            if (-not $msiFile -and -not $stage2Override) {
-              Write-Host "::error::Could not find an MSI inside the installer."
-              if (Test-Path $stage1) {
-                Write-Host "Full stage 1 listing:"
-                Get-ChildItem $stage1 -Recurse | ForEach-Object {
-                  Write-Host "  $($_.Length.ToString().PadLeft(12))  $($_.FullName)"
-                }
-              }
-              throw "Failed to extract MSI from VCToolkitSetup.exe"
-            }
+            # Ensure Windows Installer service is running.
+            Set-Service -Name msiserver -StartupType Automatic -ErrorAction SilentlyContinue
+            Start-Service -Name msiserver -ErrorAction SilentlyContinue
+            Write-Debug "msiserver service status: $((Get-Service msiserver).Status)"
 
-            # --- Phase 2: Extract file contents from the MSI ---
-            $stage2 = if ($stage2Override) { $stage2Override } else {
-              $s2 = Join-Path $env:RUNNER_TEMP "vc2003_stage2"
-              Write-Host "Found MSI: $($msiFile.FullName) ($($msiFile.Length) bytes)"
-              Write-Host "Phase 2: Extracting MSI contents..."
-              & 7z x $msiFile.FullName "-o$s2" -y | Out-Null
-              Write-Debug "7z exit code (phase 2): $LASTEXITCODE"
-              $s2
-            }
+            # --- Attempt 1: Run installer with policy fix ---
+            $msiLog = Join-Path $env:RUNNER_TEMP "vc2003_install.log"
+            Write-Host "Attempt 1: Running installer (policy relaxed, /qn)..."
+            $proc = Start-Process -FilePath $installer `
+              -ArgumentList "/s /v`"/qn AGREETOLICENSE=Yes /l*v \`"$msiLog\`"`"" `
+              -Wait -PassThru
+            Write-Host "Installer bootstrap exit code: $($proc.ExitCode)"
 
-            if ($debug -and (Test-Path $stage2)) {
-              Write-Debug "Stage 2 contents:"
-              Get-ChildItem $stage2 -Recurse | ForEach-Object {
-                Write-Debug "  $($_.Length.ToString().PadLeft(12))  $($_.FullName)"
-              }
-            }
-
-            # --- Phase 3: Locate cl.exe and reconstruct the toolkit directory ---
-            $extractedCl = Get-ChildItem $stage2 -Filter "cl.exe" -Recurse -ErrorAction SilentlyContinue |
-              Select-Object -First 1
-
-            if ($extractedCl) {
-              # Walk up from cl.exe to find the toolkit root.
-              # Expected structure: .../Microsoft Visual C++ Toolkit 2003/bin/cl.exe
-              $binDir = $extractedCl.Directory
-              $toolkitRoot = $binDir.Parent
-
-              # Verify this looks like the toolkit root (should have bin/ and include/).
-              $hasBin = Test-Path (Join-Path $toolkitRoot.FullName "bin")
-              $hasInclude = Test-Path (Join-Path $toolkitRoot.FullName "include")
-
-              if ($hasBin -and $hasInclude) {
-                Write-Host "Phase 3: Copying toolkit from $($toolkitRoot.FullName) to $vcRoot"
-                Copy-Item $toolkitRoot.FullName $vcRoot -Recurse -Force
+            # Wait for child msiexec to finish (max 3 min).
+            $waited = 0
+            $maxWait = 180
+            do {
+              Start-Sleep -Seconds 10
+              $waited += 10
+              # Filter to msiexec processes with a window title or command line
+              # related to our install — the msiserver service is always running.
+              $msiProcs = Get-Process msiexec -ErrorAction SilentlyContinue |
+                Where-Object { $_.Id -ne (Get-WmiObject Win32_Service -Filter "Name='msiserver'" -ErrorAction SilentlyContinue).ProcessId }
+              if ($msiProcs) {
+                Write-Debug "msiexec child process(es) still running... ($waited s elapsed)"
               } else {
-                # Fallback: just copy the entire extraction to vcRoot and hope for the best.
-                Write-Host "Phase 3: Toolkit structure not as expected. Copying full extraction."
-                Write-Debug "binDir: $($binDir.FullName), parent: $($toolkitRoot.FullName)"
-                Write-Debug "hasBin=$hasBin, hasInclude=$hasInclude"
-                New-Item -Path $vcRoot -ItemType Directory -Force | Out-Null
-                Copy-Item "$stage2\*" $vcRoot -Recurse -Force
+                break
               }
-            } else {
-              # cl.exe wasn't found with its normal name — MSI extraction sometimes
-              # produces files without extensions or with mangled names.
-              Write-Host "::error::cl.exe not found in extracted MSI."
-              Write-Host "Full stage 2 listing:"
-              Get-ChildItem $stage2 -Recurse | ForEach-Object {
-                Write-Host "  $($_.Length.ToString().PadLeft(12))  $($_.FullName)"
+            } while ($waited -lt $maxWait)
+
+            if ($waited -ge $maxWait) {
+              Write-Host "::warning::msiexec timed out after ${maxWait}s. Killing child msiexec processes."
+              $svcPid = (Get-WmiObject Win32_Service -Filter "Name='msiserver'" -ErrorAction SilentlyContinue).ProcessId
+              Get-Process msiexec -ErrorAction SilentlyContinue |
+                Where-Object { $_.Id -ne $svcPid } |
+                Stop-Process -Force -ErrorAction SilentlyContinue
+              Start-Sleep -Seconds 5
+            }
+
+            # Grace period.
+            if (-not (Test-Path $clPath)) { Start-Sleep -Seconds 10 }
+
+            # --- Attempt 2: Extract MSI from temp and run msiexec /a ---
+            if (-not (Test-Path $clPath)) {
+              Write-Host "Attempt 1 did not produce cl.exe."
+
+              # Dump MSI log from attempt 1.
+              if (Test-Path $msiLog) {
+                Write-Host "MSI verbose log (last 100 lines):"
+                Get-Content $msiLog -Tail 100 | ForEach-Object { Write-Host "  $_" }
+              } else {
+                Write-Host "No MSI log at $msiLog — the bootstrapper may not have reached msiexec."
+                # Look for any MSI logs in TEMP.
+                $msiLogs = Get-ChildItem $env:TEMP -Filter "MSI*.LOG" -ErrorAction SilentlyContinue |
+                  Sort-Object LastWriteTime -Descending | Select-Object -First 3
+                foreach ($log in $msiLogs) {
+                  Write-Host "MSI log ($($log.Name), last 60 lines):"
+                  Get-Content $log.FullName -Tail 60 | ForEach-Object { Write-Host "  $_" }
+                }
               }
-              throw "cl.exe not found after extracting MSI contents"
+
+              # The bootstrapper may have extracted the MSI to a temp location
+              # before failing. Search for it.
+              Write-Host "Searching for extracted MSI files..."
+              $msiFile = $null
+              foreach ($root in @($env:TEMP, $env:RUNNER_TEMP, "C:\Windows\Temp", "C:\Users")) {
+                $found = Get-ChildItem $root -Filter "*.msi" -Recurse -Depth 4 -ErrorAction SilentlyContinue |
+                  Where-Object { $_.Length -gt 1MB } |
+                  Sort-Object LastWriteTime -Descending |
+                  Select-Object -First 1
+                if ($found) {
+                  $msiFile = $found
+                  Write-Host "Found MSI: $($found.FullName) ($($found.Length) bytes, modified $($found.LastWriteTime))"
+                  break
+                }
+              }
+
+              if ($msiFile) {
+                Write-Host "Attempt 2: Running msiexec /a (administrative extract)..."
+                $extractDir = Join-Path $env:RUNNER_TEMP "vc2003_extract"
+                $msiLog2 = Join-Path $env:RUNNER_TEMP "vc2003_admin_install.log"
+                $msiProc = Start-Process msiexec `
+                  -ArgumentList "/a `"$($msiFile.FullName)`" /qn TARGETDIR=`"$extractDir`" /l*v `"$msiLog2`"" `
+                  -Wait -PassThru
+                Write-Host "msiexec /a exit code: $($msiProc.ExitCode)"
+
+                if (Test-Path $msiLog2) {
+                  Write-Debug "Admin install log (last 40 lines):"
+                  Get-Content $msiLog2 -Tail 40 | ForEach-Object { Write-Debug "  $_" }
+                }
+
+                $extractedCl = Get-ChildItem $extractDir -Filter "cl.exe" -Recurse -ErrorAction SilentlyContinue |
+                  Select-Object -First 1
+                if ($extractedCl) {
+                  Write-Host "Found cl.exe at: $($extractedCl.FullName)"
+                  $binDir = $extractedCl.Directory
+                  $toolkitRoot = $binDir.Parent
+                  if ((Test-Path "$($toolkitRoot.FullName)\bin") -and (Test-Path "$($toolkitRoot.FullName)\include")) {
+                    Write-Host "Copying toolkit from $($toolkitRoot.FullName) to $vcRoot"
+                    Copy-Item $toolkitRoot.FullName $vcRoot -Recurse -Force
+                  } else {
+                    Write-Host "Copying full extraction to $vcRoot"
+                    New-Item -Path $vcRoot -ItemType Directory -Force | Out-Null
+                    Copy-Item "$extractDir\*" $vcRoot -Recurse -Force
+                  }
+                } else {
+                  Write-Host "cl.exe not found in msiexec /a extraction."
+                  if (Test-Path $extractDir) {
+                    Write-Host "Extract contents:"
+                    Get-ChildItem $extractDir -Recurse -Name | Select-Object -First 50 |
+                      ForEach-Object { Write-Host "  $_" }
+                  }
+                }
+              } else {
+                Write-Host "No MSI files found in temp directories."
+                # List recent large files in TEMP for clues.
+                Write-Host "Recent large files in TEMP:"
+                Get-ChildItem $env:TEMP -Recurse -Depth 3 -ErrorAction SilentlyContinue |
+                  Where-Object { $_.Length -gt 500KB } |
+                  Sort-Object LastWriteTime -Descending |
+                  Select-Object -First 20 |
+                  ForEach-Object { Write-Host "  $($_.Length.ToString().PadLeft(12))  $($_.LastWriteTime)  $($_.FullName)" }
+              }
             }
           }
 
           if (-not (Test-Path $clPath)) {
-            Write-Host "::error::cl.exe not found at expected path after extraction."
+            Write-Host "::error::cl.exe not found after all installation attempts."
             if (Test-Path $vcRoot) {
               Write-Host "Install directory contents:"
               Get-ChildItem $vcRoot -Recurse -Name | ForEach-Object { Write-Host "  $_" }
