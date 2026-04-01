@@ -1,0 +1,171 @@
+name: Build Civ4 K-Mod DLL
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "CvGameCoreDLL/**"
+      - ".github/workflows/build-civ4-dll.yml"
+  pull_request:
+    paths:
+      - "CvGameCoreDLL/**"
+      - ".github/workflows/build-civ4-dll.yml"
+
+concurrency:
+  group: build-civ4-dll-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-dll:
+    runs-on: windows-2022
+    timeout-minutes: 90
+    env:
+      VC2003_ROOT: C:\Program Files (x86)\Microsoft Visual C++ Toolkit 2003
+      SDK_DEPS_REPO: FinalFrontierPlus/CvGameCoreDLL
+      SDK_DEPS_REF: fc130b5ebaf13f9b989004332a4bf0ddd50cd172
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up developer command prompt
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Cache VC++ Toolkit 2003
+        id: cache-vc2003
+        uses: actions/cache@v4
+        with:
+          path: C:\Program Files (x86)\Microsoft Visual C++ Toolkit 2003
+          key: ${{ runner.os }}-vc2003-toolkit-v1
+
+      - name: Cache Civ4 SDK dependency folders
+        id: cache-sdk-deps
+        uses: actions/cache@v4
+        with:
+          path: |
+            CvGameCoreDLL/Boost-1.32.0
+            CvGameCoreDLL/Python24
+          key: ${{ runner.os }}-civ4-sdk-deps-${{ env.SDK_DEPS_REF }}
+
+      - name: Install VC++ Toolkit 2003 and required CRT libs
+        shell: pwsh
+        run: |
+          $vcRoot = $env:VC2003_ROOT
+          $clPath = Join-Path $vcRoot "bin\cl.exe"
+
+          if (-not (Test-Path $clPath)) {
+            Write-Host "Installing VC++ Toolkit 2003..."
+            $installer = Join-Path $env:RUNNER_TEMP "VCToolkitSetup.exe"
+            Invoke-WebRequest "http://kael.civfanatics.net/files/VCToolkitSetup.exe" -OutFile $installer
+            Start-Process -FilePath $installer -ArgumentList '/s /v"/qb"' -Wait
+
+            # The installer can take a while to complete all file writes.
+            Start-Sleep -Seconds 120
+          }
+
+          if (-not (Test-Path $clPath)) {
+            throw "VC++ Toolkit 2003 was not installed correctly. Expected compiler at: $clPath"
+          }
+
+          $libDir = Join-Path $vcRoot "lib"
+          New-Item -Path $libDir -ItemType Directory -Force | Out-Null
+
+          foreach ($lib in @("msvcrt.lib", "msvcrtd.lib", "msvcprt.lib")) {
+            $target = Join-Path $libDir $lib
+            if (-not (Test-Path $target)) {
+              Invoke-WebRequest "http://kael.civfanatics.net/files/$lib" -OutFile $target
+            }
+          }
+
+      - name: Fetch missing Boost 1.32 and Python24 folders
+        if: steps.cache-sdk-deps.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          $tmpRepo = Join-Path $env:RUNNER_TEMP "civ4-sdk-deps"
+          if (Test-Path $tmpRepo) {
+            Remove-Item -Recurse -Force $tmpRepo
+          }
+
+          git clone --depth 1 --branch master "https://github.com/$env:SDK_DEPS_REPO.git" $tmpRepo
+
+          Copy-Item "$tmpRepo\Boost-1.32.0" "CvGameCoreDLL\Boost-1.32.0" -Recurse -Force
+          Copy-Item "$tmpRepo\Python24" "CvGameCoreDLL\Python24" -Recurse -Force
+
+      - name: Validate dependency folders
+        shell: pwsh
+        run: |
+          $requiredPaths = @(
+            "CvGameCoreDLL\Boost-1.32.0\include\boost\python.hpp",
+            "CvGameCoreDLL\Boost-1.32.0\libs\boost_python-vc71-mt-1_32.lib",
+            "CvGameCoreDLL\Python24\include\Python.h",
+            "CvGameCoreDLL\Python24\libs\python24.lib"
+          )
+
+          foreach ($path in $requiredPaths) {
+            if (-not (Test-Path $path)) {
+              throw "Missing required SDK dependency: $path"
+            }
+          }
+
+      - name: Resolve a compatible Windows SDK path
+        shell: pwsh
+        run: |
+          function Test-PsdkRoot([string]$root) {
+            if ([string]::IsNullOrWhiteSpace($root)) {
+              return $false
+            }
+
+            $rc = Join-Path $root "Bin\rc.exe"
+            $include = Join-Path $root "Include\windows.h"
+            $lib = Join-Path $root "Lib\kernel32.lib"
+
+            return (Test-Path $rc) -and (Test-Path $include) -and (Test-Path $lib)
+          }
+
+          $candidates = @(
+            "C:\Program Files\Microsoft SDKs\Windows\v7.1",
+            "C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1",
+            "C:\Program Files\Microsoft SDKs\Windows\v7.0A",
+            "C:\Program Files (x86)\Microsoft SDKs\Windows\v7.0A"
+          )
+
+          $psdkPath = $null
+          foreach ($candidate in $candidates) {
+            if (Test-PsdkRoot $candidate) {
+              $psdkPath = $candidate
+              break
+            }
+          }
+
+          if (-not $psdkPath) {
+            throw "No compatible Windows SDK was found. Expected one of: $($candidates -join ', ')"
+          }
+
+          "TOOLKIT_PATH=$env:VC2003_ROOT" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "PSDK_PATH=$psdkPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+          Write-Host "Using toolkit: $env:VC2003_ROOT"
+          Write-Host "Using Windows SDK: $psdkPath"
+
+      - name: Build Release DLL
+        working-directory: CvGameCoreDLL
+        shell: cmd
+        run: |
+          nmake TOOLKIT="%TOOLKIT_PATH%" PSDK="%PSDK_PATH%" Release
+
+      - name: Stage built DLL into Assets
+        shell: pwsh
+        run: |
+          Copy-Item "CvGameCoreDLL\Release\CvGameCoreDLL.dll" "Assets\CvGameCoreDLL.dll" -Force
+
+      - name: Upload DLL artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: CvGameCoreDLL-Release
+          if-no-files-found: error
+          path: |
+            CvGameCoreDLL/Release/CvGameCoreDLL.dll
+            CvGameCoreDLL/Release/CvGameCoreDLL.pdb
+            Assets/CvGameCoreDLL.dll
