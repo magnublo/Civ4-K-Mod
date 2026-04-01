@@ -11,8 +11,10 @@ This README is written for both:
 
 - `Assets/`: data-driven mod content (XML, Python, art, text, config)
 - `CvGameCoreDLL/`: C++ game DLL source (core game logic and AI)
-- `PublicMaps/`: public map scripts/scenarios
+- `PublicMaps/`: public map scripts/scenarios (includes ported Earth/Europe maps)
+- `Settings/`: configuration templates (unit naming, domestic advisor)
 - `K-Mod.ini`: mod metadata and Civ4 mod-loading flags
+- `K-Mod, more resources.ini`: optional alternative launcher profile
 - `readme.txt`: original distribution instructions and high-level feature summary
 - `changelog.txt`: release history (current text says version 1.46)
 
@@ -30,6 +32,36 @@ Integrated behavior:
 Merged files are in:
 - `Assets/xml/GameInfo/CIV4GameSpeedInfo.xml`
 - `Assets/xml/GameInfo/CIV4ProcessInfo.xml`
+
+## Included Merge: Old Personal Snapshot ("K-Mod, more resources")
+
+Additional content ported from an older personal K-Mod v1.45 snapshot. All shared files kept the newer v1.46 repo versions; only old-snapshot-only additions were ported.
+
+### XML Data Files
+
+- `Assets/xml/Civilizations/CIV4CivilizationInfos.xml` — full civilization definitions (standard BtS set)
+- `Assets/xml/GameInfo/CIV4CultureLevelInfo.xml` — culture level thresholds
+- `Assets/xml/Terrain/CIV4BonusInfos.xml` — bonus resource definitions
+
+### Blue Marble Art Assets
+
+Terrain and water textures from the [Blue Marble](https://civilization.fandom.com/wiki/Blue_Marble_(Civ4)) mod:
+- `Assets/Art/Textures/` — terrain blend/detail/grid textures (Coast, Desert, Grass, Hill, Ice, Ocean, Peak, Plains, Tundra)
+- `Assets/Art/Water/` — water surface and coast blend textures
+- `Assets/Art/Waves/` — wave animation models (.nif) and textures
+
+Blue Marble is a graphics mod by **GT** (GeoTestudo) that replaces Civ4's terrain visuals with satellite-imagery-based textures. Original mod page: https://civilization.fandom.com/wiki/Blue_Marble_(Civ4)
+
+### Settings Templates
+
+- `Settings/Adv Unit Naming.ini`
+- `Settings/CustomDomAdv/` — Custom Domestic Advisor presets (default, German, Italian, widescreen)
+
+### Optional Launcher Profile
+
+- `K-Mod, more resources.ini` — alternative mod launcher profile (does not replace default `K-Mod.ini`)
+
+Decision manifest: `gitignore/merge-decision-manifest.md`
 
 ## Gameplay XML Quick Reference
 
