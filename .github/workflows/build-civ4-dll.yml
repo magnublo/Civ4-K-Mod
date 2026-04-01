@@ -55,6 +55,7 @@ jobs:
         run: |
           $vcRoot = $env:VC2003_ROOT
           $clPath = Join-Path $vcRoot "bin\cl.exe"
+          $msiLog = Join-Path $env:RUNNER_TEMP "vc2003_install.log"
 
           if (-not (Test-Path $clPath)) {
             Write-Host "Installing VC++ Toolkit 2003..."
@@ -67,12 +68,14 @@ jobs:
               throw "Downloaded installer is too small ($fileSize bytes). The host may be returning an error page instead of the binary."
             }
 
-            Write-Host "Launching installer..."
-            $proc = Start-Process -FilePath $installer -ArgumentList '/s /v"/qb"' -Wait -PassThru
+            # Attempt 1: Standard silent install (/qn = fully silent, no UI).
+            Write-Host "Attempt 1: Running installer with /qn (fully silent)..."
+            $proc = Start-Process -FilePath $installer `
+              -ArgumentList "/s /v`"/qn AGREETOLICENSE=Yes /l*v $msiLog`"" `
+              -Wait -PassThru
             Write-Host "Installer bootstrap exit code: $($proc.ExitCode)"
 
-            # The bootstrapper may exit before msiexec finishes the real install.
-            # Poll for msiexec activity rather than using a fixed sleep.
+            # Wait for any child msiexec to complete (max 5 min).
             $waited = 0
             $maxWait = 300
             do {
@@ -84,37 +87,101 @@ jobs:
               }
             } while ($msiProcs -and $waited -lt $maxWait)
 
-            # Extra grace period for file-system flush after msiexec exits.
+            if ($waited -ge $maxWait) {
+              Write-Host "::warning::msiexec timed out. Killing remaining msiexec processes."
+              Get-Process msiexec -ErrorAction SilentlyContinue | Stop-Process -Force
+              Start-Sleep -Seconds 5
+            }
+
+            # Attempt 2: If attempt 1 failed, try extracting the MSI and running
+            # an administrative install (file extraction only, no registry/service changes).
             if (-not (Test-Path $clPath)) {
-              Start-Sleep -Seconds 15
+              Write-Host "Attempt 1 did not produce cl.exe. Trying MSI administrative extract..."
+
+              # InstallShield bootstrappers extract their embedded MSI to a temp folder.
+              # Search for it in known locations.
+              $msiFile = $null
+              $searchRoots = @($env:TEMP, $env:RUNNER_TEMP, "C:\Windows\Temp")
+              foreach ($root in $searchRoots) {
+                $found = Get-ChildItem $root -Filter "*.msi" -Recurse -ErrorAction SilentlyContinue |
+                  Where-Object { $_.Length -gt 1MB } |
+                  Sort-Object LastWriteTime -Descending |
+                  Select-Object -First 1
+                if ($found) {
+                  $msiFile = $found.FullName
+                  break
+                }
+              }
+
+              if ($msiFile) {
+                Write-Host "Found MSI at: $msiFile (size: $((Get-Item $msiFile).Length) bytes)"
+                $extractDir = Join-Path $env:RUNNER_TEMP "vc2003_extract"
+                $msiLog2 = Join-Path $env:RUNNER_TEMP "vc2003_admin_install.log"
+
+                # /a = administrative install (extracts files without running install scripts)
+                $msiArgs = "/a `"$msiFile`" /qn TARGETDIR=`"$extractDir`" /l*v `"$msiLog2`""
+                Write-Host "Running: msiexec $msiArgs"
+                $msiProc = Start-Process msiexec -ArgumentList $msiArgs -Wait -PassThru
+                Write-Host "msiexec /a exit code: $($msiProc.ExitCode)"
+
+                # The toolkit files may be nested under the extract dir.
+                $extractedCl = Get-ChildItem $extractDir -Filter "cl.exe" -Recurse -ErrorAction SilentlyContinue |
+                  Select-Object -First 1
+                if ($extractedCl) {
+                  Write-Host "Found extracted cl.exe at: $($extractedCl.FullName)"
+                  # Copy the entire toolkit tree to the expected location.
+                  $toolkitSrc = $extractedCl.Directory.Parent.FullName
+                  Write-Host "Copying toolkit from $toolkitSrc to $vcRoot"
+                  Copy-Item $toolkitSrc $vcRoot -Recurse -Force
+                } else {
+                  Write-Host "cl.exe not found in extracted MSI contents."
+                  if (Test-Path $extractDir) {
+                    Write-Host "Extract directory contents:"
+                    Get-ChildItem $extractDir -Recurse -Name | ForEach-Object { Write-Host "  $_" }
+                  }
+                  if (Test-Path $msiLog2) {
+                    Write-Host "`nAdmin install MSI log (last 60 lines):"
+                    Get-Content $msiLog2 -Tail 60 | ForEach-Object { Write-Host "  $_" }
+                  }
+                }
+              } else {
+                Write-Host "No .msi file found in temp directories."
+              }
             }
           }
 
           if (-not (Test-Path $clPath)) {
-            Write-Host "::error::cl.exe not found after installation attempt."
+            Write-Host "::error::cl.exe not found after all installation attempts."
             Write-Host "--- Diagnostic info ---"
             if (Test-Path $vcRoot) {
               Write-Host "Install directory exists. Contents:"
               Get-ChildItem $vcRoot -Recurse -Name | ForEach-Object { Write-Host "  $_" }
             } else {
               Write-Host "Install directory does NOT exist: $vcRoot"
-              # Check whether the installer placed files elsewhere
-              foreach ($alt in @(
-                "C:\Program Files\Microsoft Visual C++ Toolkit 2003",
-                "C:\Program Files (x86)\Microsoft Visual C++ Toolkit 2003"
-              )) {
-                if (Test-Path $alt) {
-                  Write-Host "Found alternative install at: $alt"
-                  Get-ChildItem $alt -Recurse -Name | ForEach-Object { Write-Host "  $_" }
-                }
+            }
+
+            # Search the entire system for cl.exe from this toolkit.
+            Write-Host "`nSearching for cl.exe under Program Files..."
+            foreach ($pf in @($env:ProgramFiles, ${env:ProgramFiles(x86)})) {
+              if ($pf) {
+                Get-ChildItem $pf -Filter "cl.exe" -Recurse -ErrorAction SilentlyContinue |
+                  ForEach-Object { Write-Host "  Found: $($_.FullName)" }
               }
             }
-            # Dump the tail of the most recent MSI log for clues.
-            $msiLogs = Get-ChildItem $env:TEMP -Filter "MSI*.LOG" -ErrorAction SilentlyContinue |
-              Sort-Object LastWriteTime -Descending | Select-Object -First 3
-            foreach ($log in $msiLogs) {
-              Write-Host "`nMSI log ($($log.Name)):"
-              Get-Content $log.FullName -Tail 40 | ForEach-Object { Write-Host "  $_" }
+
+            # Dump the verbose MSI log from attempt 1.
+            if (Test-Path $msiLog) {
+              Write-Host "`nVerbose MSI log (last 80 lines):"
+              Get-Content $msiLog -Tail 80 | ForEach-Object { Write-Host "  $_" }
+            } else {
+              Write-Host "`nNo verbose MSI log found at $msiLog"
+              # Fall back to any MSI logs in TEMP.
+              $msiLogs = Get-ChildItem $env:TEMP -Filter "MSI*.LOG" -ErrorAction SilentlyContinue |
+                Sort-Object LastWriteTime -Descending | Select-Object -First 3
+              foreach ($log in $msiLogs) {
+                Write-Host "`nMSI log ($($log.Name)):"
+                Get-Content $log.FullName -Tail 40 | ForEach-Object { Write-Host "  $_" }
+              }
             }
             throw "VC++ Toolkit 2003 was not installed correctly. Expected compiler at: $clPath"
           }
