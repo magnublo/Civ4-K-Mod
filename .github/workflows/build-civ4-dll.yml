@@ -73,7 +73,7 @@ jobs:
               throw "Downloaded installer is too small ($fileSize bytes). The host may be returning an error page instead of the binary."
             }
 
-            # --- Phase 1: Extract the InstallShield bootstrapper to find the embedded MSI ---
+            # --- Phase 1: Extract the InstallShield bootstrapper ---
             $stage1 = Join-Path $env:RUNNER_TEMP "vc2003_stage1"
             Write-Host "Phase 1: Extracting InstallShield bootstrapper..."
             & 7z x $installer "-o$stage1" -y | Out-Null
@@ -81,33 +81,55 @@ jobs:
 
             if ($debug -and (Test-Path $stage1)) {
               Write-Debug "Stage 1 contents:"
-              Get-ChildItem $stage1 -Recurse -Name | ForEach-Object { Write-Debug "  $_" }
+              Get-ChildItem $stage1 -Recurse | ForEach-Object {
+                Write-Debug "  $($_.Length.ToString().PadLeft(12))  $($_.FullName)"
+              }
             }
 
-            # Find the MSI inside the extracted contents.
+            # Find the MSI — it may be directly in stage1, or embedded inside the
+            # InstallShield payload blob (typically named '[0]' by 7z).
             $msiFile = Get-ChildItem $stage1 -Filter "*.msi" -Recurse -ErrorAction SilentlyContinue |
               Sort-Object Length -Descending | Select-Object -First 1
 
             if (-not $msiFile) {
-              # Some InstallShield .exe's have a nested setup.exe or cab structure.
-              # Try extracting any large .cab files found.
-              $cabFile = Get-ChildItem $stage1 -Filter "*.cab" -Recurse -ErrorAction SilentlyContinue |
-                Where-Object { $_.Length -gt 1MB } | Select-Object -First 1
-              if ($cabFile) {
-                Write-Host "No MSI found directly. Extracting CAB: $($cabFile.Name)..."
-                $cabExtract = Join-Path $env:RUNNER_TEMP "vc2003_cab"
-                & 7z x $cabFile.FullName "-o$cabExtract" -y | Out-Null
-                Write-Debug "7z exit code (cab): $LASTEXITCODE"
-                if ($debug -and (Test-Path $cabExtract)) {
-                  Write-Debug "CAB contents:"
-                  Get-ChildItem $cabExtract -Recurse -Name | ForEach-Object { Write-Debug "  $_" }
+              # The installer's embedded payload is extracted as '[0]' or a large
+              # unnamed blob. Try extracting every large file (>1MB) with 7z to
+              # find the MSI inside.
+              $blobs = Get-ChildItem $stage1 -Recurse -ErrorAction SilentlyContinue |
+                Where-Object { -not $_.PSIsContainer -and $_.Length -gt 1MB }
+              foreach ($blob in $blobs) {
+                Write-Host "Extracting nested payload: $($blob.Name) ($($blob.Length) bytes)..."
+                $blobExtract = Join-Path $env:RUNNER_TEMP "vc2003_blob_$($blob.Name)"
+                & 7z x $blob.FullName "-o$blobExtract" -y 2>&1 | Out-Null
+                Write-Debug "7z exit code (blob $($blob.Name)): $LASTEXITCODE"
+
+                if (Test-Path $blobExtract) {
+                  if ($debug) {
+                    Write-Debug "Blob '$($blob.Name)' contents:"
+                    Get-ChildItem $blobExtract -Recurse | ForEach-Object {
+                      Write-Debug "  $($_.Length.ToString().PadLeft(12))  $($_.FullName)"
+                    }
+                  }
+
+                  $msiFile = Get-ChildItem $blobExtract -Filter "*.msi" -Recurse -ErrorAction SilentlyContinue |
+                    Sort-Object Length -Descending | Select-Object -First 1
+                  if ($msiFile) { break }
+
+                  # Maybe the blob itself IS the MSI (just not named .msi).
+                  # Check if it extracted files that look like toolkit content.
+                  $directCl = Get-ChildItem $blobExtract -Filter "cl.exe" -Recurse -ErrorAction SilentlyContinue |
+                    Select-Object -First 1
+                  if ($directCl) {
+                    Write-Host "Found cl.exe directly inside blob '$($blob.Name)' — skipping MSI search."
+                    # Use blobExtract as stage2 directly.
+                    $stage2Override = $blobExtract
+                    break
+                  }
                 }
-                $msiFile = Get-ChildItem $cabExtract -Filter "*.msi" -Recurse -ErrorAction SilentlyContinue |
-                  Sort-Object Length -Descending | Select-Object -First 1
               }
             }
 
-            if (-not $msiFile) {
+            if (-not $msiFile -and -not $stage2Override) {
               Write-Host "::error::Could not find an MSI inside the installer."
               if (Test-Path $stage1) {
                 Write-Host "Full stage 1 listing:"
@@ -118,17 +140,21 @@ jobs:
               throw "Failed to extract MSI from VCToolkitSetup.exe"
             }
 
-            Write-Host "Found MSI: $($msiFile.FullName) ($($msiFile.Length) bytes)"
-
             # --- Phase 2: Extract file contents from the MSI ---
-            $stage2 = Join-Path $env:RUNNER_TEMP "vc2003_stage2"
-            Write-Host "Phase 2: Extracting MSI contents..."
-            & 7z x $msiFile.FullName "-o$stage2" -y | Out-Null
-            Write-Debug "7z exit code (phase 2): $LASTEXITCODE"
+            $stage2 = if ($stage2Override) { $stage2Override } else {
+              $s2 = Join-Path $env:RUNNER_TEMP "vc2003_stage2"
+              Write-Host "Found MSI: $($msiFile.FullName) ($($msiFile.Length) bytes)"
+              Write-Host "Phase 2: Extracting MSI contents..."
+              & 7z x $msiFile.FullName "-o$s2" -y | Out-Null
+              Write-Debug "7z exit code (phase 2): $LASTEXITCODE"
+              $s2
+            }
 
             if ($debug -and (Test-Path $stage2)) {
               Write-Debug "Stage 2 contents:"
-              Get-ChildItem $stage2 -Recurse -Name | ForEach-Object { Write-Debug "  $_" }
+              Get-ChildItem $stage2 -Recurse | ForEach-Object {
+                Write-Debug "  $($_.Length.ToString().PadLeft(12))  $($_.FullName)"
+              }
             }
 
             # --- Phase 3: Locate cl.exe and reconstruct the toolkit directory ---
