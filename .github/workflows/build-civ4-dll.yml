@@ -39,7 +39,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: C:\Program Files (x86)\Microsoft Visual C++ Toolkit 2003
-          key: ${{ runner.os }}-vc2003-toolkit-v1
+          key: ${{ runner.os }}-vc2003-toolkit-v2
 
       - name: Cache Civ4 SDK dependency folders
         id: cache-sdk-deps
@@ -51,242 +51,39 @@ jobs:
           key: ${{ runner.os }}-civ4-sdk-deps-${{ env.SDK_DEPS_REF }}
 
       - name: Install VC++ Toolkit 2003 and required CRT libs
-        env:
-          # Set to 'true' for verbose diagnostic output from this step.
-          VC2003_DEBUG: 'true'
+        if: steps.cache-vc2003.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
           $vcRoot = $env:VC2003_ROOT
           $clPath = Join-Path $vcRoot "bin\cl.exe"
-          $debug  = $env:VC2003_DEBUG -eq 'true'
 
-          function Write-Debug($msg) { if ($debug) { Write-Host "[DEBUG] $msg" } }
+          # Download pre-extracted toolkit zip from GitHub release.
+          $zipFile = Join-Path $env:RUNNER_TEMP "vc2003-toolkit.zip"
+          Write-Host "Downloading VC++ Toolkit 2003..."
+          Invoke-WebRequest "$env:BUILD_DEPS_URL/vc2003-toolkit.zip" -OutFile $zipFile -UseBasicParsing
 
-          if (-not (Test-Path $clPath)) {
-            # --- Download installer ---
-            Write-Host "Installing VC++ Toolkit 2003..."
-            $installer = Join-Path $env:RUNNER_TEMP "VCToolkitSetup.exe"
-            Invoke-WebRequest "$env:BUILD_DEPS_URL/VCToolkitSetup.exe" -OutFile $installer -UseBasicParsing
+          $fileSize = (Get-Item $zipFile).Length
+          Write-Host "Downloaded zip size: $fileSize bytes"
 
-            $fileSize = (Get-Item $installer).Length
-            Write-Host "Downloaded installer size: $fileSize bytes"
-            if ($fileSize -lt 1MB) {
-              throw "Downloaded installer is too small ($fileSize bytes)."
-            }
+          # The zip contains: Program Files/Microsoft Visual C++ Toolkit 2003/{bin,include,lib,...}
+          # Extract so the toolkit lands at the expected VC2003_ROOT path.
+          $extractDir = Join-Path $env:RUNNER_TEMP "vc2003_extract"
+          Expand-Archive -Path $zipFile -DestinationPath $extractDir -Force
 
-            # The bootstrapper returns 1645 on Windows Server 2022 due to an
-            # internal OS version check, *before* it ever calls msiexec. None of
-            # the following work: registry policy relaxation, /qn, /qb, etc.
-            #
-            # Strategy: use InstallShield extraction flags to get the embedded
-            # MSI out of the bootstrapper, then run msiexec /a (admin extract)
-            # to get the actual toolkit files without running any install logic.
-
-            $isExtractDir = Join-Path $env:RUNNER_TEMP "vc2003_isextract"
-            New-Item -Path $isExtractDir -ItemType Directory -Force | Out-Null
-
-            # --- Attempt 1: /b flag (InstallShield temp extraction path) ---
-            # The /b flag tells the bootstrapper where to extract its temp files
-            # (including the MSI). Even if the install itself fails, the MSI may
-            # be left in this directory.
-            Write-Host "Attempt 1: Running bootstrapper with /b flag to capture MSI..."
-            $proc = Start-Process -FilePath $installer `
-              -ArgumentList "/s /b`"$isExtractDir`" /v`"/qn`"" `
-              -Wait -PassThru
-            Write-Host "Bootstrapper exit code: $($proc.ExitCode)"
-
-            # Also check without /s (the bootstrapper might skip extraction in silent mode).
-            if (-not (Get-ChildItem $isExtractDir -Filter "*.msi" -ErrorAction SilentlyContinue)) {
-              Write-Host "No MSI found with /s. Trying without /s..."
-              $proc2 = Start-Process -FilePath $installer `
-                -ArgumentList "/b`"$isExtractDir`" /v`"/qn`"" `
-                -Wait -PassThru
-              Write-Host "Bootstrapper exit code (no /s): $($proc2.ExitCode)"
-            }
-
-            if ($debug -and (Test-Path $isExtractDir)) {
-              Write-Debug "Contents of /b extract dir:"
-              Get-ChildItem $isExtractDir -Recurse | ForEach-Object {
-                Write-Debug "  $($_.Length.ToString().PadLeft(12))  $($_.FullName)"
-              }
-            }
-
-            # Search for MSI in the extraction dir and common temp paths.
-            $msiFile = $null
-            $searchPaths = @($isExtractDir, $env:TEMP, $env:RUNNER_TEMP, "C:\Windows\Temp")
-            foreach ($root in $searchPaths) {
-              $found = Get-ChildItem $root -Filter "*.msi" -Recurse -Depth 4 -ErrorAction SilentlyContinue |
-                Where-Object { $_.Length -gt 1MB } |
-                Sort-Object LastWriteTime -Descending |
-                Select-Object -First 1
-              if ($found) {
-                $msiFile = $found
-                Write-Host "Found MSI: $($found.FullName) ($($found.Length) bytes)"
-                break
-              }
-            }
-
-            # --- Attempt 2: /extract_all flag (InstallShield PFTW extraction) ---
-            if (-not $msiFile) {
-              Write-Host "Attempt 2: Trying /extract_all flag..."
-              $extractAllDir = Join-Path $env:RUNNER_TEMP "vc2003_extractall"
-              New-Item -Path $extractAllDir -ItemType Directory -Force | Out-Null
-
-              # Several variations of this flag exist across InstallShield versions.
-              foreach ($flag in @(
-                "/extract_all:`"$extractAllDir`"",
-                "/extract_all `"$extractAllDir`"",
-                "/a /s /v`"/qn TARGETDIR=\`"$extractAllDir\`"`""
-              )) {
-                Write-Host "  Trying: VCToolkitSetup.exe $flag"
-                $proc = Start-Process -FilePath $installer -ArgumentList $flag -Wait -PassThru
-                Write-Host "  Exit code: $($proc.ExitCode)"
-
-                $found = Get-ChildItem $extractAllDir -Filter "*.msi" -Recurse -ErrorAction SilentlyContinue |
-                  Where-Object { $_.Length -gt 1MB } |
-                  Sort-Object Length -Descending |
-                  Select-Object -First 1
-                if ($found) {
-                  $msiFile = $found
-                  Write-Host "Found MSI: $($found.FullName) ($($found.Length) bytes)"
-                  break
-                }
-              }
-
-              if ($debug -and (Test-Path $extractAllDir)) {
-                Write-Debug "Contents of extract_all dir:"
-                Get-ChildItem $extractAllDir -Recurse | ForEach-Object {
-                  Write-Debug "  $($_.Length.ToString().PadLeft(12))  $($_.FullName)"
-                }
-              }
-            }
-
-            # --- Attempt 3: Monitor filesystem during install ---
-            if (-not $msiFile) {
-              Write-Host "Attempt 3: Running installer while monitoring temp for MSI..."
-
-              # Start a background job to watch for MSI files in TEMP.
-              $watchJob = Start-Job -ScriptBlock {
-                param($tempDir, $extractDir)
-                $found = @()
-                $deadline = (Get-Date).AddSeconds(120)
-                while ((Get-Date) -lt $deadline) {
-                  foreach ($root in @($tempDir, $extractDir, "C:\Windows\Temp", $env:TEMP)) {
-                    $msis = Get-ChildItem $root -Filter "*.msi" -Recurse -Depth 4 -ErrorAction SilentlyContinue |
-                      Where-Object { $_.Length -gt 1MB }
-                    foreach ($m in $msis) {
-                      $dest = Join-Path $extractDir $m.Name
-                      if (-not (Test-Path $dest)) {
-                        Copy-Item $m.FullName $dest -Force -ErrorAction SilentlyContinue
-                        $found += $dest
-                      }
-                    }
-                  }
-                  Start-Sleep -Seconds 2
-                }
-                return $found
-              } -ArgumentList $env:TEMP, $isExtractDir
-
-              # Run installer while the watcher is active.
-              $proc = Start-Process -FilePath $installer `
-                -ArgumentList "/s /v`"/qn`"" `
-                -Wait -PassThru
-              Write-Host "Installer exit code: $($proc.ExitCode)"
-
-              # Give the watcher a few more seconds.
-              Start-Sleep -Seconds 10
-              Stop-Job $watchJob -ErrorAction SilentlyContinue
-              $captured = Receive-Job $watchJob -ErrorAction SilentlyContinue
-              Remove-Job $watchJob -ErrorAction SilentlyContinue
-
-              if ($captured) {
-                Write-Host "Filesystem watcher captured MSI files:"
-                foreach ($c in $captured) { Write-Host "  $c" }
-                $msiFile = Get-ChildItem $captured[0] -ErrorAction SilentlyContinue
-              }
-
-              # Also scan again after the installer exits.
-              if (-not $msiFile) {
-                foreach ($root in @($env:TEMP, $env:RUNNER_TEMP, $isExtractDir, "C:\Windows\Temp")) {
-                  $found = Get-ChildItem $root -Filter "*.msi" -Recurse -Depth 4 -ErrorAction SilentlyContinue |
-                    Where-Object { $_.Length -gt 1MB } |
-                    Sort-Object LastWriteTime -Descending |
-                    Select-Object -First 1
-                  if ($found) {
-                    $msiFile = $found
-                    Write-Host "Found MSI post-install: $($found.FullName) ($($found.Length) bytes)"
-                    break
-                  }
-                }
-              }
-            }
-
-            # --- Extract toolkit files from MSI ---
-            if ($msiFile) {
-              Write-Host "Extracting toolkit from MSI: $($msiFile.FullName)..."
-              $msiExtract = Join-Path $env:RUNNER_TEMP "vc2003_msi_extract"
-              $msiLog = Join-Path $env:RUNNER_TEMP "vc2003_msiexec.log"
-              $msiProc = Start-Process msiexec `
-                -ArgumentList "/a `"$($msiFile.FullName)`" /qn TARGETDIR=`"$msiExtract`" /l*v `"$msiLog`"" `
-                -Wait -PassThru
-              Write-Host "msiexec /a exit code: $($msiProc.ExitCode)"
-
-              if ($debug -and (Test-Path $msiLog)) {
-                Write-Debug "msiexec log (last 40 lines):"
-                Get-Content $msiLog -Tail 40 | ForEach-Object { Write-Debug "  $_" }
-              }
-
-              $extractedCl = Get-ChildItem $msiExtract -Filter "cl.exe" -Recurse -ErrorAction SilentlyContinue |
-                Select-Object -First 1
-              if ($extractedCl) {
-                $binDir = $extractedCl.Directory
-                $toolkitRoot = $binDir.Parent
-                if ((Test-Path "$($toolkitRoot.FullName)\bin") -and (Test-Path "$($toolkitRoot.FullName)\include")) {
-                  Write-Host "Copying toolkit from $($toolkitRoot.FullName) to $vcRoot"
-                  Copy-Item $toolkitRoot.FullName $vcRoot -Recurse -Force
-                } else {
-                  Write-Host "Toolkit structure unclear. Copying full extraction to $vcRoot"
-                  New-Item -Path $vcRoot -ItemType Directory -Force | Out-Null
-                  Copy-Item "$msiExtract\*" $vcRoot -Recurse -Force
-                }
-              } else {
-                Write-Host "cl.exe not found in MSI extraction."
-                if (Test-Path $msiExtract) {
-                  Write-Host "MSI extraction contents:"
-                  Get-ChildItem $msiExtract -Recurse | ForEach-Object {
-                    Write-Host "  $($_.Length.ToString().PadLeft(12))  $($_.FullName)"
-                  }
-                }
-              }
-            } else {
-              Write-Host "::error::No MSI found after all extraction attempts."
-              Write-Host "Listing large files across temp directories:"
-              foreach ($root in @($env:TEMP, $env:RUNNER_TEMP, "C:\Windows\Temp")) {
-                Get-ChildItem $root -Recurse -Depth 3 -ErrorAction SilentlyContinue |
-                  Where-Object { $_.Length -gt 100KB } |
-                  Sort-Object LastWriteTime -Descending |
-                  Select-Object -First 10 |
-                  ForEach-Object { Write-Host "  $($_.Length.ToString().PadLeft(12))  $($_.LastWriteTime)  $($_.FullName)" }
-              }
-            }
+          $toolkitSrc = Join-Path $extractDir "Program Files\Microsoft Visual C++ Toolkit 2003"
+          if (-not (Test-Path $toolkitSrc)) {
+            throw "Unexpected zip layout. Contents: $(Get-ChildItem $extractDir -Recurse -Name | Select-Object -First 20)"
           }
 
-          if (-not (Test-Path $clPath)) {
-            Write-Host "::error::cl.exe not found after all installation attempts."
-            if (Test-Path $vcRoot) {
-              Write-Host "Install directory contents:"
-              Get-ChildItem $vcRoot -Recurse -Name | ForEach-Object { Write-Host "  $_" }
-            } else {
-              Write-Host "Install directory does NOT exist: $vcRoot"
-            }
-            throw "VC++ Toolkit 2003 was not provisioned correctly. Expected compiler at: $clPath"
-          }
+          Copy-Item $toolkitSrc $vcRoot -Recurse -Force
 
+          if (-not (Test-Path $clPath)) {
+            throw "cl.exe not found after extraction. Expected at: $clPath"
+          }
           Write-Host "VC++ Toolkit 2003 compiler found at: $clPath"
 
+          # Download additional CRT libs needed by the Civ4 build.
           $libDir = Join-Path $vcRoot "lib"
-          New-Item -Path $libDir -ItemType Directory -Force | Out-Null
-
           foreach ($lib in @("msvcrt.lib", "msvcrtd.lib", "msvcprt.lib")) {
             $target = Join-Path $libDir $lib
             if (-not (Test-Path $target)) {
