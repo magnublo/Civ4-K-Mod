@@ -110,7 +110,7 @@
 - **What changed:** corrected enum ordering/mapping issue that broke advisor switching via function keys.
 - **Why:** restore expected UI navigation.
 - **Assessment:** **Safe candidate**
-- **Porting notes:** confirm local enum set/order before cherry-picking logic.
+- **Porting notes:** confirm local enum set/order before semantic reimplementation in this DLL.
 
 ### 8) Civics screen heading layout fix
 - **Category:** UI bug fix
@@ -218,7 +218,23 @@
 
 ## Quality of Life (Gameplay-Neutral)
 
-### 16) On-screen message timing fix
+### 16) Worker pre-chop stop-at-1-turn behavior for forest-removing builds
+- **Category:** QoL / worker command behavior
+- **Upstream source:** AdvCiv (and inherited by AdvCiv-SAS)
+- **History reference (best available):**
+  - internal change tags in code comments: `advc.011b`, `advc.011c`
+  - implementation location in current source state:
+    - `CvGameCoreDLL/CvSelectionGroup.cpp` (`groupBuild` logic, stop when `getBuildTurnsLeft(...) == 1`)
+  - related text/config traces:
+    - `Assets/XML/Text/BULL Actions Options.xml` (`PreChop Forests`, `PreChop Improvements`, includes note `advc.011b`)
+    - `Assets/Python/BUG/Tabs/BugGeneralOptionsTab.py` (AdvCiv/AdvCiv-SAS keeps PreChop checkboxes commented out)
+- **Affected files/systems:** worker mission execution (`MISSION_BUILD`) and mission queue handling when 1 turn remains
+- **What changed:** human worker build orders that would remove a forest can be interrupted at 1 turn remaining, requiring explicit re-issue to finish.
+- **Why it may be worth porting:** directly addresses manual pre-chop micromanagement workflow.
+- **Assessment:** **Mixed / needs separation**
+- **Porting notes:** this repository currently exposes PreChop options in BUG text/config/UI (`Actions__PreChopForests`, `Actions__PreChopImprovements`) but does not appear to have matching DLL-side stop-at-1-turn logic. Port should be a semantic reimplementation in `CvSelectionGroup::groupBuild`, not a mechanical patch.
+
+### 17) On-screen message timing fix
 - **Category:** QoL / UI behavior
 - **Upstream source:** AdvCiv
 - **Commit(s):** `7a6bce539f23e8e6d9588ccc25ed71248a684e19`
@@ -229,7 +245,7 @@
 - **Assessment:** **Safe candidate**
 - **Porting notes:** tiny DLL-side patch, likely low risk.
 
-### 17) Unload button lingering-state fix
+### 18) Unload button lingering-state fix
 - **Category:** QoL / UI bug fix
 - **Upstream source:** AdvCiv
 - **Commit(s):** `b560a83419ac8ec9e220d03049fb2186c8c6c4ab`
@@ -240,7 +256,7 @@
 - **Assessment:** **Safe candidate**
 - **Porting notes:** localized; validate with group unload edge cases.
 
-### 18) Tile hover owner attribution fix
+### 19) Tile hover owner attribution fix
 - **Category:** QoL / UI text correctness
 - **Upstream source:** AdvCiv
 - **Commit(s):** `e2686d498434d098dedbab4ed31bfb3ba6c721b1`
@@ -255,7 +271,7 @@
 
 ## AI Tuning / AI Behavior (Non-rule-changing)
 
-### 19) Pathfinder danger-avoidance correctness series
+### 20) Pathfinder danger-avoidance correctness series
 - **Category:** AI behavior correctness / stability
 - **Upstream source:** AdvCiv
 - **Commit(s):**
@@ -274,7 +290,7 @@
 - **Assessment:** **Mixed / needs separation**
 - **Porting notes:** broad pathfinder touch set; port only as tested mini-series, not isolated hunks.
 
-### 20) Rare plot-to-working-city assignment bug fix
+### 21) Rare plot-to-working-city assignment bug fix
 - **Category:** AI/engine correctness
 - **Upstream source:** AdvCiv
 - **Commit(s):** `8f92e0843d86a3312c0bb115a66d130f53f9f492`
@@ -293,7 +309,7 @@
 
 ## Technical Bug Fixes / Engine Cleanups
 
-### 21) OOS logger locale compatibility
+### 22) OOS logger locale compatibility
 - **Category:** Technical bug fix / MP support
 - **Upstream source:** AdvCiv
 - **Commit(s):** `6b3ece079dab0c0acf9fa89b23e002ffdd421d0f`
@@ -304,7 +320,7 @@
 - **Assessment:** **Safe candidate**
 - **Porting notes:** pure Python, low conflict risk.
 
-### 22) OOS fix on human group bombard/splits
+### 23) OOS fix on human group bombard/splits
 - **Category:** Technical bug fix / MP stability
 - **Upstream source:** AdvCiv
 - **Commit(s):** `9e70b989b233e1cd6352d67cb695581b883099f8`
@@ -315,7 +331,7 @@
 - **Assessment:** **Safe candidate**
 - **Porting notes:** localized patch with high practical value for MP-heavy users.
 
-### 23) BUG options first-run persistence fix
+### 24) BUG options first-run persistence fix
 - **Category:** Technical bug fix / QoL
 - **Upstream source:** AdvCiv
 - **Commit(s):** `2f14174118899095e1f4b3c64638e4da907c73b8`
@@ -326,7 +342,7 @@
 - **Assessment:** **Safe candidate**
 - **Porting notes:** tiny upstream patch; likely directly portable.
 
-### 24) Python crash fix for corp/no-religion city path
+### 25) Python crash fix for corp/no-religion city path
 - **Category:** Technical bug fix
 - **Upstream source:** AdvCiv
 - **Commit(s):** `5ba43d46b67eef24dbcff90d4f925bd2c2ec38ce`
@@ -339,7 +355,7 @@
 - **Assessment:** **Safe candidate**
 - **Porting notes:** small Python guard change; good low-risk pickup.
 
-### 25) Potential memory leak fix in replay info
+### 26) Potential memory leak fix in replay info
 - **Category:** Technical bug fix
 - **Upstream source:** AdvCiv
 - **Commit(s):** `fc41848ceac8e16d81a9f06d127a84be94ccfa6b`
@@ -350,7 +366,7 @@
 - **Assessment:** **Safe candidate**
 - **Porting notes:** very contained C++ patch.
 
-### 26) Cached commerce/culture consistency + savegame recalc set
+### 27) Cached commerce/culture consistency + savegame recalc set
 - **Category:** Technical bug fix / consistency
 - **Upstream source:** AdvCiv
 - **Commit(s):**
@@ -371,7 +387,7 @@
 - **Assessment:** **Safe candidate** (as a small series)
 - **Porting notes:** port as a coherent bundle; single commits depend on prior cache assertions and recalc logic.
 
-### 27) Wide/narrow string conversion bugfix
+### 28) Wide/narrow string conversion bugfix
 - **Category:** Technical cleanup / bug fix
 - **Upstream source:** AdvCiv
 - **Commit(s):** `20003c613157a7d0fbb7e084d14d514694665db2`
@@ -382,7 +398,7 @@
 - **Assessment:** **Safe candidate**
 - **Porting notes:** self-contained and broadly useful.
 
-### 28) UI theme load diagnostics and path hardening
+### 29) UI theme load diagnostics and path hardening
 - **Category:** Technical diagnostics / robustness
 - **Upstream source:** AdvCiv
 - **Commit(s):**
@@ -400,7 +416,7 @@
 - **Assessment:** **Safe candidate**
 - **Porting notes:** medium-sized but independent of gameplay systems.
 
-### 29) SAS crash fixes tied to known base-AdvCiv defects
+### 30) SAS crash fixes tied to known base-AdvCiv defects
 - **Category:** Technical crash fixes
 - **Upstream source:** AdvCiv-SAS
 - **Commit(s):**
@@ -425,7 +441,7 @@
 
 ## Mixed or Probably Gameplay-Altering (Do Not Directly Port as “non-gameplay”)
 
-### 30) Lake-generation overflow fix commit includes map-generation behavior change
+### 31) Lake-generation overflow fix commit includes map-generation behavior change
 - **Category:** Mixed (engine bug + gameplay/map behavior)
 - **Upstream source:** AdvCiv
 - **Commit(s):** `1b2adf4aea769c23269ac862d0c2f64c488f5b35`
@@ -434,7 +450,7 @@
 - **Assessment:** **Mixed / needs separation**
 - **Porting notes:** only port arithmetic/overflow safety parts after isolating from worldgen-rule changes.
 
-### 31) Large SAS AI “performance” commits with balance/behavior retuning
+### 32) Large SAS AI “performance” commits with balance/behavior retuning
 - **Category:** Mixed / gameplay-altering
 - **Upstream source:** AdvCiv-SAS
 - **Commit(s):** e.g. `1f9b99fd955e07d83cd3984be22b61bad3bc4220` and nearby series
@@ -443,7 +459,7 @@
 - **Assessment:** **Reject as direct port candidate**
 - **Porting notes:** only use as idea source; require fresh reimplementation of tiny proven-neutral pieces.
 
-### 32) SAS diplomacy/foreign-advisor visual overhauls with semantic/UI-content shifts
+### 33) SAS diplomacy/foreign-advisor visual overhauls with semantic/UI-content shifts
 - **Category:** Mixed
 - **Upstream source:** AdvCiv-SAS
 - **Commit(s):** `2078e7e8e9acc04ebf59a13dbfec0fa775a0723d` (and related)
@@ -452,7 +468,7 @@
 - **Assessment:** **Mixed / needs separation**
 - **Porting notes:** iconography and string rendering may be safe; screen-content decisions should be reviewed as design choices.
 
-### 33) SAS startup/widget constant fix likely partly target-specific
+### 34) SAS startup/widget constant fix likely partly target-specific
 - **Category:** Mixed / environment-dependent
 - **Upstream source:** AdvCiv-SAS
 - **Commit(s):** `6f94679507a14828421cdc06eeb033a436f1e890`
@@ -464,13 +480,13 @@
 ---
 
 ## Suggested Porting Order (shortlist)
-1. **Low-risk, high-value:** #23, #24, #25, #21, #22, #16, #18
-2. **UI polish/fixes:** #7, #8, #9, #10, #11, #12, #14
-3. **Performance-infrastructure:** #1, #2, #3, #4
-4. **Bundle candidates requiring careful sequencing:** #26, #19
-5. **Manual archaeology first (mixed):** #5, #6, #15, #29, #30, #33
+1. **Low-risk, high-value:** BUG options first-run persistence; corp/no-religion Python crash fix; CvReplayInfo leak fix; OOS logger locale fix; OOS fix on bombard/splits; message timing; tile-hover owner fix.
+2. **UI polish/fixes:** F-key advisor switch; Civics heading layout; plot-list sizing; city automation indicator; GP/advisor overlap; Domestic Advisor scaling; GP-bar click-to-city.
+3. **Performance-infrastructure:** scoreboard lag fix; nonvirtual AI-control check; `ArrayEnumMap<bool>` packing; map shelf/area micro-optimizations.
+4. **Bundle candidates requiring careful sequencing:** cached commerce/culture consistency series; pathfinder danger-avoidance series; worker pre-chop behavior.
+5. **Manual archaeology first (mixed):** Sevopedia regroup perf tweak; SAS CvCityAI caching series; diplomacy icon/row enhancements; SAS crash-fix bundle commits; mixed lake/worldgen commit; startup/widget-binding fix.
 
 ## Notes for follow-up implementation agents
-- Prefer cherry-picking **single safe commits** first where upstream commit is narrow and self-contained.
+- Do **not** rely on direct cherry-picks as default strategy for DLL work in this repo; prefer semantic reimplementation from upstream intent because refactors may have shifted structure.
 - For mixed commits, diff-split by subsystem and port only gameplay-neutral hunks with explicit validation.
 - For any DLL changes touching pathfinding or cached values, do AI Auto Play smoke tests plus MP/OOS sanity checks before acceptance.
