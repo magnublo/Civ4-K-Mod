@@ -28,7 +28,8 @@ v. 0.68 K-Mod-Magnus (2026, written with Claude for the K-Mod-Magnus mod; the pl
 - New option Coastline: Rugged, Very rugged or Maximum coast reshape the continents for more coast (fjords and
   peninsulas, no new lakes), keeping each continent in one piece, its size and the separation.
 - New option Minimum island size (replaces One tile islands allowed).
-- New option Rival civs on your continent: how many other civs start on your continent.
+- New option Rival civs on your continent: how many other civs start on your continent, an exact number or a random
+  one from a range (1 - 2, 2 - 3, 4 - 5, 6 - 10, 11 - 15, 16 - 20).
 - New option Every resource at least twice: whatever the climate, every resource is on the map at least twice.
 - Fixed: a crash in continent growth (part bookkeeping), peaks filling one-plot lakes, and plots near the map's
   x seam and edges in two helpers.
@@ -152,7 +153,7 @@ selection_titles = [
 					["Coastline:","coastline",False], #K-Mod-Magnus
 					["Continent scattering:","continent_scattering",False], #do not use auto random generation from array
 					["Relative continent size:","continent_size",True],
-					["Rival civs on your continent:","home_rivals",False], #K-Mod-Magnus
+					["Rival civs on your continent:","home_rivals",True], #K-Mod-Magnus (a range is one of its numbers, at random)
 					["Percentage of ocean:","ocean",True],
 					["Land near pole ice:","land_near_ice",True],
 					["Lonely islands:","lonely_islands",True],
@@ -308,6 +309,12 @@ selection_names_and_values = [
 					],
 					[ #Rival civs on your continent: (K-Mod-Magnus) how many other civs start on your continent
 					["Any (default)",-1,False],
+					["Random (1 - 2 rivals)",[1,2],False],
+					["Random (2 - 3 rivals)",[2,3],False],
+					["Random (4 - 5 rivals)",[4,5],False],
+					["Random (6 - 10 rivals)",[6,7,8,9,10],False],
+					["Random (11 - 15 rivals)",[11,12,13,14,15],False],
+					["Random (16 - 20 rivals)",[16,17,18,19,20],False],
 					["None, a continent of your own",0,False],
 					["1 rival",1,False],
 					["2 rivals",2,False],
@@ -2809,9 +2816,12 @@ def generatePlotTypes():
 	coastline = getSelValue("coastline") #K-Mod-Magnus
 	if coastline is None:
 		coastline = 0
+	# a range of rivals is picked here, once: the number sizes the home continent and sets the starts
 	homeRivals = getSelValue("home_rivals") #K-Mod-Magnus
 	if homeRivals is None:
 		homeRivals = -1
+	if homeRivals >= 0:
+		print "Planet Generator: rival civs on your continent: %d" % homeRivals
 	if continentScatter[0] <= 7 and len(continentScatter) < 8: # settings from before K-Mod-Magnus
 		continentScatter = list(continentScatter) + [0.0, 0, 0, 0]
 	startAreaPlan = None
@@ -2909,7 +2919,7 @@ def generatePlotTypes():
 	# islands come on top, as if they were ocean. The land used to be lowered for the separation and by another 5%,
 	# while land bridges and filled lakes came on top of it.
 	targetLand = landTargetPlots(iW, iH, oceanPercentage)
-	print "Planet Generator: continent land plots wanted:", targetLand, "of", iW * iH
+	print "Planet Generator: continent land plots wanted: %d of %d" % (targetLand, iW * iH)
 
 	#world is two-dimensional array which wraps in X automagically, so you may not worry about edges
 	world = worldArray([iW,iH],PlotTypes.PLOT_OCEAN)
@@ -2994,7 +3004,7 @@ def generatePlotTypes():
 		startX, startY = contPositions[i]
 		seed = plan.findSeed(world.getOffset([startX, startY]), group, group)
 		if seed < 0:
-			print "Planet Generator: no room for continent", i
+			print "Planet Generator: no room for continent %d" % i
 			continue
 		continent.start(seed % iW, seed // iW)
 		contList.append(continent)
@@ -3004,7 +3014,7 @@ def generatePlotTypes():
 	#now what is left - growing :)
 	growContinents(contList, targets, steps, bodyTotal)
 	size = plan.land
-	print "Planet Generator: continents", size, "plots (wanted", bodyTotal, ")"
+	print "Planet Generator: continents grown to %d plots (wanted %d)" % (size, bodyTotal)
 	if debugChecks and not archipelago:
 		plan.check("growth", len(contList))
 
@@ -3069,7 +3079,7 @@ def generatePlotTypes():
 	balanceLand(plan, contList, steps, targetLand, "random", "compact", True)
 	if minIslandSize > 1 and plan.removeSmallPieces(minIslandSize) > 0:
 		balanceLand(plan, contList, steps, targetLand, "random", "compact", False)
-	print "Planet Generator: continents balanced to", plan.contLand, "plots"
+	print "Planet Generator: continents balanced to %d plots" % plan.contLand
 	if debugChecks and not archipelago:
 		plan.check("balance", len(contList))
 	# Coastline (K-Mod-Magnus): reshape the continents for more coast
@@ -3079,7 +3089,7 @@ def generatePlotTypes():
 		before = plan.coastCount()
 		for continent in contList:
 			plan.roughen(continent.mass, continent.group, int(iterations * len(plan.massTiles[continent.mass])), reach)
-		print "Planet Generator: coastline", coastline, "- coast plots", before, "->", plan.coastCount()
+		print "Planet Generator: coastline %d - coast plots %d -> %d" % (coastline, before, plan.coastCount())
 	if coastline >= 2:
 		islandMode = "coast"
 	else:
@@ -3143,7 +3153,7 @@ def generatePlotTypes():
 				placed += plan.placeIslands(spots, sizes, smallest, islandMode)
 				count += len(spots)
 				r -= 1
-		print "Planet Generator: lonely islands", count, "with", placed, "plots"
+		print "Planet Generator: lonely islands %d with %d plots" % (count, placed)
 
 	if debugChecks and not archipelago:
 		plan.check("lonely", len(contList))
@@ -3179,7 +3189,8 @@ def generatePlotTypes():
 	for m in plan.massTiles.keys():
 		if m >= 1000 and len(plan.massTiles[m]) > 0:
 			islands += 1
-	# (no percent sign in the text: the game's log runs printed text through printf)
+	# (one string per print, with no percent sign in it: the game's log puts every printed item on a line of its own and
+	# runs the text through printf)
 	print "Planet Generator: %d continents with %d land plots (wanted %d: %.1f percent water without the islands), %d islands with %d plots, %.1f percent water, %d coast plots" % (len(contList), plan.contLand, targetLand, 100.0 * (iW * iH - plan.contLand) / (iW * iH), islands, plan.land - plan.contLand, 100.0 * (iW * iH - plan.land) / (iW * iH), plan.coastCount())
 
 	peakOptions = getSelValue("peaks")
@@ -4358,7 +4369,7 @@ def makeStartAreaPlan():
 			for n in range(quota[i][0]):
 				plan[rest[j]] = others[i][1]
 				j += 1
-	print "Planet Generator: start areas", plan
+	print "Planet Generator: start areas %s" % (plan,)
 	return plan
 
 def ensureEveryResource(minCount):
