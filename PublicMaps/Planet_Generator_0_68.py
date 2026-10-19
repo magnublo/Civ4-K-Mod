@@ -49,7 +49,7 @@ v. 0.60
 - TileBuilder code improved, to avoid continent jams.
 - Generation bug fixed. Hopefully, it will no longer stops at start (!).
 - Random (Standard:Rare/Common) flood option fixed.
-- New option: Map size. It is now possible to specify custom map size, up to 256×160. Because of this change, following options are modified:
+- New option: Map size. It is now possible to specify custom map size, up to 256x160. Because of this change, following options are modified:
 - Continent separation options expanded up to 10 tiles.
 - Distance from poles no longer depends on continent separation, and is always constant (3).
 - From now on, area for continent separation is excluded from ocean area when calculating ocean percentage. It means that selecting higher continent separation now will produce less land. This helps against continent jams.
@@ -705,11 +705,11 @@ class probabilityArray:
 # multi dimensional array wrapper
 # usage:
 # - creating array:
-# a = mdArray([5,9],0) #creates 5×9 array with data:0 in every cell
-# b = mdArray([4,2,6],"nodata") #creates 4×2×6 array with data:"nodata" in every cell
+# a = mdArray([5,9],0) #creates 5x9 array with data:0 in every cell
+# b = mdArray([4,2,6],"nodata") #creates 4x2x6 array with data:"nodata" in every cell
 # - changing data:
-# a[0,1] = 5 #change 0×1 cell to 5
-# b[3,1,5] = "some data" #change 3×1×5 cell to "some data"
+# a[0,1] = 5 #change 0x1 cell to 5
+# b[3,1,5] = "some data" #change 3x1x5 cell to "some data"
 # - also:
 # print a[0,1]
 # print len(a)
@@ -2239,7 +2239,7 @@ def generatePlotTypes():
 			offset = world.getOffset([x,y])
 			if peakStartProbability > 0:
 				#collect peaks
-				#check if land area is 9×9 empty
+				#check if land area is 9x9 empty
 				if world[x,y] == PlotTypes.PLOT_LAND and world[x-1,y] == PlotTypes.PLOT_LAND and world[x+1,y] == PlotTypes.PLOT_LAND and world[x,y-1] == PlotTypes.PLOT_LAND and world[x,y+1] == PlotTypes.PLOT_LAND and (not world[x+1,y+1] == PlotTypes.PLOT_PEAK) and (not world[x-1,y+1] == PlotTypes.PLOT_PEAK) and (not world[x-1,y-1] == PlotTypes.PLOT_PEAK) and (not world[x+1,y-1] == PlotTypes.PLOT_PEAK):
 					if getRand(dice) < peakStartProbability:
 						world._data[offset] = PlotTypes.PLOT_PEAK
@@ -2247,7 +2247,7 @@ def generatePlotTypes():
 							peakArray[offset] = [x,y,1]
 			if hillStartProbability > 0:
 				#collect hills
-				#check if land area is 11×11 empty
+				#check if land area is 11x11 empty
 				if world[x,y] == PlotTypes.PLOT_LAND and not hillIntersect(world,x,y,x,y,1):
 					if getRand(dice) < hillStartProbability:
 						world._data[offset] = PlotTypes.PLOT_HILLS
