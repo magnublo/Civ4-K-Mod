@@ -12,6 +12,23 @@
 """
 Change log:
 
+v. 0.68 K-Mod-Magnus (2026, written with Claude for the K-Mod-Magnus mod; the plot types part is mostly new)
+- Percentage of ocean is exact now, of the whole map: "70%" gives 70% water. The land used to be lowered for the
+  continent separation and by another 5%, and lonely islands, land bridges and filled lakes came on top of it.
+- Continents grow until the land is there: one continent that could not grow any more used to stop all of them.
+- Continent separation holds: grow candidates were checked when found, not when used, so continents could touch.
+- Each continent is one landmass: "Continent scattering" now puts islands near its coast instead of flinging parts
+  of the continent away (those parts often were continents of their own). Archipelago continents are as before.
+- Lonely islands are placed by how far open water is from all land, so "Use every empty area in ocean" fills every
+  gap (big islands first, smaller ones in the gaps left); island sizes give way to the ocean percentage.
+- New option Coastline: Rugged, Very rugged or Maximum coast reshape the continents for more coast (fjords and
+  peninsulas, no new lakes), keeping each continent in one piece, its size and the separation.
+- New option Minimum island size (replaces One tile islands allowed).
+- New option Rival civs on your continent: how many other civs start on your continent.
+- New option Every resource at least twice: whatever the climate, every resource is on the map at least twice.
+- Fixed: a crash in continent growth (part bookkeeping), peaks filling one-plot lakes, and plots near the map's
+  x seam and edges in two helpers.
+
 v. 0.68
 - Coordinate system changed to circular for continent growth calculation (faster, not so blocky shapes)
 - Continents should no longer break in several big parts (except with "archipelago continents")
@@ -128,13 +145,15 @@ selection_titles = [
 					["Continent separation:","continent_separation",True],
 					["Continent distribution:","continent_distribution",True],
 					["Continent shape:","continent_shape",True],
+					["Coastline:","coastline",False], #K-Mod-Magnus
 					["Continent scattering:","continent_scattering",False], #do not use auto random generation from array
 					["Relative continent size:","continent_size",True],
+					["Rival civs on your continent:","home_rivals",False], #K-Mod-Magnus
 					["Percentage of ocean:","ocean",True],
 					["Land near pole ice:","land_near_ice",True],
 					["Lonely islands:","lonely_islands",True],
 					["Lonely island size:","lonely_island_size",True],
-					["One tile islands allowed:","allow_one_tile_islands",True],
+					["Minimum island size:","min_island_size",False], #K-Mod-Magnus: was "One tile islands allowed" (No = 2 plots)
 					["Mountains (peaks):","peaks",False], #do not use auto random generation from array
 					["Hills:","hills",False], #do not use auto random generation from array
 					["Climate variation:","variation",True],
@@ -142,6 +161,7 @@ selection_titles = [
 					["Temperature:","temperature",True],
 					["Flood plains:","flood_plains",True],
 					["Resources:","bonus_generation",True],
+					["Every resource at least twice:","every_resource",False], #K-Mod-Magnus
 					]
 # default choices, or first-time choices (later only last-time values should be remembered)
 selection_defaults = [
@@ -150,13 +170,15 @@ selection_defaults = [
 					4, #Continent separation
 					0, #Continent distribution
 					2, #Continent shape
+					0, #Coastline
 					2, #Continent scattering
 					1, #Relative continent size
+					0, #Rival civs on your continent
 					8, #Percentage of ocean
 					0, #Land near pole ice
 					7, #Lonely islands
 					1, #Lonely island size
-					1, #One tile islands allowed
+					1, #Minimum island size
 					7, #Mountains (peaks)
 					6, #Hills
 					3, #Climate variation
@@ -164,6 +186,7 @@ selection_defaults = [
 					6, #Temperature
 					1, #Flood plains
 					0, #Resources
+					0, #Every resource at least twice
 					]
 # (selection_description), (value or random value list), (is included in "random" selection)
 selection_names_and_values = [
@@ -253,16 +276,25 @@ selection_names_and_values = [
 					["Landmass (rough edges)","crab",True],
 					["Round","smooth",False],
 					],
+					[ #Coastline: (K-Mod-Magnus) reshapes the continents for more coast; each continent stays one landmass
+					["As grown (default)",0,True],
+					["Rugged (fjords, more coast)",1,True],
+					["Very rugged",2,True],
+					["Maximum coast",3,True],
+					],
 					[ #Continent scattering:
 					["Random (without archipelago)","random",False],
-					["Solid, no islands around",		[0,	0,	0,	0],True],# 0,0,0,0 == bypass
-					["Rare small islands (default)",	[1,	3,	0.5,1],True], #Min, Max, ChangeChance, MaxDif
-					["Common islands",					[3,	6,	0.4,2],True],
-					["Rare islands - common islands",	[1,	5,	0.3,2],True],
-					["Rare islands - many islands",		[1,	8,	0.3,3],True],
-					["Common islands - many islands",	[3,	10,	0.4,2],True],
-					["Coast varies alot",				[1,	12,	0.3,5],True],
-					["Archipelago continents",			[8,	15,	0.5,2],False],
+					# Min, Max, ChangeChance, MaxDif: TileBuilder scattering, now only used by "Archipelago continents".
+					# K-Mod-Magnus: the other choices put islands near each continent instead (scattering used to fling parts of
+					# the continent away): share of the continent's land, smallest and biggest island, farthest distance from its coast.
+					["Solid, no islands around",		[0,	0,	0,	0,	0.0,	0,	0,	0],True],# 0,0,0,0 == bypass
+					["Rare small islands (default)",	[1,	3,	0.5,1,	0.02,	1,	3,	3],True],
+					["Common islands",					[3,	6,	0.4,2,	0.08,	2,	6,	4],True],
+					["Rare islands - common islands",	[1,	5,	0.3,2,	0.05,	1,	5,	4],True],
+					["Rare islands - many islands",		[1,	8,	0.3,3,	0.07,	1,	8,	5],True],
+					["Common islands - many islands",	[3,	10,	0.4,2,	0.12,	2,	10,	4],True],
+					["Coast varies alot",				[1,	12,	0.3,5,	0.10,	1,	12,	6],True],
+					["Archipelago continents",			[8,	15,	0.5,2,	0.0,	0,	0,	0],False],
 					],
 					[ #Continent size:
 					["Random selection","random",False],
@@ -270,19 +302,37 @@ selection_names_and_values = [
 					["By player count","players",True],
 					["May vary","unpredictable",True],
 					],
+					[ #Rival civs on your continent: (K-Mod-Magnus) how many other civs start on your continent
+					["Any (default)",-1,False],
+					["None, a continent of your own",0,False],
+					["1 rival",1,False],
+					["2 rivals",2,False],
+					["3 rivals",3,False],
+					["4 rivals",4,False],
+					["5 rivals",5,False],
+					["6 rivals",6,False],
+					["7 rivals",7,False],
+					["8 rivals",8,False],
+					["9 rivals",9,False],
+					["10 rivals",10,False],
+					["12 rivals",12,False],
+					["15 rivals",15,False],
+					["20 rivals",20,False],
+					["All other civs",999,False],
+					],
 					[ #Percentage of ocean:
 					["Random (include all)","random",False],
 					["Random (60% - 70%)",[60,62,64,66,68,70],False],
 					["Random (50% - 60%)",[50,55,60],False],
 					["Random (40% - 70%)",[40,45,50,55,60,65,70],False],
 					["Minimize ocean size",0,True],
-					["More than 30%",30,True], #sometimes it may not be possible to generate very small ocean size; if algorytm meets dead end or some continent runs out of space, generation stops
-					["More than 40%",40,True],
-					["More than 50%",50,True],
-					["More than 60% (normal)",60,True],
-					["More than 70%",70,True],
-					["More than 80%",80,True],
-					["More than 90%",90,True],
+					["30%",30,True], #K-Mod-Magnus: exact percentages now (these were "More than ..."); if the land does not fit, as much as fits
+					["40%",40,True],
+					["50%",50,True],
+					["60% (normal)",60,True],
+					["70%",70,True],
+					["80%",80,True],
+					["90%",90,True],
 					],
 					[ #Land near ice:
 					["Sometimes (default)",True,False],
@@ -306,10 +356,20 @@ selection_names_and_values = [
 					["Medium (default)","medium",True],
 					["Big","big",True],
 					],
-					[ #Allow 1-tile islands:
-					["Random","random",False],
-					["No (default)",False,True],
-					["Yes",True,True],
+					[ #Minimum island size: (K-Mod-Magnus) smaller islands grow to it, or go if there is no room
+					["1 plot (one-plot islands allowed)",1,True],
+					["2 plots (default)",2,True],
+					["3 plots",3,True],
+					["4 plots",4,True],
+					["5 plots",5,True],
+					["6 plots",6,True],
+					["8 plots",8,True],
+					["10 plots",10,True],
+					["12 plots",12,True],
+					["15 plots",15,True],
+					["20 plots",20,True],
+					["25 plots",25,True],
+					["30 plots",30,True],
 					],
 					[ #Mountains (peaks):
 					["Random (without extreme)","random",False],
@@ -388,6 +448,10 @@ selection_names_and_values = [
 					#["Planet generator - Full",1.5,False],
 					#["Planet generator - Many",3.0,False],
 					],
+					[ #Every resource at least twice: (K-Mod-Magnus) a drop-down: the map options have no check boxes
+					["No (default)",False,False],
+					["Yes, whatever the climate",True,False],
+					],
 					]
 
 continentCount = 1 #initial value
@@ -398,6 +462,16 @@ climateTemperature = 40
 allowLandNearIce = False
 
 world = None
+
+# K-Mod-Magnus: for the start areas (findStartingArea)
+continentAnchors = [] # a land plot of each continent
+homeContinent = -1 # the continent planned for the human player and his rivals
+homeRivals = -1 # "Rival civs on your continent" (-1: any)
+startAreaPlan = None # player -> area, made at the first findStartingArea of a game
+continentPlayers = None # players each continent was made for ("By player count")
+landPlan = None # the LandPlan of the last map, and what the options came to (for checking maps outside the game)
+debugChecks = False # set by tests outside the game: check the continents after every step
+landSettings = None
 
 landTypes = [PlotTypes.PLOT_LAND,PlotTypes.PLOT_HILLS,PlotTypes.PLOT_PEAK]
 
@@ -538,7 +612,7 @@ def getGridSize(argsList):
 			fnW = (((continentSeparation * 2) + 1) * continentCount / minWidthDivision + continentCount) / 4
 			fH = int(fH * fnW / float(fW) * 4) / 4
 			fW = fnW
-	return (fW, fH)
+	return (int(fW), int(fH)) # K-Mod-Magnus: "Around center" made them fractions
 	# return (10, 6) # tiny
 	#return (32, 20) # huge
 
@@ -866,13 +940,30 @@ class TileBuilder:
 		self.continentParts = bArray()
 		self.continentPartsIdGen = -1
 		self.continentPartAllTiles = bArray()
+		# K-Mod-Magnus: with a LandPlan, new plots must keep the separation from other continents and islands and
+		# must not merge with them (the plan checks every plot before it becomes land)
+		self.plan = None
+		self.group = 0
+		self.mass = 0
+		self.otherBits = 0
+		self.contiguous = False # with a plan: only grow next to its own land (all but archipelago continents)
+		self.searches = 0 # slow candidate searches so far
+
+	def usePlan(self, plan, group, mass):
+		self.plan = plan
+		self.group = group
+		self.mass = mass
+		self.otherBits = ~(1 << group)
 
 	def start(self, x, y):
 		self.progress = 0
 		self.refreshCount = 0
 		self.nextRefresh = self.targetSize / float(self.refreshCountRequired + 1) * (self.refreshCount + 1)
-		self.world[x,y] = self.tileType[0]
 		offset = self.world.getOffset([x,y])
+		if self.plan is not None:
+			self.plan.setLand(offset, self.mass, self.group)
+		else:
+			self.world[x,y] = self.tileType[0]
 		if self.continentPartControlEnabled:
 			self.continentPartsIdGen += 1
 			part = ContinentPart(self.continentPartsIdGen,self)
@@ -949,80 +1040,24 @@ class TileBuilder:
 				else:
 					break
 
-		# try to find more tiles if there is no more
-		#fast method first:
-		if len(self.possibleTiles) == 0:
-			self.builders = bArray()
-			c = 0
-			for j in range(builderTiles * 2):
-				tile = self.active.randomItem(self.dice)
-				if tile != None:
-					x, y, d, scatt, scattdir = tile
-					c = self._checkPosGrow(self.possibleTiles,x,y,scatt,scattdir)
-					if (c > 0):
-						if len(self.builders) < builderTiles:
-							offset = world.getOffset([x,y])
-							self.builders[offset] = [x, y, scatt, scattdir]
-							self.builderList.append(offset)
-						else:
-							break
-				else:
-					break
-
-		#extreme method (slow as hell):
-		if len(self.possibleTiles) == 0:
-			#print " ------------------ USING EXTREME METHOD -------------------- "
-			newActive = bArray()
-			for index in range(len(self.active)):
-				tile = self.active.random(self.dice)
-				if tile != None:
-					x, y, d, scatt, scattdir = tile
-					offset = world.getOffset([x,y])
-					newActive[offset] = tile
-					c = self._checkPosGrow(self.possibleTiles,x,y,scatt,scattdir)
-					if (c > 0):
-						if len(self.builders) < builderTiles:
-							self.builders[offset] = [x, y, scatt, scattdir]
-							self.builderList.append(offset)
-			self.active = newActive
-
-		if len(self.possibleTiles) == 0:
-			c = 0
-			#print " --------------- USING EMERGENCY TILE SEARCH ----------------- "
-			#clear active tiles, we will make new
-			self.active = bArray()
-			for index in range(len(self.allTiles)):
-				tile = self.allTiles.randomItem(self.dice)
-				if tile != None:
-					x, y, d, scatt, scattdir = tile
-					if self._makeActive(x,y):
-						c += self._checkPosGrow(self.possibleTiles,x,y,scatt,scattdir)
-						if len(self.active) >= activeTiles:
-							break
-				else:
-					break
-			#add tiles to builders
-			if (c > 0):
-				while len(self.builders) < builderTiles:
-					tile = self.possibleTiles.random(self.dice)
-					if (tile != None):
-						if len(self.builders) < builderTiles:
-							x, y, scatt, scattdir, origoffset = tile
-							offset = world.getOffset([x,y])
-							self.builders[offset] = [x, y, scatt, scattdir]
-							self.builderList.append(offset)
-						else:
-							break
-					else:
-						break
+		self._findMoreTiles(builderTiles, activeTiles)
 
 		# grow one tile
-		if len(self.possibleTiles) > 0:
-			x, y, scatt, scattdir, origoffset = self.possibleTiles.random(self.dice) # take one tile from possible tile array
+		tile = self._takeValidTile()
+		if tile == None and self.plan is not None:
+			# K-Mod-Magnus: the candidates left were no longer valid (other land grew near them); look once more
+			self.possibleTiles = self._getPossibleGrowTiles()
+			self._findMoreTiles(builderTiles, activeTiles)
+			tile = self._takeValidTile()
+		if tile != None:
+			x, y, scatt, scattdir, origoffset = tile
 			offset = world.getOffset([x, y])
 			self.active[offset] = [x, y, activeTiles / growCount, scatt, scattdir]
 			self.allTiles[offset] = [x, y, activeTiles / growCount, scatt, scattdir]
-			world[x, y] = self.tileType[0]
+			if self.plan is not None:
+				self.plan.setLand(offset, self.mass, self.group)
+			else:
+				world[x, y] = self.tileType[0]
 			#zx, zy = self.world.getPos(offset)
 			#print "Offset %d translated to x:%d y:%d while original is x:%d y:%d"%(offset,zx,zy,x,y)
 			if self.continentPartControlEnabled:
@@ -1042,10 +1077,13 @@ class TileBuilder:
 					#print "New lonely tile: x:%d y:%d id:%d"%(x,y,part.id)
 					self.continentPartAllTiles[offset] = part.id #idedam part id i tile sarasa
 					currentPartId = self.continentPartAllTiles[origoffset] #gaunam dabartinio part id
-					currentPart = self.continentParts[currentPartId] #gaunam dabartinio part obj
-					part.links[currentPart.id] = [currentPart.id, offset, origoffset] #idedam linka
-					#print "Add link from id:%d to id:%d orig:%d new:%d"%(part.id,currentPart.id,offset,origoffset)
-					currentPart.links[part.id] = [part.id, origoffset, offset] #idedam linka
+					currentPart = None
+					if currentPartId != None:
+						currentPart = self.continentParts[currentPartId] #gaunam dabartinio part obj
+					if currentPart != None: # K-Mod-Magnus: the part may have been merged away (crashed before)
+						part.links[currentPart.id] = [currentPart.id, offset, origoffset] #idedam linka
+						#print "Add link from id:%d to id:%d orig:%d new:%d"%(part.id,currentPart.id,offset,origoffset)
+						currentPart.links[part.id] = [part.id, origoffset, offset] #idedam linka
 					#print "Add link from id:%d to id:%d orig:%d new:%d"%(currentPart.id,part.id,origoffset,offset)
 				else:
 					part = self.continentParts[partsAround._data[0][1]]
@@ -1120,6 +1158,96 @@ class TileBuilder:
 
 		return result
 
+	def _findMoreTiles(self, builderTiles, activeTiles):
+		"""Refills self.possibleTiles when it is empty (moved out of grow() unchanged, for K-Mod-Magnus)."""
+		world = self.world
+		# try to find more tiles if there is no more
+		#fast method first:
+		if len(self.possibleTiles) == 0:
+			self.builders = bArray()
+			c = 0
+			for j in range(builderTiles * 2):
+				tile = self.active.randomItem(self.dice)
+				if tile != None:
+					x, y, d, scatt, scattdir = tile
+					c = self._checkPosGrow(self.possibleTiles,x,y,scatt,scattdir)
+					if (c > 0):
+						if len(self.builders) < builderTiles:
+							offset = world.getOffset([x,y])
+							self.builders[offset] = [x, y, scatt, scattdir]
+							self.builderList.append(offset)
+						else:
+							break
+				else:
+					break
+
+		# K-Mod-Magnus: with a plan, a continent that keeps needing the slow searches below is nearly stuck; it stops
+		# here and the plan grows it at its sides (balanceLand), which is much faster (the searches look at every
+		# plot of the continent each time, and took minutes on big maps)
+		if len(self.possibleTiles) == 0 and self.plan is not None:
+			self.searches += 1
+			if self.searches > 6:
+				return
+
+		#extreme method (slow as hell):
+		if len(self.possibleTiles) == 0:
+			#print " ------------------ USING EXTREME METHOD -------------------- "
+			newActive = bArray()
+			for index in range(len(self.active)):
+				tile = self.active.random(self.dice)
+				if tile != None:
+					x, y, d, scatt, scattdir = tile
+					offset = world.getOffset([x,y])
+					newActive[offset] = tile
+					c = self._checkPosGrow(self.possibleTiles,x,y,scatt,scattdir)
+					if (c > 0):
+						if len(self.builders) < builderTiles:
+							self.builders[offset] = [x, y, scatt, scattdir]
+							self.builderList.append(offset)
+			self.active = newActive
+
+		if len(self.possibleTiles) == 0:
+			c = 0
+			#print " --------------- USING EMERGENCY TILE SEARCH ----------------- "
+			#clear active tiles, we will make new
+			self.active = bArray()
+			for index in range(len(self.allTiles)):
+				tile = self.allTiles.randomItem(self.dice)
+				if tile != None:
+					x, y, d, scatt, scattdir = tile
+					if self._makeActive(x,y):
+						c += self._checkPosGrow(self.possibleTiles,x,y,scatt,scattdir)
+						if len(self.active) >= activeTiles:
+							break
+				else:
+					break
+			#add tiles to builders
+			if (c > 0):
+				while len(self.builders) < builderTiles:
+					tile = self.possibleTiles.random(self.dice)
+					if (tile != None):
+						if len(self.builders) < builderTiles:
+							x, y, scatt, scattdir, origoffset = tile
+							offset = world.getOffset([x,y])
+							self.builders[offset] = [x, y, scatt, scattdir]
+							self.builderList.append(offset)
+						else:
+							break
+					else:
+						break
+
+	def _takeValidTile(self):
+		"""Takes a random candidate; with a LandPlan, only one that may still become land (K-Mod-Magnus: candidates
+		are found long before they are used, and used to be placed even when other land had grown next to them)."""
+		while len(self.possibleTiles) > 0:
+			tile = self.possibleTiles.random(self.dice)
+			if self.plan is None:
+				return tile
+			o = self.world.getOffset([tile[0], tile[1]])
+			if self.plan.canAdd(o, self.group, self.mass) and (not self.contiguous or self.plan.touches(o, self.mass)):
+				return tile
+		return None
+
 	def joinParts(self, minSize):
 		if self.continentPartControlEnabled:
 			bUsed = bArray()
@@ -1189,6 +1317,11 @@ class TileBuilder:
 
 	def _intersect(self, x, y):
 		dice = self.dice
+
+		# K-Mod-Magnus: other continents and islands, within the separation in any direction (the ring below only
+		# looks at plots exactly that far away)
+		if self.plan is not None and self.plan.claims[self.world.getOffset([x, y])] & self.otherBits:
+			return True
 
 		cs = self.continentSeparation
 		r = range(cs * 2)
@@ -1402,6 +1535,916 @@ class TileBuilder:
 			x -= 1
 			self.builders.pop(x)
 		return result
+
+#------------------------------------------------------
+"""LAND PLANNING (K-Mod-Magnus)"""
+#------------------------------------------------------
+# Written for K-Mod-Magnus (2026) so that the land options do what they say. LandPlan knows the continent ("group")
+# and the landmass ("mass") of every land plot while the plot types are made. With it the ocean percentage is met
+# exactly, continents keep the chosen separation from each other and from islands, every continent stays one
+# landmass (scattering now puts islands near the coast instead of flinging parts of the continent away), lonely
+# islands fill the empty ocean as asked, and the Coastline option reshapes the continents for more coast plots
+# (the DLL makes every water plot next to land coast, the rest ocean).
+
+RING_DIRS = [[0,1],[1,1],[1,0],[1,-1],[0,-1],[-1,-1],[-1,0],[-1,1]] # N, NE, E, SE, S, SW, W, NW
+
+def _ringConnected(mask):
+	"""True if the plots marked in mask (bit i = RING_DIRS[i] around a plot) are connected to each other without
+	the plot in the middle (8-neighbour connectivity, as Civ4 makes its areas)."""
+	pos = []
+	for i in range(8):
+		if mask & (1 << i):
+			pos.append(i)
+	if len(pos) == 0:
+		return False
+	adj = []
+	for i in range(8):
+		adj.append([(i + 1) % 8, (i + 7) % 8])
+	for a, b in [[0,2],[2,4],[4,6],[6,0]]:
+		adj[a].append(b)
+		adj[b].append(a)
+	seen = {pos[0]: True}
+	stack = [pos[0]]
+	while len(stack) > 0:
+		i = stack.pop()
+		for j in adj[i]:
+			if (mask & (1 << j)) and not seen.has_key(j):
+				seen[j] = True
+				stack.append(j)
+	return len(seen) == len(pos)
+
+# SIMPLE_RING[mask]: removing a plot whose same-landmass neighbours are mask keeps the landmass in one piece
+SIMPLE_RING = []
+for _mask in range(256):
+	SIMPLE_RING.append(_ringConnected(_mask))
+
+class RandSet:
+	"Set of plot offsets with random picks in constant time."
+	def __init__(self):
+		self.items = []
+		self.pos = {}
+
+	def __len__(self):
+		return len(self.items)
+
+	def add(self, o):
+		if not self.pos.has_key(o):
+			self.pos[o] = len(self.items)
+			self.items.append(o)
+
+	def remove(self, o):
+		i = self.pos.pop(o, None)
+		if i is not None:
+			last = self.items.pop()
+			if i < len(self.items):
+				self.items[i] = last
+				self.pos[last] = i
+
+	def pick(self, dice):
+		return self.items[dice.get(len(self.items), "Python - Planet Generator: random plot")]
+
+class LandPlan:
+	def __init__(self, world, separation, allowLandNearIce, dice):
+		self.world = world
+		self.data = world._data # plot types, offset = y * width + x
+		W = world.getWidth()
+		H = world.getHeight()
+		self.W = W
+		self.H = H
+		self.N = W * H
+		if separation < 1:
+			separation = 1
+		self.sep = separation
+		self.dice = dice
+		# the rows TileBuilder may grow into (it keeps one row more than poleSeparation free)
+		if allowLandNearIce:
+			ps = 1
+		else:
+			ps = 3
+		self.minY = ps + 1
+		self.maxY = H - ps - 2
+		N = self.N
+		self.owner = [-1] * N # group of each land plot: continents 0.., lonely islands after them
+		self.mass = [-1] * N # landmass of each land plot: a continent's body has the continent's number, islands 1000..
+		self.claims = [0] * N # bit g: group g has land within the separation
+		self.landNb = [0] * N # land plots among the 8 neighbours
+		self.land = 0
+		self.massTiles = {}
+		self.massCoast = {} # land plots of the mass with water next to them
+		self.massGroup = {}
+		self.nextIsland = 1000
+		self.nextGroup = 0
+		self.growCache = {} # landmass -> candidates from its last full scan (used up before scanning again)
+		nb8 = []
+		ring = []
+		for o in range(N):
+			x = o % W
+			y = o // W
+			r = []
+			n = []
+			for d in RING_DIRS:
+				yy = y + d[1]
+				if yy < 0 or yy >= H:
+					r.append(-1)
+				else:
+					oo = yy * W + (x + d[0]) % W
+					r.append(oo)
+					n.append(oo)
+			ring.append(r)
+			nb8.append(n)
+		self.nb8 = nb8
+		self.ring = ring
+
+	def newGroup(self):
+		g = self.nextGroup
+		self.nextGroup += 1
+		return g
+
+	def newIslandMass(self):
+		m = self.nextIsland
+		self.nextIsland += 1
+		return m
+
+	def isWater(self, o):
+		return self.data[o] == PlotTypes.PLOT_OCEAN
+
+	def rowOK(self, o):
+		y = o // self.W
+		return y >= self.minY and y <= self.maxY
+
+	def canAdd(self, o, g, m):
+		"""Can water plot o become land of landmass m (group g)? Not in the pole margin, not within the
+		separation of another group's land, and not next to another landmass (that would merge them)."""
+		if self.data[o] != PlotTypes.PLOT_OCEAN:
+			return False
+		y = o // self.W
+		if y < self.minY or y > self.maxY:
+			return False
+		if self.claims[o] & ~(1 << g):
+			return False
+		mass = self.mass
+		for n in self.nb8[o]:
+			k = mass[n]
+			if k != -1 and k != m:
+				return False
+		return True
+
+	def touches(self, o, m):
+		"Is plot o next to land of landmass m?"
+		mass = self.mass
+		for n in self.nb8[o]:
+			if mass[n] == m:
+				return True
+		return False
+
+	def setLand(self, o, m, g):
+		self.data[o] = PlotTypes.PLOT_LAND
+		self.owner[o] = g
+		self.mass[o] = m
+		if not self.massTiles.has_key(m):
+			self.massTiles[m] = RandSet()
+			self.massCoast[m] = RandSet()
+			self.massGroup[m] = g
+		self.massTiles[m].add(o)
+		self.land += 1
+		landNb = self.landNb
+		mass = self.mass
+		for n in self.nb8[o]:
+			landNb[n] += 1
+		self._updateCoast(o)
+		for n in self.nb8[o]:
+			if mass[n] != -1:
+				self._updateCoast(n)
+		self._claim(o, 1 << g)
+
+	def setWater(self, o):
+		m = self.mass[o]
+		self.data[o] = PlotTypes.PLOT_OCEAN
+		self.owner[o] = -1
+		self.mass[o] = -1
+		self.massTiles[m].remove(o)
+		self.massCoast[m].remove(o)
+		self.land -= 1
+		landNb = self.landNb
+		mass = self.mass
+		for n in self.nb8[o]:
+			landNb[n] -= 1
+			if mass[n] != -1:
+				self._updateCoast(n)
+		# claims are not taken back: they only ever keep other land further away than needed
+
+	def _updateCoast(self, o):
+		if self.landNb[o] < len(self.nb8[o]):
+			self.massCoast[self.mass[o]].add(o)
+		else:
+			self.massCoast[self.mass[o]].remove(o)
+
+	def _claim(self, o, bit):
+		W = self.W
+		s = self.sep
+		x = o % W
+		y = o // W
+		y0 = y - s
+		if y0 < 0:
+			y0 = 0
+		y1 = y + s
+		if y1 > self.H - 1:
+			y1 = self.H - 1
+		claims = self.claims
+		xs = []
+		for dx in range(-s, s + 1):
+			xs.append((x + dx) % W)
+		for yy in range(y0, y1 + 1):
+			row = yy * W
+			for xx in xs:
+				claims[row + xx] |= bit
+
+	def coastAddDelta(self, o):
+		"change in coast plots if water plot o becomes land"
+		d = 0
+		if self.landNb[o] > 0:
+			d = -1
+		data = self.data
+		landNb = self.landNb
+		for n in self.nb8[o]:
+			if landNb[n] == 0 and data[n] == PlotTypes.PLOT_OCEAN:
+				d += 1
+		return d
+
+	def coastRemoveDelta(self, o):
+		"change in coast plots if land plot o becomes water"
+		d = 0
+		if self.landNb[o] > 0:
+			d = 1
+		data = self.data
+		landNb = self.landNb
+		for n in self.nb8[o]:
+			if landNb[n] == 1 and data[n] == PlotTypes.PLOT_OCEAN:
+				d -= 1
+		return d
+
+	def coastCount(self):
+		c = 0
+		data = self.data
+		landNb = self.landNb
+		for o in xrange(self.N):
+			if landNb[o] > 0 and data[o] == PlotTypes.PLOT_OCEAN:
+				c += 1
+		return c
+
+	def isSimple(self, o):
+		"Can land plot o go without splitting its landmass?"
+		m = self.mass[o]
+		mask = 0
+		bit = 1
+		mass = self.mass
+		for n in self.ring[o]:
+			if n >= 0 and mass[n] == m:
+				mask |= bit
+			bit <<= 1
+		return SIMPLE_RING[mask]
+
+	def keepsOrthogonalLinks(self, o):
+		"Would every land neighbour of o (same landmass) still touch its landmass at a side, not only a corner?"
+		m = self.mass[o]
+		ring = self.ring
+		mass = self.mass
+		r = ring[o]
+		for i in [0, 2, 4, 6]:
+			n = r[i]
+			if n >= 0 and mass[n] == m:
+				rn = ring[n]
+				links = 0
+				for j in [0, 2, 4, 6]:
+					k = rn[j]
+					if k >= 0 and k != o and mass[k] == m:
+						links += 1
+				if links == 0:
+					return False
+		return True
+
+	def distance(self, a, b):
+		"plots between a and b in the Chebyshev metric (x wraps)"
+		W = self.W
+		dx = abs(a % W - b % W)
+		if dx > W - dx:
+			dx = W - dx
+		dy = abs(a // W - b // W)
+		if dx > dy:
+			return dx
+		return dy
+
+	def distanceMap(self, sources, limit):
+		"""Distance (Chebyshev, x wraps) of every plot from the nearest source plot; limit + 1 beyond limit."""
+		dist = [limit + 1] * self.N
+		frontier = []
+		for o in sources:
+			dist[o] = 0
+			frontier.append(o)
+		d = 0
+		nb8 = self.nb8
+		while len(frontier) > 0 and d < limit:
+			d += 1
+			nxt = []
+			for o in frontier:
+				for n in nb8[o]:
+					if dist[n] > d:
+						dist[n] = d
+						nxt.append(n)
+			frontier = nxt
+		return dist
+
+	def findSeed(self, o, g, m):
+		"the plot nearest to o (rings around it) that landmass m of group g may start on, or -1"
+		if self.canAdd(o, g, m):
+			return o
+		W = self.W
+		x0 = o % W
+		y0 = o // W
+		for r in range(1, W):
+			for dy in range(-r, r + 1):
+				y = y0 + dy
+				if y < 0 or y >= self.H:
+					continue
+				for dx in range(-r, r + 1):
+					if abs(dx) == r or abs(dy) == r:
+						oo = y * W + (x0 + dx) % W
+						if self.canAdd(oo, g, m):
+							return oo
+		return -1
+
+	def _growCandidate(self, m, g, mode, tries):
+		"a water plot at a side of landmass m that may become land, chosen by mode; -1 if none"
+		coast = self.massCoast[m]
+		if len(coast) == 0:
+			return -1
+		dice = self.dice
+		ring = self.ring
+		best = -1
+		bestValue = -9999
+		for t in range(tries):
+			o = coast.pick(dice)
+			n = ring[o][2 * dice.get(4, "Python - Planet Generator: grow direction")]
+			if n < 0 or not self.canAdd(n, g, m):
+				continue
+			if mode == "coast" and not self.keepsWaterLinked(n):
+				continue
+			v = self._growValue(n, mode)
+			if v > bestValue:
+				bestValue = v
+				best = n
+		if best < 0:
+			# the samples missed: candidates left from the last full scan, then a new full scan (every side of the
+			# landmass; then the corners too, closing off a lake if nothing else is left)
+			cache = self.growCache.get(m)
+			if cache is not None:
+				while len(cache) > 0:
+					n = cache.pop()
+					if self.canAdd(n, g, m) and self.touches(n, m):
+						return n
+			cache = self._scanCandidates(m, g, [0, 2, 4, 6], mode == "coast")
+			if len(cache) == 0:
+				cache = self._scanCandidates(m, g, range(8), False)
+			self.growCache[m] = cache
+			while len(cache) > 0:
+				n = cache.pop()
+				if self.canAdd(n, g, m) and self.touches(n, m):
+					return n
+		return best
+
+	def _scanCandidates(self, m, g, dirs, linked):
+		"every plot at the given sides of landmass m that may become land, in random order"
+		ring = self.ring
+		seen = {}
+		cands = []
+		for o in self.massCoast[m].items:
+			for i in dirs:
+				n = ring[o][i]
+				if n >= 0 and not seen.has_key(n) and self.canAdd(n, g, m) and (not linked or self.keepsWaterLinked(n)):
+					seen[n] = True
+					cands.append(n)
+		dice = self.dice
+		for i in range(len(cands) - 1, 0, -1):
+			j = dice.get(i + 1, "Python - Planet Generator: grow order")
+			cands[i], cands[j] = cands[j], cands[i]
+		return cands
+
+	def _growValue(self, n, mode):
+		r = self.dice.get(4, "Python - Planet Generator: grow choice")
+		if mode == "coast":
+			return self.coastAddDelta(n) * 4 + r
+		if mode == "compact":
+			return self.landNb[n] * 4 + r
+		if mode == "organic":
+			return self.landNb[n] + self.dice.get(6, "Python - Planet Generator: grow choice")
+		return self.dice.get(100, "Python - Planet Generator: grow choice")
+
+	def growMass(self, m, g, count, mode):
+		"""Adds up to count plots at the sides of landmass m: mode "compact" fills bays first, "organic" a little,
+		"coast" makes the most new coast, anything else grows at random. Returns the plots added."""
+		added = 0
+		while added < count:
+			n = self._growCandidate(m, g, mode, 16)
+			if n < 0:
+				break
+			self.setLand(n, m, g)
+			added += 1
+		return added
+
+	def _shrinkCandidate(self, m, mode, tries):
+		coast = self.massCoast[m]
+		if len(coast) == 0 or len(self.massTiles[m]) < 2:
+			return -1
+		dice = self.dice
+		best = -1
+		bestValue = -9999
+		for t in range(tries):
+			o = coast.pick(dice)
+			if not self.isSimple(o) or not self.keepsOrthogonalLinks(o):
+				continue
+			v = self._shrinkValue(o, mode)
+			if v > bestValue:
+				bestValue = v
+				best = o
+		if best < 0:
+			for o in coast.items:
+				if self.isSimple(o) and self.keepsOrthogonalLinks(o):
+					v = self._shrinkValue(o, mode)
+					if v > bestValue:
+						bestValue = v
+						best = o
+		return best
+
+	def _shrinkValue(self, o, mode):
+		r = self.dice.get(4, "Python - Planet Generator: shrink choice")
+		if mode == "coast":
+			return self.coastRemoveDelta(o) * 4 + r
+		if mode == "compact":
+			return -self.landNb[o] * 4 + r # the most exposed plots first: smooths the coast
+		return self.dice.get(100, "Python - Planet Generator: shrink choice")
+
+	def shrinkMass(self, m, count, mode):
+		"Removes up to count plots from the coast of landmass m without splitting it. Returns the plots removed."
+		removed = 0
+		while removed < count:
+			o = self._shrinkCandidate(m, mode, 16)
+			if o < 0:
+				break
+			self.setWater(o)
+			removed += 1
+		return removed
+
+	def seaMap(self):
+		"water connected to the polar rows (always water): the open sea, as opposed to lakes"
+		sea = [False] * self.N
+		data = self.data
+		stack = []
+		for o in range(self.W):
+			for oo in [o, (self.H - 1) * self.W + o]:
+				if data[oo] == PlotTypes.PLOT_OCEAN and not sea[oo]:
+					sea[oo] = True
+					stack.append(oo)
+		nb8 = self.nb8
+		while len(stack) > 0:
+			o = stack.pop()
+			for n in nb8[o]:
+				if not sea[n] and data[n] == PlotTypes.PLOT_OCEAN:
+					sea[n] = True
+					stack.append(n)
+		return sea
+
+	def keepsWaterLinked(self, o):
+		"Would the water around plot o stay connected if o became land (no new lake cut off)?"
+		data = self.data
+		mask = 0
+		bit = 1
+		for n in self.ring[o]:
+			if n >= 0 and data[n] == PlotTypes.PLOT_OCEAN:
+				mask |= bit
+			bit <<= 1
+		return mask == 0 or SIMPLE_RING[mask]
+
+	def roughen(self, m, g, iterations, reach):
+		"""Coastline option: moves plots of landmass m from where they make little coast to where they make more,
+		keeping the landmass in one piece and its number of plots. Plots only go where the open sea reaches and
+		only come where they cut no water off, so the coast gets fjords and peninsulas rather than lakes. With
+		reach > 0 nothing changes further than that from the coast as it was, so the inland stays."""
+		dice = self.dice
+		coast = self.massCoast[m]
+		ring = self.ring
+		nb8 = self.nb8
+		sea = self.seaMap()
+		inland = None
+		offshore = None
+		if reach > 0:
+			water = []
+			for o in xrange(self.N):
+				if self.data[o] == PlotTypes.PLOT_OCEAN:
+					water.append(o)
+			inland = self.distanceMap(water, reach) # land: plots to the coast
+			offshore = self.distanceMap(self.massTiles[m].items, reach) # water: plots from this landmass
+		gained = 0
+		for it in xrange(iterations):
+			if len(coast) < 4:
+				break
+			a = -1
+			da = -9999
+			for t in range(6):
+				o = coast.pick(dice)
+				nearSea = False
+				for n in nb8[o]:
+					if sea[n]:
+						nearSea = True
+						break
+				if inland is not None and inland[o] > reach:
+					continue
+				if nearSea and self.isSimple(o) and self.keepsOrthogonalLinks(o):
+					d = self.coastRemoveDelta(o)
+					if d > da:
+						da = d
+						a = o
+			if a < 0:
+				continue
+			b = -1
+			db = -9999
+			for t in range(6):
+				o = coast.pick(dice)
+				n = ring[o][2 * dice.get(4, "Python - Planet Generator: coastline direction")]
+				if n < 0 or self.distance(n, a) <= 2:
+					continue
+				if offshore is not None and offshore[n] > reach:
+					continue
+				if self.canAdd(n, g, m) and self.keepsWaterLinked(n):
+					d = self.coastAddDelta(n)
+					if d > db:
+						db = d
+						b = n
+			if b < 0:
+				continue
+			gain = da + db
+			if gain > 0 or (gain == 0 and dice.get(8, "Python - Planet Generator: coastline drift") == 0):
+				self.setWater(a)
+				sea[a] = True
+				self.setLand(b, m, g)
+				sea[b] = False
+				gained += gain
+		return gained
+
+	def pieces(self, m):
+		"the 8-connected pieces of landmass m, biggest first"
+		mass = self.mass
+		nb8 = self.nb8
+		seen = {}
+		result = []
+		for o in self.massTiles[m].items:
+			if seen.has_key(o):
+				continue
+			piece = [o]
+			seen[o] = True
+			i = 0
+			while i < len(piece):
+				for n in nb8[piece[i]]:
+					if mass[n] == m and not seen.has_key(n):
+						seen[n] = True
+						piece.append(n)
+				i += 1
+			result.append(piece)
+		result.sort(lambda a, b: len(b) - len(a))
+		return result
+
+	def check(self, step, count):
+		"debugging: every continent in one piece"
+		for m in range(count):
+			if self.massTiles.has_key(m) and len(self.massTiles[m]) > 0:
+				ps = self.pieces(m)
+				if len(ps) > 1:
+					print "Planet Generator check after %s: continent %d in %d pieces %s" % (step, m, len(ps), [len(x) for x in ps][:5])
+
+	def removeMass(self, m):
+		removed = 0
+		for o in list(self.massTiles[m].items):
+			self.setWater(o)
+			removed += 1
+		return removed
+
+	def fitIslands(self, minSize, mode):
+		"""Minimum island size: islands below it grow to it, or go if there is no room. Returns the plots removed."""
+		removed = 0
+		for m in self.massTiles.keys():
+			n = len(self.massTiles[m])
+			if m >= 1000 and n > 0 and n < minSize:
+				n += self.growMass(m, self.massGroup[m], minSize - n, mode)
+				if n < minSize:
+					removed += self.removeMass(m)
+		return removed
+
+	def removeSmallPieces(self, minSize):
+		"""Removes islands below minSize, and the pieces of an archipelago continent below it (all but its biggest
+		piece). Returns the plots removed."""
+		removed = 0
+		mass = self.mass
+		nb8 = self.nb8
+		for m in self.massTiles.keys():
+			tiles = self.massTiles[m].items
+			if len(tiles) == 0:
+				continue
+			if m >= 1000:
+				if len(tiles) < minSize:
+					removed += self.removeMass(m)
+				continue
+			# the pieces of a continent (more than one only for archipelago continents)
+			seen = {}
+			pieces = []
+			for o in tiles:
+				if seen.has_key(o):
+					continue
+				piece = [o]
+				seen[o] = True
+				i = 0
+				while i < len(piece):
+					for n in nb8[piece[i]]:
+						if mass[n] == m and not seen.has_key(n):
+							seen[n] = True
+							piece.append(n)
+					i += 1
+				pieces.append(piece)
+			if len(pieces) > 1:
+				biggest = 0
+				for i in range(len(pieces)):
+					if len(pieces[i]) > len(pieces[biggest]):
+						biggest = i
+				for i in range(len(pieces)):
+					if i != biggest and len(pieces[i]) < minSize:
+						for o in pieces[i]:
+							self.setWater(o)
+							removed += 1
+		return removed
+
+	def islandAt(self, seed, size, g, mode):
+		"""A new island of up to size plots from seed (group g: a continent's own islands, or a lonely island's
+		own group). Returns the plots placed."""
+		m = self.newIslandMass()
+		if not self.canAdd(seed, g, m):
+			return 0
+		self.setLand(seed, m, g)
+		if size > 1:
+			return 1 + self.growMass(m, g, size - 1, mode)
+		return 1
+
+	def placeIslands(self, spots, sizes, budget, smallest, mode):
+		"""Lonely islands in spots, each its own group: as big as sizes, all of them shrunk alike to fit budget, but
+		at least smallest. Returns the plots placed."""
+		seeds = []
+		for i in range(len(spots)):
+			g = self.newGroup()
+			m = self.newIslandMass()
+			if self.canAdd(spots[i], g, m):
+				self.setLand(spots[i], m, g)
+				seeds.append([m, g, sizes[i]])
+		placed = len(seeds)
+		budget -= placed
+		for seed in seeds:
+			n = self.growMass(seed[0], seed[1], smallest - 1, mode)
+			placed += n
+			budget -= n
+		extra = 0
+		for seed in seeds:
+			extra += max(0, seed[2] - smallest)
+		if extra > 0 and budget > 0:
+			scale = min(1.0, budget / float(extra))
+			for seed in seeds:
+				placed += self.growMass(seed[0], seed[1], int(max(0, seed[2] - smallest) * scale), mode)
+		return placed
+
+	def coastalIslands(self, g, share, sizeMin, sizeMax, maxDistance, mode, allowOneTile):
+		"""Continent scattering: islands near continent g, about share of its land, 1 to maxDistance - 1 water
+		plots off its coast. Returns the plots placed."""
+		body = self.massTiles.get(g)
+		if body is None or share <= 0 or maxDistance < 2:
+			return 0
+		budget = int(len(body) * share + 0.5)
+		if budget <= 0:
+			return 0
+		if not allowOneTile and sizeMin < 2:
+			sizeMin = 2
+		if sizeMax < sizeMin:
+			sizeMax = sizeMin
+		dist = self.distanceMap(body.items, maxDistance)
+		cands = []
+		for o in xrange(self.N):
+			if dist[o] >= 2 and dist[o] <= maxDistance and self.data[o] == PlotTypes.PLOT_OCEAN and self.rowOK(o):
+				cands.append(o)
+		placed = 0
+		dice = self.dice
+		while placed < budget and len(cands) > 0:
+			i = dice.get(len(cands), "Python - Planet Generator: coastal island")
+			o = cands[i]
+			cands[i] = cands[-1]
+			cands.pop()
+			size = sizeMin + dice.get(sizeMax - sizeMin + 1, "Python - Planet Generator: coastal island size")
+			if size > budget - placed:
+				size = budget - placed
+				if size < sizeMin:
+					break
+			placed += self.islandAt(o, size, g, mode)
+		return placed
+
+	def lonelySpots(self, radius):
+		"""Centres for lonely islands: open water at least separation + 1 + radius plots from all land (the most
+		open first), packed so that islands of that radius keep the separation between each other too."""
+		W = self.W
+		data = self.data
+		sources = []
+		for o in xrange(self.N):
+			if data[o] != PlotTypes.PLOT_OCEAN:
+				sources.append(o)
+		need = self.sep + 1 + radius
+		dist = self.distanceMap(sources, need + 50)
+		dice = self.dice
+		cands = []
+		# centres at least 4 rows from the map's edges, as the original ocean search (no lonely islands in the ice)
+		low = max(self.minY, 4) + radius
+		high = min(self.maxY, self.H - 5) - radius
+		for o in xrange(self.N):
+			if dist[o] >= need:
+				y = o // W
+				if y >= low and y <= high:
+					# most open first, give or take two plots (strictly by distance they came out as a grid)
+					cands.append((-dist[o] - dice.get(3, "Python - Planet Generator: lonely island spot"), dice.get(10000, "Python - Planet Generator: lonely island spot"), o))
+		cands.sort()
+		reach = 2 * radius + self.sep # centres must be further apart than this
+		blocked = [False] * self.N
+		spots = []
+		for c in cands:
+			o = c[2]
+			if blocked[o]:
+				continue
+			spots.append(o)
+			x = o % W
+			y = o // W
+			y0 = y - reach
+			if y0 < 0:
+				y0 = 0
+			y1 = y + reach
+			if y1 > self.H - 1:
+				y1 = self.H - 1
+			for yy in range(y0, y1 + 1):
+				row = yy * W
+				for dx in range(-reach, reach + 1):
+					blocked[row + (x + dx) % W] = True
+		return spots
+
+def landTargetPlots(iW, iH, oceanPercentage):
+	"land plots for the chosen percentage of ocean (of the whole map, poles included)"
+	return int(round(iW * iH * (100 - oceanPercentage) / 100.0))
+
+def islandSizeRange(lonelyIslandSize):
+	"(smallest, biggest, radius): the sizes lonely islands were always drawn from"
+	if lonelyIslandSize == "small":
+		return 2, 5, 1
+	elif lonelyIslandSize == "medium":
+		return 16, 51, 3
+	return 20, 83, 4
+
+def continentPlayerCounts(players, count, rivals, dice):
+	"""Players per continent for "By player count" sizes, and the continent of the human player (-1: not
+	planned). With rivals >= 0 that continent gets the human and that many rivals, the others share the rest."""
+	if rivals < 0 or count < 2:
+		contData = []
+		for p in range(players):
+			contData.append(1)
+		while len(contData) > count:
+			index = int(getRand(dice) * len(contData))
+			if index == 0:
+				index2 = len(contData) - 1
+			else:
+				index2 = index - 1
+			contData[index2] += contData[index]
+			contData.pop(index)
+		return contData, -1
+	k = rivals
+	if k > players - 1:
+		k = players - 1
+	rest = players - 1 - k
+	others = []
+	for i in range(count - 1):
+		others.append(rest // (count - 1))
+	for i in range(rest % (count - 1)):
+		others[i] += 1
+	shuffled = []
+	while len(others) > 0:
+		shuffled.append(others.pop(dice.get(len(others), "Python - Planet Generator: continent players")))
+	home = dice.get(count, "Python - Planet Generator: home continent")
+	shuffled.insert(home, k + 1)
+	return shuffled, home
+
+def growContinents(contList, targets, steps, total):
+	"""Grows the continents to their targets, each in turn (those meant for more players more per turn, as
+	before). K-Mod-Magnus: a continent that cannot grow any more leaves its share to the others; one stuck
+	continent used to stop all of them, which left far too little land."""
+	n = len(contList)
+	grown = [1] * n # the start plot
+	stuck = [False] * n
+	quota = list(targets)
+	while True:
+		progress = False
+		for i in range(n):
+			if stuck[i]:
+				continue
+			for k in range(steps[i]):
+				if grown[i] >= quota[i]:
+					break
+				if contList[i].grow():
+					grown[i] += 1
+					progress = True
+				else:
+					stuck[i] = True
+					break
+		if not progress:
+			missing = total - sum(grown)
+			free = []
+			for i in range(n):
+				if not stuck[i]:
+					free.append(i)
+			if missing <= 0 or len(free) == 0:
+				break
+			for j in range(len(free)):
+				quota[free[j]] += missing // len(free)
+				if j < missing % len(free):
+					quota[free[j]] += 1
+	for i in range(n):
+		contList[i].stuck = stuck[i]
+	return grown
+
+def balanceLand(plan, contList, steps, target, coastline, minIslandSize, useBuilders):
+	"""K-Mod-Magnus: adds or removes land at the coasts until the map has exactly target land plots (as far as
+	there is room). Continents grow their own way first (TileBuilder), then at their sides; islands only grow when
+	no continent can."""
+	if coastline > 0:
+		growMode = "coast"
+		shrinkMode = "coast"
+	else:
+		growMode = "random"
+		shrinkMode = "compact"
+	full = {}
+	while plan.land < target:
+		progress = False
+		for i in range(len(contList)):
+			continent = contList[i]
+			m = continent.mass
+			if full.has_key(m):
+				continue
+			for k in range(steps[i]):
+				if plan.land >= target:
+					break
+				ok = False
+				if useBuilders and coastline == 0 and not continent.stuck:
+					ok = continent.grow()
+					if not ok:
+						continent.stuck = True
+				if not ok:
+					ok = plan.growMass(m, continent.group, 1, growMode) > 0
+				if ok:
+					progress = True
+				else:
+					full[m] = True
+					break
+		if not progress and useBuilders:
+			# no continent can grow: the islands, then new islands wherever they fit
+			for m in plan.massTiles.keys():
+				if m >= 1000 and not full.has_key(m) and plan.land < target:
+					if plan.growMass(m, plan.massGroup[m], 1, growMode) > 0:
+						progress = True
+					else:
+						full[m] = True
+			if not progress:
+				size = max(4, minIslandSize)
+				spots = plan.lonelySpots(0)
+				for o in spots:
+					if target - plan.land < minIslandSize:
+						break
+					if plan.islandAt(o, min(size, target - plan.land), plan.newGroup(), growMode) > 0:
+						progress = True
+		if not progress:
+			break
+	while plan.land > target:
+		progress = False
+		order = []
+		for continent in contList:
+			order.append((-len(plan.massTiles[continent.mass]), continent.mass))
+		order.sort()
+		for item in order:
+			if plan.land <= target:
+				break
+			if plan.shrinkMass(item[1], 1, shrinkMode) > 0:
+				progress = True
+		if not progress:
+			for m in plan.massTiles.keys():
+				if m >= 1000 and plan.land > target and len(plan.massTiles[m]) > 0:
+					if plan.shrinkMass(m, 1, shrinkMode) > 0:
+						progress = True
+			if not progress:
+				break
 
 def generateRandomMap():
 	"""Can be overridden if you want to manually control the sequence in which plot types, heights, and terrain are generated.
@@ -1705,6 +2748,11 @@ def generatePlotTypes():
 	global allowLandNearIce
 	global poleSeparation
 
+	global homeContinent
+	global homeRivals
+	global startAreaPlan
+	global continentPlayers
+
 	poleSeparation = 3
 
 	cgc = CyGlobalContext()
@@ -1739,12 +2787,22 @@ def generatePlotTypes():
 	lonelyIslands = getSelValue("lonely_islands")
 	if lonelyIslands is None:
 		lonelyIslands = "one"
-	allowOneTileIslands = getSelValue("allow_one_tile_islands")
-	if allowOneTileIslands is None:
-		allowOneTileIslands = True
+	minIslandSize = getSelValue("min_island_size") #K-Mod-Magnus (was "One tile islands allowed": No = 2, Yes = 1)
+	if minIslandSize is None:
+		minIslandSize = 2
+	allowOneTileIslands = minIslandSize <= 1
 	allowLandNearIce = getSelValue("land_near_ice")
 	if allowLandNearIce is None:
 		allowLandNearIce = False
+	coastline = getSelValue("coastline") #K-Mod-Magnus
+	if coastline is None:
+		coastline = 0
+	homeRivals = getSelValue("home_rivals") #K-Mod-Magnus
+	if homeRivals is None:
+		homeRivals = -1
+	if continentScatter[0] <= 7 and len(continentScatter) < 8: # settings from before K-Mod-Magnus
+		continentScatter = list(continentScatter) + [0.0, 0, 0, 0]
+	startAreaPlan = None
 	# there is list of templates which are used for various continent shape types
 	# there are three parameters in this array (separated by commas): [builder tiles, active tiles, grow count]
 
@@ -1834,166 +2892,113 @@ def generatePlotTypes():
 			shapeData = tbsCrabLike
 
 	#calculate actual land tiles we must produce
-	maxLandTiles = iW * (iH - poleSeparation * 2) * ((100 - oceanPercentage) / 100.0)
-	print "default max tiles:",maxLandTiles
-	if continentCount > 0 and maxLandTiles >=0:
-		newMaxLandTiles = ((( sqrt(maxLandTiles / float(continentCount))) - continentSeparation * 0.9)**2) * continentCount
-		if newMaxLandTiles > continentCount * 2:
-			maxLandTiles = newMaxLandTiles
-	maxLandTiles = int(maxLandTiles * 0.95)
-	print "modified max tiles:",maxLandTiles
+	# K-Mod-Magnus: exactly the chosen percentage of the whole map is ocean. The land used to be lowered for the
+	# separation and by another 5%, while islands, land bridges and filled lakes came on top of it.
+	targetLand = landTargetPlots(iW, iH, oceanPercentage)
+	print "Planet Generator: land plots wanted:", targetLand, "of", iW * iH
 
 	#world is two-dimensional array which wraps in X automagically, so you may not worry about edges
 	world = worldArray([iW,iH],PlotTypes.PLOT_OCEAN)
+	plan = LandPlan(world, continentSeparation, allowLandNearIce, dice)
+
+	# land kept back for the lonely islands until they are placed (what they do not use goes to the continents)
+	islandMin, islandMax, islandRadius = islandSizeRange(lonelyIslandSize)
+	lonelyNumber = 0
+	lonelyShare = 0.0
+	lonelyReserve = 0
+	if isinstance(lonelyIslands, str):
+		if lonelyIslands.startswith("lonely"):
+			lonelyNumber = int(lonelyIslands[6:])
+			lonelyReserve = min(targetLand * 0.4, lonelyNumber * (islandMin + islandMax) / 2.0)
+	elif lonelyIslands > 0:
+		lonelyNumber = -1 # a share of all the empty spots
+		lonelyShare = float(lonelyIslands)
+		lonelyReserve = targetLand * 0.35 * lonelyShare
+
+	archipelago = continentScatter[0] > 7
+	coastShare = 0.0
+	if not archipelago and len(continentScatter) >= 8:
+		coastShare = continentScatter[4]
+	bodyTotal = int((targetLand - lonelyReserve) / (1.0 + coastShare))
+	if bodyTotal < continentCount:
+		bodyTotal = continentCount
+
+	# players per continent ("By player count" sizes) and the continent the human player is to start on
+	homeContinent = -1
+	contData = None
+	if continentSize == "players" and continentCount > 1 and (players > continentCount or homeRivals >= 0):
+		contData, homeContinent = continentPlayerCounts(players, continentCount, homeRivals, dice)
+	continentPlayers = contData
+	weights = []
+	for i in range(continentCount):
+		if contData is not None:
+			w = float(contData[i])
+			if w < 0.5:
+				w = 0.5 # a continent nobody starts on still gets some land
+		elif continentSize == "unpredictable":
+			w = 0.4 + getRand(dice) * 1.2
+		else:
+			w = 1.0
+		weights.append(w)
+	weightSum = 0.0
+	for w in weights:
+		weightSum += w
+	minWeight = min(weights)
 
 	#now we must somehow distribute start positions for each continent, depending on number of players.
-	#if there is not enough continents for players, we will make some random continent to grow more.
-	#actual player distribution is handled by Firaxis code, which looks how big each continent is and places players acording to that.
-	if players > continentCount and continentSize == "players":
-		# we will make helper-array to randomly make some continents bigger
-		contData = []
-		# first of all, we make continent amount the same as plaer amount, and add to each continent 1 player:
-		for p in range(players):
-			contData.append(1) # 1 player in 1 continent
+	#actual player distribution is handled by Firaxis code (or findStartingArea below), which looks how big each continent is.
+	contPositions = getStartPositions(world, contData)
 
-		#colapse continents to match what we have
-		#colapsing: if we in helper-array have more continents than we need, remove one item from array
-		#  and randomly increase other array item by 1
-		#do so until we get right continent count
-		while len(contData) > continentCount:
-			index = int(getRand(dice) * len(contData)) #random index
-			#merge it with nearest continent
-			if index == 0:
-				index2 = len(contData) - 1
-			else:
-				index2 = index - 1
-			contData[index2] += contData[index]
-			contData.pop(index)
-
-
-		#position calculation moved to other function
-		contPositions = getStartPositions(world, contData)
-
-		#start continents
-		contList = [] #contList will contain TileBuilders for each continent
-
-		for i in range(len(contData)): #now contData contains how many players are in each continent
-			if shapeRandom: #if we have random shape for each continent, we get it now
-				index = int(getRand(dice) * len(randomList)) #random index
-				shapeData = randomList[index]
-			#initialize tile builder
-			continent = TileBuilder(world, PlotTypes.PLOT_LAND, shapeData[0], shapeData[1], shapeData[2], continentSeparation, int(maxLandTiles / float(players) * contData[i]))
+	contList = [] #contList will contain TileBuilders for each continent; continent i is group i and landmass i of the plan
+	targets = []
+	steps = []
+	for i in range(continentCount):
+		if shapeRandom: #if we have random shape for each continent, we get it now
+			index = int(getRand(dice) * len(randomList)) #random index
+			shapeData = randomList[index]
+		group = plan.newGroup()
+		target = int(bodyTotal * weights[i] / weightSum)
+		if target < 1:
+			target = 1
+		#initialize tile builder
+		continent = TileBuilder(world, PlotTypes.PLOT_LAND, shapeData[0], shapeData[1], shapeData[2], continentSeparation, target)
+		if archipelago:
 			continent.coastScatterMin = continentScatter[0]
 			continent.coastScatterMax = continentScatter[1]
 			continent.coastScatterChangeChance = continentScatter[2]
 			continent.coastScatterChangeDif = continentScatter[3]
-			continent.allowReachPoles = allowLandNearIce
-			if continent.coastScatterMin == 0 or continent.coastScatterMin > 7:
-				continent.continentPartControlEnabled = False
-			#place first tile (x, y)
-			startX, startY = contPositions[i]
-			continent.start(startX, startY)
-			#add tile builder to builder list
-			contList.append(continent)
+		else:
+			# the continent grows in one piece; the islands around it come afterwards
+			continent.coastScatterMin = 0
+			continent.coastScatterMax = 0
+			continent.coastScatterChangeChance = 0
+			continent.coastScatterChangeDif = 0
+		continent.allowReachPoles = allowLandNearIce
+		continent.continentPartControlEnabled = False
+		continent.usePlan(plan, group, group)
+		continent.contiguous = not archipelago
+		continent.stuck = False
+		#place first tile (x, y)
+		startX, startY = contPositions[i]
+		seed = plan.findSeed(world.getOffset([startX, startY]), group, group)
+		if seed < 0:
+			print "Planet Generator: no room for continent", i
+			continue
+		continent.start(seed % iW, seed // iW)
+		contList.append(continent)
+		targets.append(target)
+		steps.append(int(weights[i] / minWeight + 0.5))
 
-		#now what is left - growing :)
-		size = 0 #at first size is 0
-		grows = True #variable to check if everything still grows
-		#if size < maxLandTiles and grows:
-		while size < maxLandTiles and grows:
-			for i, continent in enumerate(contList): #for each index, TileBuilder in contList
-				if contData[i] == 1: #if one player is supposed to be there
-					if continent.grow(): #if tile builder is able to grow and grows one tile
-						size += 1 #increase size by one
-					else:
-						grows = False #otherwise stop this script
-				else: #if more than one player is there, grow it for each of them :)
-					cGrows = True
-					for j in range(contData[i]): # grow continent more if there are more players in it
-						if continent.grow():
-							size += 1
-						else:
-							cGrows = False
-					if not cGrows:
-						grows = False
-
-		for i, continent in enumerate(contList):
-			#print "Final %d continent parts: %d"%(i,len(continent.continentParts))
-			continent.joinParts(continent.coastScatterMax * 2)
-	elif continentSize == "unpredictable":
-		contPositions = getStartPositions(world, None)
-		contList = []
-
-		for i in range(continentCount):
-			if shapeRandom:
-				index = int(getRand(dice) * len(randomList)) #random index
-				shapeData = randomList[index]
-			continent = TileBuilder(world, PlotTypes.PLOT_LAND, shapeData[0], shapeData[1], shapeData[2], continentSeparation, maxLandTiles / continentCount)
-			continent.coastScatterMin = continentScatter[0]
-			continent.coastScatterMax = continentScatter[1]
-			continent.coastScatterChangeChance = continentScatter[2]
-			continent.coastScatterChangeDif = continentScatter[3]
-			continent.allowReachPoles = allowLandNearIce
-			if continent.coastScatterMin == 0 or continent.coastScatterMin > 7:
-				continent.continentPartControlEnabled = False
-			startX, startY = contPositions[i]
-			continent.start(startX, startY)
-			contList.append(continent)
-
-		#grow continents
-		size = 0
-		grows = True
-		while size < maxLandTiles and grows:
-		#if size < maxLandTiles and grows:
-			for continent in contList:
-				while getRand(dice) > 0.6:
-					if continent.grow() and size < maxLandTiles:
-						size += 1
-					else:
-						grows = False
-						break
-		for i, continent in enumerate(contList):
-			#print "Final %d continent parts: %d"%(i,len(continent.continentParts))
-			continent.joinParts(continent.coastScatterMax)
-	else: #if there are less players than continents, code looks like English ;)
-		#start continents
-		contPositions = getStartPositions(world, None)
-		contList = []
-
-		for i in range(continentCount):
-			if shapeRandom:
-				index = int(getRand(dice) * len(randomList)) #random index
-				shapeData = randomList[index]
-			continent = TileBuilder(world, PlotTypes.PLOT_LAND, shapeData[0], shapeData[1], shapeData[2], continentSeparation, maxLandTiles / continentCount)
-			continent.coastScatterMin = continentScatter[0]
-			continent.coastScatterMax = continentScatter[1]
-			continent.coastScatterChangeChance = continentScatter[2]
-			continent.coastScatterChangeDif = continentScatter[3]
-			continent.allowReachPoles = allowLandNearIce
-			if continent.coastScatterMin == 0 or continent.coastScatterMin > 7:
-				continent.continentPartControlEnabled = False
-			startX, startY = contPositions[i]
-			continent.start(startX, startY)
-			contList.append(continent)
-
-		#grow continents
-		size = 0
-		grows = True
-		while size < maxLandTiles and grows:
-		#if size < maxLandTiles and grows:
-			for continent in contList:
-				if continent.grow():
-					size += 1
-				else:
-					grows = False
-		for i, continent in enumerate(contList):
-			#print "Final %d continent parts: %d"%(i,len(continent.continentParts))
-			continent.joinParts(continent.coastScatterMax * 2)
-
-	print "size",size
+	#now what is left - growing :)
+	growContinents(contList, targets, steps, bodyTotal)
+	size = plan.land
+	print "Planet Generator: continents", size, "plots (wanted", bodyTotal, ")"
+	if debugChecks and not archipelago:
+		plan.check("growth", len(contList))
 
 	# now we want to remove one-square and two-square lakes. more templates (which describe how to remove tiles) can be added in initReplacements function,
 	#  and code below should handle them just fine. i am not adding comments to it because i forgot how it works :D
+	# K-Mod-Magnus: only where all the land around belongs to one continent, and only where that continent may grow
 	rep = initReplacements()
 
 	for x in range(iW):
@@ -2014,6 +3019,20 @@ def generatePlotTypes():
 								Tinka = False
 								break
 				if Tinka:
+					group = -1
+					mass = -1
+					for ax in range(w):
+						for ay in range(h):
+							if orig[ay][ax] == 2:
+								o = world.getOffset([x-dw+ax,y-dh+ay])
+								if group == -1:
+									group = plan.owner[o]
+									mass = plan.mass[o]
+								elif plan.owner[o] != group:
+									Tinka = False
+					if group < 0:
+						Tinka = False
+				if Tinka:
 					if isinstance(final_v[0][0],list): # if array is deeper than coordinates
 						index = int(getRand(dice) * len(final_v))
 						final = final_v[index]
@@ -2026,191 +3045,117 @@ def generatePlotTypes():
 					for ax in range(w):
 						for ay in range(h):
 							cell = final[ay][ax]
-							if landR(cell) != None:
-								world[x-dw+ax,y-dh+ay] = landR(cell)
+							if landR(cell) == PlotTypes.PLOT_LAND:
+								o = world.getOffset([x-dw+ax,y-dh+ay])
+								if plan.isWater(o) and plan.rowOK(o) and not (plan.claims[o] & ~(1 << group)):
+									plan.setLand(o, mass, group)
 
-	#ocean tiles we want to collect
-	oceanTiles = bArray()
-
-	if lonelyIslandSize == "small":
-		islandAreaRadius = 3
-	elif lonelyIslandSize == "medium":
-		islandAreaRadius = 5
+	if debugChecks and not archipelago:
+		plan.check("lakes", len(contList))
+	# Coastline (K-Mod-Magnus): reshape the continents for more coast
+	if coastline > 0 and not archipelago:
+		iterations = [0, 0.5, 2, 10][coastline] # moves tried, per plot of the continent
+		reach = [0, 1, 3, 0][coastline] # how far from the coast as grown it may change (0: anywhere)
+		before = plan.coastCount()
+		for continent in contList:
+			plan.roughen(continent.mass, continent.group, int(iterations * len(plan.massTiles[continent.mass])), reach)
+		print "Planet Generator: coastline", coastline, "- coast plots", before, "->", plan.coastCount()
+	if coastline >= 2:
+		islandMode = "coast"
 	else:
-		islandAreaRadius = 7
+		islandMode = "organic"
 
-	oceanSearchLineSize = islandAreaRadius * 2
-	searchLinePos = 0
-	for y in range(iH):
-		for s in range(islandAreaRadius):
-			x = s - islandAreaRadius - 1
-			if y >= 4 and y < iH - 4:
-				if world[x,y] == PlotTypes.PLOT_OCEAN:
-					searchLinePos += 1
-				else:
-					searchLinePos = 0
-		for x in range(iW):
-			offset = world.getOffset([x,y])
-			#collect ocean tiles
-			if y >= 4 and y < iH - 4:
-				if world[x,y] == PlotTypes.PLOT_OCEAN:
-					searchLinePos += 1
-					if searchLinePos >= oceanSearchLineSize:
-						ax = x - islandAreaRadius
-						oceanTiles[world.getOffset([ax,y])] = [ax, y]
-				else:
-					searchLinePos = 0
-				if searchLinePos > oceanSearchLineSize:
-					searchLinePos -= 1
+	if debugChecks and not archipelago:
+		plan.check("coastline", len(contList))
+	# islands stay smaller than continents: at most half the smallest continent (or the minimum island size)
+	smallestBody = 0
+	for continent in contList:
+		n = len(plan.massTiles[continent.mass])
+		if smallestBody == 0 or n < smallestBody:
+			smallestBody = n
+	islandCap = max(minIslandSize, smallestBody // 2)
 
-	if lonelyIslands == "lonely1" or lonelyIslands == "lonely2" or lonelyIslands == "lonely3" or lonelyIslands == "lonely4" or lonelyIslands == "lonely5" or lonelyIslands > 0:
-		# find places for small lonely islands
+	# continent scattering (K-Mod-Magnus): islands near each continent's coast
+	if coastShare > 0:
+		for continent in contList:
+			plan.coastalIslands(continent.group, coastShare, max(continentScatter[5], minIslandSize), max(minIslandSize, min(continentScatter[6], islandCap)), continentScatter[7], islandMode, allowOneTileIslands)
 
-		possibleIslandList = bArray()
-		for index in range(len(oceanTiles) / (islandAreaRadius * islandAreaRadius)):
-			tile = oceanTiles.random(dice)
-			if tile == None:
-				break
-			x, y = tile
-			if world[x,y] == PlotTypes.PLOT_OCEAN:
-				tileList = getTilesAroundDistance(x,y,islandAreaRadius)
-				Tinka = True
-				for tile in tileList:
-					ax, ay = tile
-					oceanTile = oceanTiles[world.getOffset([ax,ay])]
-					if oceanTile == None:
-						Tinka = False
-						break
-				if Tinka:
-					oceanTiles.remove(world.getOffset([x,y]))
-					for tile in tileList:
-						ax, ay = tile
-						oceanTiles.remove(world.getOffset([ax,ay]))
-					possibleIslandList[world.getOffset([x,y])] = [x, y]
+	if debugChecks and not archipelago:
+		plan.check("scattering", len(contList))
+	# lonely islands (K-Mod-Magnus: found with a distance map, so every empty part of the ocean counts; they keep the
+	# separation from all other land, and their size gives way to the ocean percentage)
+	if lonelyNumber != 0:
+		smallest = max(1, minIslandSize)
+		budget = targetLand - plan.land
+		# the islands of the chosen size, in the most open spots (or a share of them, or the number asked for)
+		spots = plan.lonelySpots(islandRadius)
+		if lonelyNumber > 0:
+			spots = spots[:lonelyNumber]
+		elif lonelyShare < 1.0:
+			want = int(len(spots) * lonelyShare + 0.5)
+			chosen = []
+			while len(chosen) < want and len(spots) > 0:
+				chosen.append(spots.pop(dice.get(len(spots), "Python - Planet Generator: lonely island")))
+			spots = chosen
+		if len(spots) > 0 and budget < len(spots) * smallest:
+			# make room on the continents for an island in every spot
+			for continent in contList:
+				plan.shrinkMass(continent.mass, (len(spots) * smallest - budget) // len(contList) + 1, "compact")
+			budget = targetLand - plan.land
+		reserve = 0
+		if lonelyShare >= 1.0:
+			reserve = budget // 5 # some land for the gaps
+		sizes = []
+		for o in spots:
+			sizes.append(min(islandCap, max(smallest, islandMin + dice.get(islandMax - islandMin + 1, "Python - Planet Generator: lonely island size"))))
+		placed = plan.placeIslands(spots, sizes, budget - reserve, smallest, islandMode)
+		count = len(spots)
+		if lonelyShare >= 1.0:
+			# "every empty area": smaller islands in the gaps that are left, the biggest gaps first
+			r = islandRadius - 1
+			while r >= 1:
+				spots = plan.lonelySpots(r)
+				size = min(islandCap, max(smallest, (2 * r + 1) * (2 * r + 1) * 2 // 3))
+				sizes = []
+				for o in spots:
+					sizes.append(size)
+				placed += plan.placeIslands(spots, sizes, targetLand - plan.land, smallest, islandMode)
+				count += len(spots)
+				r -= 1
+		print "Planet Generator: lonely islands", count, "with", placed, "plots"
 
-		islandStartList = bArray()
-		# get island start positions
-		for index in range(len(possibleIslandList)):
-			possibleTile = possibleIslandList.random(dice)
-			if possibleTile == None:
-				break;
-			x, y = possibleTile
-			islandStartList[world.getOffset([x,y])] = [x, y]
-			tileList = getTilesAroundDistance(x,y,islandAreaRadius * 2)
-			for tile in tileList:
-				ax, ay = tile
-				index, value = possibleIslandList._search(world.getOffset([ax,ay]),0,len(possibleIslandList._data)-1)
-				if value != None:
-					possibleIslandList._data.pop(index)
+	if debugChecks and not archipelago:
+		plan.check("lonely", len(contList))
+	# islands below the minimum size grow to it, or go if there is no room (K-Mod-Magnus; was: remove 1 - tile islands)
+	if minIslandSize > 1:
+		plan.fitIslands(minIslandSize, islandMode)
 
-		if lonelyIslands == "lonely1":
-			contPositions = []
-			pos = islandStartList.random(dice)
-			if pos != None:
-				contPositions.append(pos)
-		elif lonelyIslands == "lonely2":
-			for index in range(2):
-				pos = islandStartList.random(dice)
-				if pos != None:
-					contPositions.append(pos)
-				else:
-					break
-		elif lonelyIslands == "lonely3":
-			for index in range(3):
-				pos = islandStartList.random(dice)
-				if pos != None:
-					contPositions.append(pos)
-				else:
-					break
-		elif lonelyIslands == "lonely4":
-			for index in range(4):
-				pos = islandStartList.random(dice)
-				if pos != None:
-					contPositions.append(pos)
-				else:
-					break
-		elif lonelyIslands == "lonely5":
-			for index in range(5):
-				pos = islandStartList.random(dice)
-				if pos != None:
-					contPositions.append(pos)
-				else:
-					break
-		elif lonelyIslands == 1.0:
-			contPositions = []
-			for tile in islandStartList:
-				contPositions.append(tile)
-		else:
-			contPositions = []
-			for index in range(int(len(islandStartList) * lonelyIslands)):
-				pos = islandStartList.random(dice)
-				if pos != None:
-					contPositions.append(pos)
-				else:
-					break
+	# and now exactly the land wanted
+	balanceLand(plan, contList, steps, targetLand, coastline, minIslandSize, True)
+	if minIslandSize > 1 and plan.removeSmallPieces(minIslandSize) > 0:
+		balanceLand(plan, contList, steps, targetLand, coastline, minIslandSize, False)
 
-		contList = []
-		sizeList = []
-		growsList = []
-		targetSizeList = []
-		for i in range(len(contPositions)):
-			shapeData = tbsTravelingNatural
-			specScatter = [0.0,getRand(dice),getRand(dice)+1]
-			if lonelyIslandSize == "small":
-				targetSize = int(getRand(dice) * 2 * 2 + 2)
-			elif lonelyIslandSize == "medium":
-				targetSize = int(getRand(dice) * 6 * 6 + 16)
-			else:
-				targetSize = int(getRand(dice) * 8 * 8 + 20)
-			sizeList.append(0)
-			targetSizeList.append(targetSize)
-			continent = TileBuilder(world, PlotTypes.PLOT_LAND, shapeData[0], shapeData[1], shapeData[2], continentSeparation, targetSize)
-			continent.coastScatterMin = 1
-			continent.coastScatterMax = 7
-			continent.coastScatterChangeChance = 0.2
-			continent.coastScatterChangeDif = 3
-			continent.initialScatter = 1
-			continent.refreshCountRequired = 0
-			continent.allowReachPoles = allowLandNearIce
-			if continent.coastScatterMin == 0 or continent.coastScatterMin > 7:
-				continent.continentPartControlEnabled = False
-			startX, startY = contPositions[i]
-			continent.start(startX, startY)
-			contList.append(continent)
-			growsList.append(True)
+	if debugChecks and not archipelago:
+		plan.check("balance", len(contList))
+	global landPlan
+	global landSettings
+	landPlan = plan
+	landSettings = {"ocean": oceanPercentage, "separation": continentSeparation, "continents": len(contList),
+		"minIslandSize": minIslandSize, "archipelago": archipelago, "coastline": coastline, "targetLand": targetLand}
 
-		#grow islands
-		grows = True
-		while grows:
-			somethingGrowing = False
-			for index in range(len(contList)):
-				continent = contList[index]
-				if sizeList[index] < targetSizeList[index]:
-					if growsList[index]:
-						if continent.grow():
-							sizeList[index] += 1
-							somethingGrowing = True
-						else:
-							growsList[index] = False
-			if not somethingGrowing:
-				grows = False
-		for i, continent in enumerate(contList):
-			#print "Final %d continent parts: %d"%(i,len(continent.continentParts))
-			continent.joinParts(3)
-
-	# remove 1 - tile islands
-	if not allowOneTileIslands:
-		for x in range(iW):
-			for y in range(iH - 2):
-				if world[x,y+1] != PlotTypes.PLOT_OCEAN:
-					tileList = getTilesAroundDistance(x,y+1,1)
-					isIsland = True
-					for tile in tileList:
-						ax, ay = tile
-						if world[ax,ay] != PlotTypes.PLOT_OCEAN:
-							isIsland = False
-					if isIsland:
-						world[x,y+1] = PlotTypes.PLOT_OCEAN
+	global continentAnchors
+	continentAnchors = []
+	for i in range(continentCount):
+		anchor = -1
+		if plan.massTiles.has_key(i) and len(plan.massTiles[i]) > 0:
+			anchor = plan.massTiles[i].items[0]
+		continentAnchors.append(anchor)
+	islands = 0
+	for m in plan.massTiles.keys():
+		if m >= 1000 and len(plan.massTiles[m]) > 0:
+			islands += 1
+	# (no percent sign in the text: the game's log runs printed text through printf)
+	print "Planet Generator: %d land plots (wanted %d), %.1f percent water, %d coast plots, %d continents, %d islands" % (plan.land, targetLand, 100.0 * (iW * iH - plan.land) / (iW * iH), plan.coastCount(), len(contList), islands)
 
 	peakOptions = getSelValue("peaks")
 	if peakOptions is None:
@@ -2270,35 +3215,35 @@ def generatePlotTypes():
 				possibleTiles = bArray() # store them here
 				c = 0
 				wtt = world[x-1,y]
-				if not wtt == PlotTypes.PLOT_PEAK and not peakIntersect(world,x-1,y,x,y):
+				if not wtt == PlotTypes.PLOT_PEAK and not wtt == PlotTypes.PLOT_OCEAN and not peakIntersect(world,x-1,y,x,y):
 					possibleTiles[world.getOffset([x-1,y])] = [x-1,y]
 					c += 1
 				wtt = world[x-1,y-1]
-				if not wtt == PlotTypes.PLOT_PEAK and not peakIntersect(world,x-1,y-1,x,y):
+				if not wtt == PlotTypes.PLOT_PEAK and not wtt == PlotTypes.PLOT_OCEAN and not peakIntersect(world,x-1,y-1,x,y):
 					possibleTiles[world.getOffset([x-1,y-1])] = [x-1,y-1]
 					c += 1
 				wtt = world[x,y-1]
-				if not wtt == PlotTypes.PLOT_PEAK and not peakIntersect(world,x,y-1,x,y):
+				if not wtt == PlotTypes.PLOT_PEAK and not wtt == PlotTypes.PLOT_OCEAN and not peakIntersect(world,x,y-1,x,y):
 					possibleTiles[world.getOffset([x,y-1])] = [x,y-1]
 					c += 1
 				wtt = world[x+1,y-1]
-				if not wtt == PlotTypes.PLOT_PEAK and not peakIntersect(world,x+1,y-1,x,y):
+				if not wtt == PlotTypes.PLOT_PEAK and not wtt == PlotTypes.PLOT_OCEAN and not peakIntersect(world,x+1,y-1,x,y):
 					possibleTiles[world.getOffset([x+1,y-1])] = [x+1,y-1]
 					c += 1
 				wtt = world[x+1,y]
-				if not wtt == PlotTypes.PLOT_PEAK and not peakIntersect(world,x+1,y,x,y):
+				if not wtt == PlotTypes.PLOT_PEAK and not wtt == PlotTypes.PLOT_OCEAN and not peakIntersect(world,x+1,y,x,y):
 					possibleTiles[world.getOffset([x+1,y])] = [x+1,y]
 					c += 1
 				wtt = world[x+1,y+1]
-				if not wtt == PlotTypes.PLOT_PEAK and not peakIntersect(world,x+1,y+1,x,y):
+				if not wtt == PlotTypes.PLOT_PEAK and not wtt == PlotTypes.PLOT_OCEAN and not peakIntersect(world,x+1,y+1,x,y):
 					possibleTiles[world.getOffset([x+1,y+1])] = [x+1,y+1]
 					c += 1
 				wtt = world[x,y+1]
-				if not wtt == PlotTypes.PLOT_PEAK and not peakIntersect(world,x,y+1,x,y):
+				if not wtt == PlotTypes.PLOT_PEAK and not wtt == PlotTypes.PLOT_OCEAN and not peakIntersect(world,x,y+1,x,y):
 					possibleTiles[world.getOffset([x,y+1])] = [x,y+1]
 					c += 1
 				wtt = world[x-1,y+1]
-				if not wtt == PlotTypes.PLOT_PEAK and not peakIntersect(world,x-1,y+1,x,y):
+				if not wtt == PlotTypes.PLOT_PEAK and not wtt == PlotTypes.PLOT_OCEAN and not peakIntersect(world,x-1,y+1,x,y):
 					possibleTiles[world.getOffset([x-1,y+1])] = [x-1,y+1]
 					c += 1
 
@@ -3169,20 +4114,11 @@ def getTilesAround(x,y):
 	map = cgc.getMap()
 	iW = map.getGridWidth()
 	iH = map.getGridHeight()
-	l = [[x-1,y],[x-1,y+1],[x,y+1],[x+1,y+1],[x+1,y],[x+1,y-1],[x,y-1],[x-1,y-1]]
-	rem = []
-	for index, item in enumerate(l):
-		ax, ay = item
-		if ay < 0 or ay >= iH:
-			rem.append(index)
-		if ax < 0:
-			ax = iW - 1
-			l[index] = [ax,ay]
-		elif ax >= iW:
-			ax = 0
-			l[index] = [ax,ay]
-	for index in rem:
-		l.pop(index)
+	l = []
+	for ax, ay in [[x-1,y],[x-1,y+1],[x,y+1],[x+1,y+1],[x+1,y],[x+1,y-1],[x,y-1],[x-1,y-1]]:
+		# K-Mod-Magnus: popping the off-map ones by index removed the wrong ones (and failed at the map's edge)
+		if ay >= 0 and ay < iH:
+			l.append([ax % iW, ay])
 	return l
 
 def getTilesAroundDistance(x,y,distance,plotTypes = None):
@@ -3198,10 +4134,7 @@ def getTilesAroundDistance(x,y,distance,plotTypes = None):
 				ay = y - distance + by
 				if ay >= 0 and ay < iH:
 					if (not (ax == x and ay == y)):
-						if ax < 0:
-							ax = iW - 1
-						elif ax >= iW:
-							ax = 0
+						ax = ax % iW # K-Mod-Magnus: was iW - 1 or 0 whatever the distance
 						l.append([ax,ay])
 	else:
 		for by in range(distance * 2 + 1):
@@ -3210,10 +4143,7 @@ def getTilesAroundDistance(x,y,distance,plotTypes = None):
 				ay = y - distance + by
 				if ay >= 0 and ay < iH:
 					if (not (ax == x and ay == y)):
-						if ax < 0:
-							ax = iW - 1
-						elif ax >= iW:
-							ax = 0
+						ax = ax % iW # K-Mod-Magnus: was iW - 1 or 0 whatever the distance
 						if map.plot(ax, ay).getPlotType() in plotTypes:
 							l.append([ax,ay])
 	return l
@@ -3272,6 +4202,9 @@ def addGoodies():
 	"Can override to control where goodies are added on	the	map"
 	global generationStarted
 	generationStarted = False
+	# K-Mod-Magnus: the resources are on the map by now (addBonuses), the starting plots not yet
+	if getSelValue("every_resource"):
+		ensureEveryResource(2)
 	CyPythonMgr().allowDefaultImpl()
 
 def canPlaceGoodyAt(argsList):
@@ -3294,6 +4227,288 @@ def assignStartingPlots():
 	"Can assign	as many	starting locations as desired"
 	CyPythonMgr().allowDefaultImpl()
 
+def makeStartAreaPlan():
+	"""K-Mod-Magnus, "Rival civs on your continent": player -> area, so that the human player (with his team) and
+	that many rivals start on one continent and everybody else on the others, shared out by their land (or by the
+	players they were made for). {} when the option is off or there is only one continent."""
+	if homeRivals < 0:
+		return {}
+	cgc = CyGlobalContext()
+	cymap = CyMap()
+	dice = cgc.getGame().getMapRand()
+	players = []
+	human = -1
+	for p in range(cgc.getMAX_CIV_PLAYERS()):
+		player = cgc.getPlayer(p)
+		if player.isAlive():
+			players.append(p)
+			if human < 0 and player.isHuman():
+				human = p
+	if human < 0 or len(players) < 2:
+		return {}
+	conts = [] # [plots, area, continent], as the game sees them now
+	seen = {}
+	for i in range(len(continentAnchors)):
+		o = continentAnchors[i]
+		if o < 0:
+			continue
+		plot = cymap.plotByIndex(o)
+		if plot.isWater():
+			continue
+		a = plot.getArea()
+		if seen.has_key(a):
+			continue
+		seen[a] = True
+		conts.append([cymap.getArea(a).getNumTiles(), a, i])
+	if len(conts) < 2:
+		return {}
+	team = cgc.getPlayer(human).getTeam()
+	mates = []
+	rivals = []
+	for p in players:
+		if p != human:
+			if cgc.getPlayer(p).getTeam() == team:
+				mates.append(p)
+			else:
+				rivals.append(p)
+	k = homeRivals
+	if k > len(rivals):
+		k = len(rivals)
+	home = None
+	for c in conts:
+		if c[2] == homeContinent:
+			home = c
+	total = 0
+	for c in conts:
+		total += c[0]
+	if home is None:
+		# the continent whose share of the land fits the players on it best
+		share = (k + 1 + len(mates)) / float(len(players))
+		best = 2.0
+		for c in conts:
+			d = abs(c[0] / float(total) - share)
+			if d < best:
+				best = d
+				home = c
+	plan = {human: home[1]}
+	for p in mates:
+		plan[p] = home[1]
+	shuffled = []
+	while len(rivals) > 0:
+		shuffled.append(rivals.pop(dice.get(len(rivals), "Python - Planet Generator: start continent")))
+	for p in shuffled[:k]:
+		plan[p] = home[1]
+	rest = shuffled[k:]
+	others = []
+	for c in conts:
+		if c is not home:
+			others.append(c)
+	if len(rest) > 0:
+		# shares: the players the continents were made for ("By player count"), otherwise their land
+		weights = []
+		for c in others:
+			w = float(c[0])
+			if continentPlayers is not None and c[2] < len(continentPlayers):
+				w = float(continentPlayers[c[2]]) + 0.01
+			weights.append(w)
+		wsum = 0.0
+		for w in weights:
+			wsum += w
+		quota = []
+		given = 0
+		for i in range(len(others)):
+			q = len(rest) * weights[i] / wsum
+			quota.append([int(q), q - int(q)])
+			given += int(q)
+		while given < len(rest):
+			best = 0
+			for i in range(len(quota)):
+				if quota[i][1] > quota[best][1]:
+					best = i
+			quota[best][0] += 1
+			quota[best][1] = -1.0
+			given += 1
+		j = 0
+		for i in range(len(others)):
+			for n in range(quota[i][0]):
+				plan[rest[j]] = others[i][1]
+				j += 1
+	print "Planet Generator: start areas", plan
+	return plan
+
+def ensureEveryResource(minCount):
+	"""K-Mod-Magnus, "Every resource at least twice": adds missing resources where they can be (at any latitude),
+	spread out and on other landmasses than the ones they have. Where the climate left no such plot, one is made
+	to fit (terrain, forest or jungle, hills) as the resource needs."""
+	cgc = CyGlobalContext()
+	cymap = CyMap()
+	dice = cgc.getGame().getMapRand()
+	iW = cymap.getGridWidth()
+	numPlots = cymap.numPlots()
+	plots = []
+	for i in range(numPlots):
+		plots.append(cymap.plotByIndex(i))
+	where = {}
+	for i in range(numPlots):
+		b = plots[i].getBonusType(-1)
+		if b >= 0:
+			if not where.has_key(b):
+				where[b] = []
+			where[b].append(i)
+	terrains = []
+	for name in ["TERRAIN_GRASS", "TERRAIN_PLAINS", "TERRAIN_DESERT", "TERRAIN_TUNDRA", "TERRAIN_SNOW", "TERRAIN_COAST", "TERRAIN_OCEAN"]:
+		t = cgc.getInfoTypeForString(name)
+		if t >= 0:
+			terrains.append(t)
+	# latitude each terrain or feature suits, for making a plot fit with as little change as possible
+	suits = {}
+	for name, lat in [["TERRAIN_GRASS", 30], ["TERRAIN_PLAINS", 40], ["TERRAIN_DESERT", 20], ["TERRAIN_TUNDRA", 65], ["TERRAIN_SNOW", 80], ["FEATURE_JUNGLE", 10], ["FEATURE_FOREST", 50]]:
+		suits[cgc.getInfoTypeForString(name)] = lat
+	features = []
+	for name in ["FEATURE_FOREST", "FEATURE_JUNGLE"]:
+		f = cgc.getInfoTypeForString(name)
+		if f >= 0:
+			features.append(f)
+
+	def dist(a, b):
+		dx = abs(a % iW - b % iW)
+		if dx > iW - dx:
+			dx = iW - dx
+		dy = abs(a // iW - b // iW)
+		if dx > dy:
+			return dx
+		return dy
+
+	def spread(i, have):
+		"spread score: other landmasses than the resource's, then far from it"
+		if len(have) == 0:
+			return 0
+		v = 1000
+		near = 99
+		area = plots[i].getArea()
+		for j in have:
+			if plots[j].getArea() == area:
+				v = 0
+			d = dist(i, j)
+			if d < near:
+				near = d
+		return v + min(near, 30)
+
+	for b in range(cgc.getNumBonusInfos()):
+		info = cgc.getBonusInfo(b)
+		if info.getConstAppearance() <= 0:
+			continue # not placed on maps (e.g. from buildings)
+		have = []
+		if where.has_key(b):
+			have = where[b]
+		missing = minCount - len(have)
+		if missing <= 0:
+			continue
+		added = 0
+		forced = 0
+		# 1. plots that can take it as they are, the latitude aside
+		cands = []
+		for i in range(numPlots):
+			if plots[i].canHaveBonus(b, True):
+				cands.append(i)
+		while missing > 0 and len(cands) > 0:
+			best = -1
+			bestValue = -1
+			for t in range(min(300, len(cands))):
+				i = cands[dice.get(len(cands), "Python - Planet Generator: resource plot")]
+				v = spread(i, have) * 10 + dice.get(10, "Python - Planet Generator: resource plot")
+				if v > bestValue:
+					bestValue = v
+					best = i
+			plots[best].setBonusType(b)
+			have = have + [best]
+			cands.remove(best)
+			missing -= 1
+			added += 1
+		# 2. make plots fit: the terrains (and forest or jungle on them) it can be on
+		if missing > 0:
+			options = []
+			for t in terrains:
+				if info.isTerrain(t):
+					options.append([t, -1])
+			for f in features:
+				if info.isFeature(f):
+					for t in terrains:
+						if info.isFeatureTerrain(t) and cgc.getFeatureInfo(f).isTerrain(t):
+							options.append([t, f])
+			tries = 0
+			while missing > 0 and len(options) > 0 and tries < 400:
+				tries += 1
+				t, f = options[dice.get(len(options), "Python - Planet Generator: resource terrain")]
+				water = cgc.getTerrainInfo(t).isWater()
+				best = -1
+				bestValue = -99999
+				for n in range(60):
+					i = dice.get(numPlots, "Python - Planet Generator: resource plot")
+					plot = plots[i]
+					if plot.getBonusType(-1) >= 0 or plot.isPeak() or plot.isWater() != water or plot.isStartingPlot():
+						continue
+					if not water and ((plot.isHills() and not info.isHills()) or (plot.isFlatlands() and not info.isFlatlands())):
+						continue
+					if info.isNoRiverSide() and plot.isRiverSide():
+						continue
+					v = spread(i, have) * 10
+					if plot.getTerrainType() == t:
+						v += 50
+					if suits.has_key(t):
+						v -= abs(plot.getLatitude() - suits[t])
+					if f >= 0 and suits.has_key(f):
+						v -= abs(plot.getLatitude() - suits[f])
+					v += dice.get(10, "Python - Planet Generator: resource plot")
+					if v > bestValue:
+						bestValue = v
+						best = i
+				if best < 0:
+					continue
+				plot = plots[best]
+				oldTerrain = plot.getTerrainType()
+				oldFeature = plot.getFeatureType()
+				oldVariety = plot.getFeatureVariety()
+				plot.setTerrainType(t, True, True)
+				plot.setFeatureType(f, -1)
+				if plot.canHaveBonus(b, True):
+					plot.setBonusType(b)
+					have = have + [best]
+					missing -= 1
+					forced += 1
+				else:
+					plot.setTerrainType(oldTerrain, True, True)
+					plot.setFeatureType(oldFeature, oldVariety)
+			if missing > 0 and info.isHills() and not info.isFlatlands():
+				# it needs hills and none would do: make some
+				for n in range(400):
+					if missing <= 0:
+						break
+					i = dice.get(numPlots, "Python - Planet Generator: resource plot")
+					plot = plots[i]
+					if plot.isWater() or plot.isPeak() or plot.isHills() or plot.getBonusType(-1) >= 0 or plot.isStartingPlot():
+						continue
+					for t, f in options:
+						if cgc.getTerrainInfo(t).isWater():
+							continue
+						oldTerrain = plot.getTerrainType()
+						oldFeature = plot.getFeatureType()
+						oldVariety = plot.getFeatureVariety()
+						plot.setPlotType(PlotTypes.PLOT_HILLS, True, True)
+						plot.setTerrainType(t, True, True)
+						plot.setFeatureType(f, -1)
+						if plot.canHaveBonus(b, True):
+							plot.setBonusType(b)
+							have = have + [i]
+							missing -= 1
+							forced += 1
+							break
+						plot.setPlotType(PlotTypes.PLOT_LAND, True, True)
+						plot.setTerrainType(oldTerrain, True, True)
+						plot.setFeatureType(oldFeature, oldVariety)
+		if added + forced > 0:
+			print "Planet Generator: %s %d more (%d where it could be, %d on a plot made to fit)%s" % (info.getType(), added + forced, added, forced, (missing > 0 and ", still missing %d" % missing) or "")
+
 def findStartingArea(argsList):
 	"""Can override	to return the ID of	the	area in	which the given	player should start. Return	an areaID to
 	force the player to	start in a certain area, or	-1 to specify that the player should start in the best
@@ -3302,7 +4517,17 @@ def findStartingArea(argsList):
 
 	WARNING: If	findStartingPlot() is overriden	then this function will	not	automatically be called."""
 	playerID = argsList[0]
-	CyPythonMgr().allowDefaultImpl()
+	# K-Mod-Magnus: "Rival civs on your continent". The DLL updates the found values and then asks for the area;
+	# the best plot in it is found by the default findStartingPlot.
+	global startAreaPlan
+	if startAreaPlan is None:
+		startAreaPlan = makeStartAreaPlan()
+	if len(startAreaPlan) == 0:
+		CyPythonMgr().allowDefaultImpl()
+		return
+	if startAreaPlan.has_key(playerID):
+		return startAreaPlan[playerID]
+	return -1
 
 def findStartingPlot(argsList):
 	"Can override to return	the	plot index at which	the	given player should	start"
@@ -3313,6 +4538,8 @@ def findStartingPlot(argsList):
 def normalizeStartingPlotLocations():
 	"Can override to change	how	starting plots are distributed.	(note, this	function is	called after all starting locs are distributed...)"
 	print "-------- Normalize starting plot locations ----------"
+	if startAreaPlan: # K-Mod-Magnus: the start continents were planned; swapping starts (team games) would undo that
+		return
 	CyPythonMgr().allowDefaultImpl()
 
 def normalizeAddRiver():
@@ -3784,6 +5011,15 @@ def loadMapOptionDefaults():
 		#print optionsWithDefault
 		for optionIndex in range(len(optionsWithDefault)):
 			option, valueName = optionsWithDefault[optionIndex]
+			# K-Mod-Magnus: settings saved by the original script
+			if valueName.startswith("More than "):
+				valueName = valueName[len("More than "):]
+			if option == "allow_one_tile_islands":
+				option = "min_island_size"
+				if valueName == "Yes":
+					valueName = "1 plot (one-plot islands allowed)"
+				else:
+					valueName = "2 plots (default)"
 			for selOptionIndex in range(len(selection_titles)):
 				selectionTitleCaption, selectionTitleName, autoRandom = selection_titles[selOptionIndex]
 				if option == selectionTitleName:
