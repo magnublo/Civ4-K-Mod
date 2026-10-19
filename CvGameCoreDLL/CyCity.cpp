@@ -2137,6 +2137,17 @@ OrderData* CyCity::getOrderFromQueue(int iIndex)
 	return m_pCity ? m_pCity->getOrderFromQueue(iIndex) : NULL;
 }
 
+// pre-build
+bool CyCity::isPrebuildOrder(int iIndex)
+{
+	return m_pCity ? m_pCity->isPrebuildOrder(iIndex) : false;
+}
+
+int CyCity::getPrebuildOrderIndex()
+{
+	return m_pCity ? m_pCity->getPrebuildOrderIndex() : -1;
+}
+
 void CyCity::setWallOverridePoints(const python::tuple& kPoints)
 {
 	if (!m_pCity)

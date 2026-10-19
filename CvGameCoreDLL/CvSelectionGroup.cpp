@@ -1449,7 +1449,7 @@ bool CvSelectionGroup::continueMission_bulk(int iSteps)
 					break;
 
 				case MISSION_BUILD:
-					if (!groupBuild((BuildTypes)(headMissionQueueNode()->m_data.iData1)))
+					if (!groupBuild((BuildTypes)(headMissionQueueNode()->m_data.iData1), headMissionQueueNode()->m_data.iData2 == BUILD_MISSION_STOP_SHORT)) // pre-chop
 					{
 						bDone = true;
 					}
@@ -3481,7 +3481,9 @@ bool CvSelectionGroup::groupRoadTo(int iX, int iY, int iFlags)
 
 
 // Returns true if build should continue...
-bool CvSelectionGroup::groupBuild(BuildTypes eBuild)
+// pre-chop: with bStopShort, no unit does the work that would finish the build. The group stops with the build
+// one worker-turn short (e.g. a forest that a later normal chop removes in one turn).
+bool CvSelectionGroup::groupBuild(BuildTypes eBuild, bool bStopShort)
 {
 	CLLNode<IDInfo>* pUnitNode;
 	CvUnit* pLoopUnit;
@@ -3539,6 +3541,29 @@ bool CvSelectionGroup::groupBuild(BuildTypes eBuild)
 
 		if (pLoopUnit->canBuild(pPlot, eBuild))
 		{
+			// pre-chop
+			if (bStopShort && pPlot->getBuildProgress(eBuild) + pLoopUnit->workRate(false) >= pPlot->getBuildTime(eBuild))
+			{
+				CvWString szBuffer;
+				CvCity* pCity = NULL;
+				int iProduction = 0;
+				if (pPlot->getFeatureType() != NO_FEATURE && GC.getBuildInfo(eBuild).isFeatureRemove(pPlot->getFeatureType()))
+				{
+					iProduction = pPlot->getFeatureProduction(eBuild, getTeam(), &pCity);
+				}
+				if (iProduction > 0 && pCity != NULL)
+				{
+					szBuffer = gDLL->getText("TXT_KEY_BUILD_STOPPED_SHORT_PRODUCTION", GC.getBuildInfo(eBuild).getTextKeyWide(), iProduction, pCity->getNameKey());
+				}
+				else
+				{
+					szBuffer = gDLL->getText("TXT_KEY_BUILD_STOPPED_SHORT", GC.getBuildInfo(eBuild).getTextKeyWide());
+				}
+				gDLL->getInterfaceIFace()->addHumanMessage(getOwnerINLINE(), false, GC.getEVENT_MESSAGE_TIME(), szBuffer, NULL, MESSAGE_TYPE_INFO, GC.getBuildInfo(eBuild).getButton(), (ColorTypes)GC.getInfoTypeForString("COLOR_WHITE"), pPlot->getX_INLINE(), pPlot->getY_INLINE(), true, true);
+				bContinue = false;
+				break;
+			}
+
 			bContinue = true;
 
 			if (pLoopUnit->build(eBuild))
@@ -3995,7 +4020,14 @@ bool CvSelectionGroup::canDoMission(int iMission, int iData1, int iData2, CvPlot
 		case MISSION_BUILD:
             FAssertMsg(((BuildTypes)iData1) < GC.getNumBuildInfos(), "Invalid Build");
             if (pLoopUnit->canBuild(pPlot, (BuildTypes)iData1, bTestVisible) && (!bCheckMoves || pLoopUnit->canMove()))
-                return true;
+			{
+				// pre-chop: a stop-short build needs a unit whose work this turn wouldn't finish it
+				if (bTestVisible || iData2 != BUILD_MISSION_STOP_SHORT ||
+					pPlot->getBuildProgress((BuildTypes)iData1) + pLoopUnit->workRate(false) < pPlot->getBuildTime((BuildTypes)iData1))
+				{
+					return true;
+				}
+			}
 			break;
 
 		case MISSION_LEAD:

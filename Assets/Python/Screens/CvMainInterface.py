@@ -2398,12 +2398,16 @@ class CvMainInterface:
 				bFound = False
 
 				# Wonders to construct
+				bPreBuildShown = False # pre-build: the toggle goes first in the wonder row (or the project row)
 				i = 0
 				for i in range( g_NumBuildingClassInfos ):
 					if (isLimitedWonderClass(i)):
 						eLoopBuilding = gc.getCivilizationInfo(pHeadSelectedCity.getCivilizationType()).getCivilizationBuildings(i)
 
 						if (pHeadSelectedCity.canConstruct(eLoopBuilding, False, True, False)):
+							if not bPreBuildShown:
+								iCount = self.appendPreBuildButton(screen, pHeadSelectedCity, iRow, iCount)
+								bPreBuildShown = True
 							screen.appendMultiListButton( "BottomButtonContainer", gc.getBuildingInfo(eLoopBuilding).getButton(), iRow, WidgetTypes.WIDGET_CONSTRUCT, i, -1, False )
 							screen.show( "BottomButtonContainer" )
 							
@@ -2422,6 +2426,9 @@ class CvMainInterface:
 				i = 0
 				for i in range( g_NumProjectInfos ):
 					if (pHeadSelectedCity.canCreate(i, False, True)):
+						if not bPreBuildShown:
+							iCount = self.appendPreBuildButton(screen, pHeadSelectedCity, iRow, iCount)
+							bPreBuildShown = True
 						screen.appendMultiListButton( "BottomButtonContainer", gc.getProjectInfo(i).getButton(), iRow, WidgetTypes.WIDGET_CREATE, i, -1, False )
 						screen.show( "BottomButtonContainer" )
 						
@@ -2470,6 +2477,15 @@ class CvMainInterface:
 
 						iCount = iCount + 1
 
+						# pre-chop: next to the chop button. iData2 = 1 (BUILD_MISSION_STOP_SHORT in the DLL) makes the
+						# workers stop one worker-turn before the forest would be chopped.
+						if self.isPreChopAction(i, pHeadSelectedUnit):
+							szPreChopButton = "Art/Interface/Buttons/Actions/PreChop.dds"
+							screen.appendMultiListButton( "BottomButtonContainer", szPreChopButton, 0, WidgetTypes.WIDGET_ACTION, i, 1, False )
+							if not self.canPreChop(i, pHeadSelectedUnit):
+								screen.disableMultiListButton( "BottomButtonContainer", 0, iCount, szPreChopButton )
+							iCount = iCount + 1
+
 					if (CyInterface().canCreateGroup()):
 						screen.appendMultiListButton( "BottomButtonContainer", ArtFileMgr.getInterfaceArtInfo("INTERFACE_BUTTONS_CREATEGROUP").getPath(), 0, WidgetTypes.WIDGET_CREATE_GROUP, -1, -1, False )
 						screen.show( "BottomButtonContainer" )
@@ -2487,6 +2503,44 @@ class CvMainInterface:
 			self.setMinimapButtonVisibility(True)
 
 		return 0
+		
+	# pre-chop: build actions that only remove the plot's feature and give hammers for it (chopping a forest)
+	def isPreChopAction( self, iAction, pUnit ):
+		kAction = gc.getActionInfo(iAction)
+		if kAction.getMissionType() != MissionTypes.MISSION_BUILD:
+			return False
+		kBuild = gc.getBuildInfo(kAction.getMissionData())
+		eFeature = pUnit.plot().getFeatureType()
+		if eFeature == -1 or kBuild.getImprovement() != -1 or kBuild.getRoute() != -1:
+			return False
+		return kBuild.isFeatureRemove(eFeature) and kBuild.getFeatureProduction(eFeature) > 0
+
+	# pre-chop: possible while a turn of the unit's work would not finish the chop (the DLL checks the same)
+	def canPreChop( self, iAction, pUnit ):
+		if not CyInterface().canHandleAction(iAction, False):
+			return False
+		eBuild = gc.getActionInfo(iAction).getMissionData()
+		pPlot = pUnit.plot()
+		return pPlot.getBuildProgress(eBuild) + pUnit.workRate(True) < pPlot.getBuildTime(eBuild)
+
+	# pre-build: the toggle for the first wonder or project in the city's queue (WIDGET_PREBUILD in the DLL)
+	def appendPreBuildButton( self, screen, pCity, iRow, iCount ):
+		iIndex = pCity.getPrebuildOrderIndex()
+		if iIndex >= 0 and pCity.isPrebuildOrder(iIndex):
+			szButton = "Art/Interface/Buttons/Actions/PreBuildOn.dds"
+		else:
+			szButton = "Art/Interface/Buttons/Actions/PreBuild.dds"
+		screen.appendMultiListButton( "BottomButtonContainer", szButton, iRow, WidgetTypes.WIDGET_PREBUILD, -1, -1, False )
+		screen.show( "BottomButtonContainer" )
+		if iIndex < 0:
+			screen.disableMultiListButton( "BottomButtonContainer", iRow, iCount, szButton )
+		return iCount + 1
+
+	# pre-build: a flagged order stops one turn before it is finished, so the queue counts the turns until that pause
+	def getQueueTurnsText( self, pCity, iIndex, iTurns ):
+		if pCity.isPrebuildOrder(iIndex):
+			iTurns = max(0, iTurns - 1)
+		return "(" + str(iTurns) + ")"
 		
 	# Will update the research buttons
 	def updateResearchButtons( self ):
@@ -4578,7 +4632,7 @@ class CvMainInterface:
 
 				elif ( CyInterface().getOrderNodeType(i) == OrderTypes.ORDER_CONSTRUCT ):
 					szLeftBuffer = gc.getBuildingInfo(CyInterface().getOrderNodeData1(i)).getDescription()
-					szRightBuffer = "(" + str(pHeadSelectedCity.getBuildingProductionTurnsLeft(CyInterface().getOrderNodeData1(i), i)) + ")"
+					szRightBuffer = self.getQueueTurnsText(pHeadSelectedCity, i, pHeadSelectedCity.getBuildingProductionTurnsLeft(CyInterface().getOrderNodeData1(i), i))
 
 # BUG - Production Started - start
 					if CityScreenOpt.isShowProductionStarted():
@@ -4601,7 +4655,7 @@ class CvMainInterface:
 
 				elif ( CyInterface().getOrderNodeType(i) == OrderTypes.ORDER_CREATE ):
 					szLeftBuffer = gc.getProjectInfo(CyInterface().getOrderNodeData1(i)).getDescription()
-					szRightBuffer = "(" + str(pHeadSelectedCity.getProjectProductionTurnsLeft(CyInterface().getOrderNodeData1(i), i)) + ")"
+					szRightBuffer = self.getQueueTurnsText(pHeadSelectedCity, i, pHeadSelectedCity.getProjectProductionTurnsLeft(CyInterface().getOrderNodeData1(i), i))
 
 # BUG - Production Started - start
 					if BugDll.isVersion(3) and CityScreenOpt.isShowProductionStarted():
@@ -4612,6 +4666,10 @@ class CvMainInterface:
 
 				elif ( CyInterface().getOrderNodeType(i) == OrderTypes.ORDER_MAINTAIN ):
 					szLeftBuffer = gc.getProcessInfo(CyInterface().getOrderNodeData1(i)).getDescription()
+
+				# pre-build: flagged wonders and projects in yellow (the row's hover text explains)
+				if pHeadSelectedCity.isPrebuildOrder(i):
+					szLeftBuffer = BugUtil.colorText(szLeftBuffer, "COLOR_YELLOW")
 
 				screen.appendTableRow( "SelectedCityText" )
 				screen.setTableText( "SelectedCityText", 0, iRow, szLeftBuffer, "", WidgetTypes.WIDGET_HELP_SELECTED, i, -1, CvUtil.FONT_LEFT_JUSTIFY )

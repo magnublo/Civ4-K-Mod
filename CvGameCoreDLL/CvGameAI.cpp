@@ -108,6 +108,33 @@ int CvGameAI::AI_turnsPercent(int iTurns, int iPercent)
 	return std::max(1, iTurns);
 }
 
+// early war: the AI starts no war plans of its own before this turn (see CvTeamAI::AI_doWar).
+// Normal-speed turns from GlobalDefinesAlt.xml, scaled by the game speed's barbarian percent like K-Mod's original
+// 30-turn rule (Quick 67%, Epic 150%, Marathon and Marathon Accelerated 400%).
+int CvGameAI::AI_earlyWarGateTurns() const
+{
+	int iSpeedPercent = GC.getGameSpeedInfo(getGameSpeedType()).getBarbPercent();
+	return GC.getDefineINT("AI_EARLY_WAR_GATE_TURNS", 30) * iSpeedPercent / 100;
+}
+
+// early war: the AI's war rands are multiplied by this percentage, so war plans are less likely early in the game.
+// AI_EARLY_WAR_RAND_PERCENT at the end of the turn gate, falling linearly to 100 at AI_EARLY_WAR_RAMP_TURNS
+// (Normal-speed turns, scaled like the gate).
+int CvGameAI::AI_earlyWarRandPercent() const
+{
+	int iMaxPercent = GC.getDefineINT("AI_EARLY_WAR_RAND_PERCENT", 100);
+	int iSpeedPercent = GC.getGameSpeedInfo(getGameSpeedType()).getBarbPercent();
+	int iRampStart = AI_earlyWarGateTurns();
+	int iRampEnd = GC.getDefineINT("AI_EARLY_WAR_RAMP_TURNS", 0) * iSpeedPercent / 100;
+	int iTurn = getElapsedGameTurns();
+
+	if (iMaxPercent <= 100 || iTurn >= iRampEnd)
+		return 100;
+	if (iTurn <= iRampStart)
+		return iMaxPercent;
+	return iMaxPercent - (iMaxPercent - 100) * (iTurn - iRampStart) / (iRampEnd - iRampStart);
+}
+
 
 void CvGameAI::read(FDataStreamBase* pStream)
 {

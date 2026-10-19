@@ -178,4 +178,22 @@
 		<DefineName>STANDARD_BATTLE_ANIMATION_ROUNDS</DefineName>
 		<iDefineIntVal>6</iDefineIntVal> <!-- introduced by K-Mod -->
 	</Define>
+	<!-- Early war. Turns are Normal-speed turns, multiplied by the game speed's iBarbPercent
+		(Quick 67%, Epic 150%, Marathon and Marathon Accelerated 400%). -->
+	<Define>
+		<DefineName>AI_EARLY_WAR_GATE_TURNS</DefineName>
+		<iDefineIntVal>50</iDefineIntVal> <!-- the AI starts no war plans of its own before this turn (K-Mod: 30) -->
+	</Define>
+	<Define>
+		<DefineName>AI_EARLY_WAR_CROWDED_WORLD</DefineName>
+		<iDefineIntVal>0</iDefineIntVal> <!-- 1 = as in K-Mod, the gate ends early once the world has more cities than half the map's target per civ; 0 = the gate always holds -->
+	</Define>
+	<Define>
+		<DefineName>AI_EARLY_WAR_RAMP_TURNS</DefineName>
+		<iDefineIntVal>150</iDefineIntVal> <!-- from the gate until this turn, the AI's war plans are less likely -->
+	</Define>
+	<Define>
+		<DefineName>AI_EARLY_WAR_RAND_PERCENT</DefineName>
+		<iDefineIntVal>300</iDefineIntVal> <!-- right after the gate the chance of a war plan is 100/this of the usual chance (300 = a third), fading to normal at the ramp's end; 100 = no ramp -->
+	</Define>
 </Civ4Defines>

@@ -552,6 +552,7 @@ enum WidgetTypes					// Exposed to Python
 	WIDGET_HELP_GLOBAL_COMMERCE_MODIFIER,
 	WIDGET_HELP_EXTRA_SPECIALIST_COMMERCE,
 	// K-Mod end
+	WIDGET_PREBUILD, // pre-build: toggle on the city screen
 
 #ifdef _USRDLL
 	NUM_WIDGET_TYPES
@@ -1085,6 +1086,7 @@ enum TaskTypes				// Exposed to Python
 	TASK_RALLY_PLOT,
 	TASK_CLEAR_RALLY_PLOT,
 	TASK_LIBERATE,
+	TASK_PREBUILD, // pre-build: iData1 = queue index, bOption = on/off
 
 #ifdef _USRDLL
 	NUM_TASK_TYPES

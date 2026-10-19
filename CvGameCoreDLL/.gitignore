@@ -1,0 +1,5 @@
+# build output of GNUmakefile / Makefile
+Release/
+LogAI/
+Debug/
+Profile/

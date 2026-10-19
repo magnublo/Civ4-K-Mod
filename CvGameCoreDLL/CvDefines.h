@@ -55,7 +55,7 @@
 #define RANDPLOT_NOT_CITY											(0x00000040)
 
 #ifdef _USRDLL
-#define MAX_CIV_PLAYERS												(48) // note: default is 48, some people like 48. They are not compatible
+#define MAX_CIV_PLAYERS												(48) // note: K-Mod's default is 18; this fork uses 48. Saves only load with the same value
 #else
 #define MAX_CIV_PLAYERS												(CvGlobals::getInstance().getMaxCivPlayers())
 #endif
@@ -148,5 +148,10 @@
 
 #define DANGER_RANGE						(4)
 #define BORDER_DANGER_RANGE					(2) // K-Mod
+
+// pre-chop: MissionData::iData2 of a MISSION_BUILD. The workers stop one worker-turn before the build would finish.
+#define BUILD_MISSION_STOP_SHORT			(1)
+// pre-build: OrderData::iData2 of an ORDER_CONSTRUCT or ORDER_CREATE. The city stops one turn before it would finish.
+#define ORDER_DATA_PREBUILD					(1)
 
 #endif	// CVDEFINES_H

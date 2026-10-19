@@ -18,6 +18,21 @@ This README is written for both:
 - `readme.txt`: original distribution instructions and high-level feature summary
 - `changelog.txt`: release history (current text says version 1.46)
 
+## Features Added In This Fork (DLL)
+
+Search the sources for the tags in brackets.
+
+- **48 civilizations** (`MAX_CIV_PLAYERS` in `CvDefines.h`; K-Mod's default is 18). Saves only load in a DLL with the same value.
+- **Fewer early AI wars** [`early war`]: the AI starts no war plans of its own before turn 50 (K-Mod: 30), and until turn 150 its war plans are less likely: a third of the usual chance at turn 50, back to normal by turn 150. Both are Normal-speed turns, scaled by the game speed's `iBarbPercent` (Marathon and Marathon Accelerated ×4: turns 200 and 600). Early rushes ("dagger" strategy) are damped the same way. Unlike K-Mod, a "crowded" world no longer ends the no-war period early (cities don't scale with game speed). Tune it in `Assets/xml/GlobalDefinesAlt.xml`: `AI_EARLY_WAR_GATE_TURNS`, `AI_EARLY_WAR_CROWDED_WORLD` (1 = K-Mod's exception), `AI_EARLY_WAR_RAMP_TURNS`, `AI_EARLY_WAR_RAND_PERCENT` (100 turns the damping off).
+- **Pre-chop** [`pre-chop`]: workers on a forest get a second chop button (axe with a pause badge). They chop until one worker-turn is left and stop, so a normal chop later finishes in one turn and delivers the hammers then. Ctrl+click on any build button does the same for that build. The flag rides in `MissionData::iData2` (`BUILD_MISSION_STOP_SHORT`).
+- **Pre-build** [`pre-build`]: a toggle at the start of the city screen's wonder row (or the project row) marks the first wonder or project in the queue. The city builds it until one turn of production is left, then pauses it with the hammers stored and moves on. Queue it again to finish it in one turn. The queue shows flagged items in yellow. The flag rides in `OrderData::iData2` (`ORDER_DATA_PREBUILD`) and is set through `TASK_PREBUILD`. Whipping or buying a flagged wonder clears the flag.
+
+Texts: `Assets/xml/Text/CIV4GameText_PreChopPreBuild.xml`. Buttons: `Assets/Art/Interface/Buttons/Actions/PreChop.dds`, `PreBuild.dds` and `PreBuildOn.dds`. UI: `Assets/Python/Screens/CvMainInterface.py`. None of this changes the savegame format.
+
+## Building On Linux (Wine)
+
+`CvGameCoreDLL/GNUmakefile` builds the DLL with the MSVC 2003 Toolkit under Wine: `cd CvGameCoreDLL && make -j$(nproc)` → `Release/CvGameCoreDLL.dll`. `make TARGET=LogAI` adds `LOG_AI`: the AI's decisions (war plans, war rolls, strategies, production) go to `Logs/BBAI.log` when `LoggingEnabled = 1`. It expects the toolkit (from this repo's `build-deps/v1` release, plus `msvcrt.lib` and `msvcprt.lib`), the Windows SDK as unpacked by `xwin --arch x86 splat`, and the BtS SDK's `Boost-1.32.0` and `Python24` under `~/.local/share/civ4-build/`. All paths can be overridden: see the file's header. The Windows build (nmake `Makefile`, CI workflow) is unchanged.
+
 ## Included Merge: Marathon Accelerated
 
 The Marathon Accelerated 1.1 game-speed mod is included unchanged (the same content as its three XML files).

@@ -38,6 +38,7 @@ public:
 	void doHurry(CvWidgetDataStruct &widgetDataStruct);
 	void doConscript();
 	void doAction(CvWidgetDataStruct &widgetDataStruct);
+	void doPrebuild(); // pre-build
 	void doChangeSpecialist(CvWidgetDataStruct &widgetDataStruct);
 	void doResearch(CvWidgetDataStruct &widgetDataStruct);
 	void doChangePercent(CvWidgetDataStruct &widgetDataStruct);
@@ -94,6 +95,7 @@ public:
 	void parseHurryHelp(CvWidgetDataStruct &widgetDataStruct, CvWStringBuffer &szBuffer);
 	void parseConscriptHelp(CvWidgetDataStruct &widgetDataStruct, CvWStringBuffer &szBuffer);
 	void parseActionHelp(CvWidgetDataStruct &widgetDataStruct, CvWStringBuffer &szBuffer);
+	void parsePrebuildHelp(CvWidgetDataStruct &widgetDataStruct, CvWStringBuffer &szBuffer); // pre-build
 	void parseCitizenHelp(CvWidgetDataStruct &widgetDataStruct, CvWStringBuffer &szBuffer);
 	void parseFreeCitizenHelp(CvWidgetDataStruct &widgetDataStruct, CvWStringBuffer &szBuffer);
 	void parseDisabledCitizenHelp(CvWidgetDataStruct &widgetDataStruct, CvWStringBuffer &szBuffer);

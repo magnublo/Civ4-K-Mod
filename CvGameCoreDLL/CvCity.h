@@ -940,6 +940,11 @@ public:
 	CLLNode<OrderData>* headOrderQueueNode() const;
 	DllExport int getNumOrdersQueued() const;
 	DllExport OrderData getOrderData(int iIndex) const;
+	// pre-build
+	bool canPrebuild(const OrderData& kOrder) const;
+	bool isPrebuildOrder(int iIndex) const;																// Exposed to Python
+	int getPrebuildOrderIndex() const;																	// Exposed to Python
+	void setPrebuildOrder(int iIndex, bool bNewValue);
 
 	// fill the kVisible array with buildings that you want shown in city, as well as the number of generics
 	// This function is called whenever CvCity::setLayoutDirty() is called

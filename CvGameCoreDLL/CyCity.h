@@ -458,6 +458,8 @@ public:
 	void popOrder(int iNum, bool bFinish, bool bChoose);
 	int getOrderQueueLength();
 	OrderData* getOrderFromQueue(int iIndex);
+	bool isPrebuildOrder(int iIndex); // pre-build
+	int getPrebuildOrderIndex(); // pre-build
 
 	void setWallOverridePoints(const python::tuple& kPoints); /* points are given in world space ... i.e. PlotXToPointX, etc */
 	python::tuple getWallOverridePoints() const;

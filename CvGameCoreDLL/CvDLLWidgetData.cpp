@@ -602,6 +602,9 @@ void CvDLLWidgetData::parseHelp(CvWStringBuffer &szBuffer, CvWidgetDataStruct &w
 		GAMETEXT.setCommerceChangeHelp(szBuffer, L"", L"", gDLL->getText("TXT_KEY_CIVIC_PER_SPECIALIST").GetCString(), GC.getTechInfo((TechTypes)(widgetDataStruct.m_iData1)).getSpecialistExtraCommerceArray(), false, false);
 		break;
 	//K-Mod end
+	case WIDGET_PREBUILD:
+		parsePrebuildHelp(widgetDataStruct, szBuffer);
+		break;
 	}
 }
 
@@ -922,6 +925,10 @@ bool CvDLLWidgetData::executeAction( CvWidgetDataStruct &widgetDataStruct )
 	case WIDGET_SCORE_BREAKDOWN:
 		//	Nothing on clicked
 		break;
+
+	case WIDGET_PREBUILD:
+		doPrebuild();
+		break;
 	}
 
 	return bHandled;
@@ -1240,7 +1247,59 @@ void CvDLLWidgetData::doConscript()
 
 void CvDLLWidgetData::doAction(CvWidgetDataStruct &widgetDataStruct)
 {
+	// pre-chop: the pre-chop button (a build action with iData2 = BUILD_MISSION_STOP_SHORT), or Ctrl + click on any build
+	// button, pushes the build with the stop-short flag. (Not in handleAction, which also serves hotkeys: Ctrl+F builds a fort.)
+	CvActionInfo& kAction = GC.getActionInfo(widgetDataStruct.m_iData1);
+	if (kAction.getMissionType() == MISSION_BUILD && (widgetDataStruct.m_iData2 == BUILD_MISSION_STOP_SHORT || GC.ctrlKey()))
+	{
+		if (gDLL->getInterfaceIFace()->canHandleAction(widgetDataStruct.m_iData1))
+		{
+			GC.getGameINLINE().selectionListGameNetMessage(GAMEMESSAGE_PUSH_MISSION, MISSION_BUILD, kAction.getMissionData(), BUILD_MISSION_STOP_SHORT, 0, false, GC.shiftKey());
+		}
+		return;
+	}
+
 	GC.getGameINLINE().handleAction(widgetDataStruct.m_iData1);
+}
+
+// pre-build: the city-screen toggle acts on the first wonder or project in the selected city's queue
+void CvDLLWidgetData::doPrebuild()
+{
+	CvCity* pCity = gDLL->getInterfaceIFace()->getHeadSelectedCity();
+	if (pCity != NULL && pCity->getOwnerINLINE() == GC.getGameINLINE().getActivePlayer())
+	{
+		int iIndex = pCity->getPrebuildOrderIndex();
+		if (iIndex >= 0)
+		{
+			CvMessageControl::getInstance().sendDoTask(pCity->getID(), TASK_PREBUILD, iIndex, -1, !pCity->isPrebuildOrder(iIndex), false, false, false);
+		}
+	}
+}
+
+// pre-build
+void CvDLLWidgetData::parsePrebuildHelp(CvWidgetDataStruct &widgetDataStruct, CvWStringBuffer &szBuffer)
+{
+	CvWString szTemp;
+	szTemp.Format(SETCOLR L"%s" ENDCOLR, TEXT_COLOR("COLOR_HIGHLIGHT_TEXT"), gDLL->getText("TXT_KEY_PREBUILD").c_str());
+	szBuffer.assign(szTemp);
+	szBuffer.append(NEWLINE);
+	szBuffer.append(gDLL->getText("TXT_KEY_PREBUILD_HELP"));
+
+	CvCity* pCity = gDLL->getInterfaceIFace()->getHeadSelectedCity();
+	if (pCity == NULL)
+	{
+		return;
+	}
+	szBuffer.append(NEWLINE);
+	int iIndex = pCity->getPrebuildOrderIndex();
+	if (iIndex < 0)
+	{
+		szBuffer.append(gDLL->getText("TXT_KEY_PREBUILD_NO_ORDER"));
+		return;
+	}
+	OrderData kOrder = pCity->getOrderData(iIndex);
+	const wchar* szName = (kOrder.eOrderType == ORDER_CONSTRUCT) ? GC.getBuildingInfo((BuildingTypes)kOrder.iData1).getTextKeyWide() : GC.getProjectInfo((ProjectTypes)kOrder.iData1).getTextKeyWide();
+	szBuffer.append(gDLL->getText(pCity->isPrebuildOrder(iIndex) ? "TXT_KEY_PREBUILD_ON" : "TXT_KEY_PREBUILD_OFF", szName));
 }
 
 
@@ -2057,8 +2116,18 @@ void CvDLLWidgetData::parseActionHelp(CvWidgetDataStruct &widgetDataStruct, CvWS
 	bAlt = GC.altKey();
 	bShift = GC.shiftKey();
 
+	// pre-chop: the stop-short twin of a build button
+	bool bStopShort = (widgetDataStruct.m_iData2 == BUILD_MISSION_STOP_SHORT && GC.getActionInfo(widgetDataStruct.m_iData1).getMissionType() == MISSION_BUILD);
+
 	CvWString szTemp;
-	szTemp.Format(SETCOLR L"%s" ENDCOLR , TEXT_COLOR("COLOR_HIGHLIGHT_TEXT"), GC.getActionInfo(widgetDataStruct.m_iData1).getHotKeyDescription().c_str());
+	if (bStopShort)
+	{
+		szTemp.Format(SETCOLR L"%s" ENDCOLR , TEXT_COLOR("COLOR_HIGHLIGHT_TEXT"), gDLL->getText("TXT_KEY_ACTION_PRECHOP").c_str());
+	}
+	else
+	{
+		szTemp.Format(SETCOLR L"%s" ENDCOLR , TEXT_COLOR("COLOR_HIGHLIGHT_TEXT"), GC.getActionInfo(widgetDataStruct.m_iData1).getHotKeyDescription().c_str());
+	}
 	szBuffer.assign(szTemp);
 
 	pHeadSelectedUnit = gDLL->getInterfaceIFace()->getHeadSelectedUnit();
@@ -2783,8 +2852,11 @@ void CvDLLWidgetData::parseActionHelp(CvWidgetDataStruct &widgetDataStruct, CvWS
 							szBuffer.append(gDLL->getText("TXT_KEY_ACTION_CHANGE_PRODUCTION", iProduction, pCity->getNameKey()));
 						}
 
-						szBuffer.append(NEWLINE);
-						szBuffer.append(gDLL->getText("TXT_KEY_ACTION_REMOVE_FEATURE", GC.getFeatureInfo(pMissionPlot->getFeatureType()).getTextKeyWide()));
+						if (!bStopShort) // pre-chop: the feature stays
+						{
+							szBuffer.append(NEWLINE);
+							szBuffer.append(gDLL->getText("TXT_KEY_ACTION_REMOVE_FEATURE", GC.getFeatureInfo(pMissionPlot->getFeatureType()).getTextKeyWide()));
+						}
 
 /*************************************************************************************************/
 /* UNOFFICIAL_PATCH                       06/10/10                           EmperorFool         */
@@ -2974,7 +3046,22 @@ void CvDLLWidgetData::parseActionHelp(CvWidgetDataStruct &widgetDataStruct, CvWS
 
 
 				szBuffer.append(NEWLINE);
-				szBuffer.append(gDLL->getText("TXT_KEY_ACTION_NUM_TURNS", iTurns));
+				// pre-chop: the stop-short button works one turn less and leaves the last turn of work for later
+				if (bStopShort)
+				{
+					szBuffer.append(gDLL->getText("TXT_KEY_ACTION_STOP_SHORT_TURNS", std::max(0, iTurns - 1)));
+					szBuffer.append(NEWLINE);
+					szBuffer.append(gDLL->getText("TXT_KEY_ACTION_PRECHOP_HELP"));
+				}
+				else
+				{
+					szBuffer.append(gDLL->getText("TXT_KEY_ACTION_NUM_TURNS", iTurns));
+					if (iTurns > 1)
+					{
+						szBuffer.append(NEWLINE);
+						szBuffer.append(gDLL->getText("TXT_KEY_ACTION_CTRL_STOP_SHORT"));
+					}
+				}
 
 				if (!CvWString(GC.getBuildInfo(eBuild).getHelp()).empty())
 				{
@@ -5026,6 +5113,13 @@ void CvDLLWidgetData::parseSelectedHelp(CvWidgetDataStruct &widgetDataStruct, Cv
 			default:
 				FAssertMsg(false, "eOrderType did not match valid options");
 				break;
+			}
+
+			// pre-build
+			if (pHeadSelectedCity->isPrebuildOrder(widgetDataStruct.m_iData1))
+			{
+				szBuffer.append(NEWLINE);
+				szBuffer.append(gDLL->getText("TXT_KEY_PREBUILD_QUEUE_HELP"));
 			}
 		}
 	}

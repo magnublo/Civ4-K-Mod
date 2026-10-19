@@ -125,7 +125,7 @@ public:
 	void groupMove(CvPlot* pPlot, bool bCombat, CvUnit* pCombatUnit = NULL, bool bEndMove = false);
 	bool groupPathTo(int iX, int iY, int iFlags);
 	bool groupRoadTo(int iX, int iY, int iFlags);
-	bool groupBuild(BuildTypes eBuild);
+	bool groupBuild(BuildTypes eBuild, bool bStopShort = false); // pre-chop: bStopShort
 
 	void setTransportUnit(CvUnit* pTransportUnit, CvSelectionGroup** pOtherGroup = NULL); // bbai added pOtherGroup
 

@@ -21057,6 +21057,9 @@ void CvPlayerAI::AI_updateStrategyHash()
             iDagger += (iAttackUnitCount > 0) ? 40 : 20;
         }
         
+        // early war: an early rush is less attractive while the AI's war plans are damped (see CvTeamAI::AI_getWarRands)
+        iDagger = iDagger * 100 / GC.getGameINLINE().AI_earlyWarRandPercent();
+        
         if (iDagger >= AI_DAGGER_THRESHOLD)
         {
             m_iStrategyHash |= AI_STRATEGY_DAGGER;            

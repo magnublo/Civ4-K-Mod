@@ -1244,6 +1244,10 @@ void CvCity::doTask(TaskTypes eTask, int iData1, int iData2, bool bOption, bool 
 		setRallyPlot(NULL);
 		break;
 
+	case TASK_PREBUILD:
+		setPrebuildOrder(iData1, bOption);
+		break;
+
 	default:
 		FAssertMsg(false, "eTask failed to match a valid option");
 		break;
@@ -3439,6 +3443,12 @@ void CvCity::hurry(HurryTypes eHurry)
 	iHurryAngerLength = hurryAngerLength(eHurry);
 
 	changeProduction(hurryProduction(eHurry));
+
+	// pre-build: hurrying a flagged wonder means it should be finished
+	if (isPrebuildOrder(0))
+	{
+		setPrebuildOrder(0, false);
+	}
 
 	GET_PLAYER(getOwnerINLINE()).changeGold(-(iHurryGold));
 	changePopulation(-(iHurryPopulation));
@@ -12779,6 +12789,64 @@ OrderData CvCity::getOrderData(int iIndex) const
 	return kData;
 }
 
+// pre-build: wonders (world, team and national) and projects can be paused one turn before they are finished
+bool CvCity::canPrebuild(const OrderData& kOrder) const
+{
+	switch (kOrder.eOrderType)
+	{
+	case ORDER_CONSTRUCT:
+		return isLimitedWonderClass((BuildingClassTypes)GC.getBuildingInfo((BuildingTypes)kOrder.iData1).getBuildingClassType());
+	case ORDER_CREATE:
+		return true;
+	default:
+		return false;
+	}
+}
+
+// pre-build: the order at iIndex stops one turn before it is finished (see CvCity::doProduction)
+bool CvCity::isPrebuildOrder(int iIndex) const
+{
+	CLLNode<OrderData>* pOrderNode = m_orderQueue.nodeNum(iIndex);
+	return pOrderNode != NULL && pOrderNode->m_data.iData2 == ORDER_DATA_PREBUILD && canPrebuild(pOrderNode->m_data);
+}
+
+// pre-build: the queue index of the first wonder or project, which the city-screen toggle acts on; -1 if none
+int CvCity::getPrebuildOrderIndex() const
+{
+	int iIndex = 0;
+	for (CLLNode<OrderData>* pOrderNode = headOrderQueueNode(); pOrderNode != NULL; pOrderNode = nextOrderQueueNode(pOrderNode))
+	{
+		if (canPrebuild(pOrderNode->m_data))
+		{
+			return iIndex;
+		}
+		iIndex++;
+	}
+	return -1;
+}
+
+void CvCity::setPrebuildOrder(int iIndex, bool bNewValue)
+{
+	CLLNode<OrderData>* pOrderNode = m_orderQueue.nodeNum(iIndex);
+	if (pOrderNode == NULL || !canPrebuild(pOrderNode->m_data))
+	{
+		return;
+	}
+	pOrderNode->m_data.iData2 = bNewValue ? ORDER_DATA_PREBUILD : -1;
+
+	if ((getTeam() == GC.getGameINLINE().getActiveTeam()) || GC.getGameINLINE().isDebugMode())
+	{
+		setInfoDirty(true);
+
+		if (isCitySelected())
+		{
+			gDLL->getInterfaceIFace()->setDirty(InfoPane_DIRTY_BIT, true );
+			gDLL->getInterfaceIFace()->setDirty(SelectionButtons_DIRTY_BIT, true);
+			gDLL->getInterfaceIFace()->setDirty(CityScreen_DIRTY_BIT, true);
+		}
+	}
+}
+
 void CvCity::setWallOverridePoints(const std::vector< std::pair<float, float> >& kPoints)
 {
 	m_kWallOverridePoints = kPoints;
@@ -13187,6 +13255,39 @@ void CvCity::doProduction(bool bAllowNoProduction)
 	if (isDisorder())
 	{
 		return;
+	}
+
+	// pre-build: a flagged wonder or project that this turn's production would finish is paused instead. Its hammers
+	// stay stored, and this turn's production goes to the next item in the queue.
+	bool bPrebuildPaused = false;
+	while (isPrebuildOrder(0) && getProduction() + getCurrentProductionDifference(false, true) >= getProductionNeeded())
+	{
+		const TCHAR* szIcon = isProductionBuilding() ? GC.getBuildingInfo(getProductionBuilding()).getButton() : GC.getProjectInfo(getProductionProject()).getButton();
+		CvWString szBuffer = gDLL->getText("TXT_KEY_PREBUILD_PAUSED", getProductionNameKey(), getNameKey(), getProduction(), getProductionNeeded());
+		gDLL->getInterfaceIFace()->addHumanMessage(getOwnerINLINE(), false, GC.getEVENT_MESSAGE_TIME(), szBuffer, NULL, MESSAGE_TYPE_MINOR_EVENT, szIcon, (ColorTypes)GC.getInfoTypeForString("COLOR_WHITE"), getX_INLINE(), getY_INLINE(), true, true);
+		popOrder(0, false, false);
+		bPrebuildPaused = true;
+	}
+	if (bPrebuildPaused)
+	{
+		if (!isProduction())
+		{
+			// nothing left in the queue: keep this turn's hammers as overflow and ask for new orders
+			changeOverflowProduction(getCurrentProductionDifference(false, false), getProductionModifier());
+			if (!isHuman() || isProductionAutomated())
+			{
+				AI_chooseProduction();
+			}
+			else
+			{
+				chooseProduction();
+			}
+			return;
+		}
+		if (isProductionProcess())
+		{
+			return;
+		}
 	}
 
 	if (isProduction())

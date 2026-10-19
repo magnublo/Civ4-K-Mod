@@ -3506,6 +3506,12 @@ void CvTeamAI::AI_getWarRands( int &iMaxWarRand, int &iLimitedWarRand, int &iDog
 	
 	iDogpileWarRand *= (2 + iNumMembers);
 	iDogpileWarRand /= (2 + iNumMembers + iNumVassals);
+
+	// early war: war plans are less likely in the early game (larger rand = smaller chance)
+	int iEarlyWarPercent = GC.getGameINLINE().AI_earlyWarRandPercent();
+	iMaxWarRand = iMaxWarRand * iEarlyWarPercent / 100;
+	iLimitedWarRand = iLimitedWarRand * iEarlyWarPercent / 100;
+	iDogpileWarRand = iDogpileWarRand * iEarlyWarPercent / 100;
 }
 
 
@@ -5598,8 +5604,11 @@ void CvTeamAI::AI_doWar()
 	// Second condition: don't consider war very early in the game. It would be unfair on human players to rush them with our extra starting units and techs!
 	bConsiderWar = bConsiderWar &&
 		(kGame.isOption(GAMEOPTION_AGGRESSIVE_AI) ||
-		 kGame.getElapsedGameTurns() >= GC.getGameSpeedInfo(kGame.getGameSpeedType()).getBarbPercent() * 30 / 100 ||
-		 kGame.getNumCivCities() > GC.getWorldInfo(GC.getMapINLINE().getWorldSize()).getTargetNumCities() * kGame.countCivPlayersAlive()/2);
+		 kGame.getElapsedGameTurns() >= GC.getGameINLINE().AI_earlyWarGateTurns() || // early war: was 30 turns, now set in GlobalDefinesAlt.xml
+		 // early war: K-Mod lets a "crowded" world end the gate early. Cities don't scale with game speed, so on slow speeds
+		 // this ended the gate long before its turn; AI_EARLY_WAR_CROWDED_WORLD = 0 (the fork's setting) turns it off.
+		 (GC.getDefineINT("AI_EARLY_WAR_CROWDED_WORLD", 1) != 0 &&
+		 kGame.getNumCivCities() > GC.getWorldInfo(GC.getMapINLINE().getWorldSize()).getTargetNumCities() * kGame.countCivPlayersAlive()/2));
 	// (Perhaps the no-war turn threshold should depend on the game difficulty level; but I don't think it would make much difference.)
 	if (bConsiderWar)
 	// K-mod end
@@ -5700,6 +5709,13 @@ void CvTeamAI::AI_doWar()
 		
 		if (bMakeWarChecks)
 		{
+			// early war: show the odds of this turn's war rolls (a roll succeeds when rand(N) <= threshold)
+			if (gTeamLogLevel >= 2)
+			{
+				logBBAI("    Team %d (%S) war rolls on turn %d: total %d/%d, limited %d/%d, dogpile %d/%d (early war rand percent %d)", getID(), GET_PLAYER(getLeaderID()).getCivilizationDescription(0), kGame.getGameTurn(),
+					iTotalWarThreshold + 1, iTotalWarRand, iLimitedWarThreshold + 1, iLimitedWarRand, iDogpileWarThreshold + 1, iDogpileWarRand, GC.getGameINLINE().AI_earlyWarRandPercent());
+			}
+
 			int iOurPower = getPower(true);
 
 			if (bAggressive && (getAnyWarPlanCount(true) == 0))

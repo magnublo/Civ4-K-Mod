@@ -26,6 +26,10 @@ public:
 
 	int AI_turnsPercent(int iTurns, int iPercent);
 
+	// early war: turn gate and early-game damping of the AI's war plans
+	int AI_earlyWarGateTurns() const;
+	int AI_earlyWarRandPercent() const;
+
 	virtual void read(FDataStreamBase* pStream);
 	virtual void write(FDataStreamBase* pStream);
 

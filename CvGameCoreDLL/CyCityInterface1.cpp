@@ -445,6 +445,8 @@ void CyCityPythonInterface1(python::class_<CyCity>& x)
 		.def("popOrder", &CyCity::popOrder, "int (int iNum, bool bFinish, bool bChoose)")
 		.def("getOrderQueueLength", &CyCity::getOrderQueueLength, "void ()")
 		.def("getOrderFromQueue", &CyCity::getOrderFromQueue, python::return_value_policy<python::manage_new_object>(), "OrderData* (int iIndex)")
+		.def("isPrebuildOrder", &CyCity::isPrebuildOrder, "bool (int iIndex) - pre-build: the order stops one turn before it is finished")
+		.def("getPrebuildOrderIndex", &CyCity::getPrebuildOrderIndex, "int () - pre-build: queue index of the first wonder or project, -1 if none")
 
 		.def("setWallOverridePoints", &CyCity::setWallOverridePoints, "setWallOverridePoints(const python::tuple& kPoints)")
 		.def("getWallOverridePoints", &CyCity::getWallOverridePoints, "python::tuple getWallOverridePoints()")

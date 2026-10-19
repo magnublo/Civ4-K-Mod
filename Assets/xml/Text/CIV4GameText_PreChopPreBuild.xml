@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Texts for the pre-chop and pre-build features of this K-Mod fork (English text in every language). -->
+<Civ4GameText xmlns="http://www.firaxis.com">
+
+	<!-- Pre-chop (worker button, and Ctrl+click on any build button) -->
+	<TEXT>
+		<Tag>TXT_KEY_ACTION_PRECHOP</Tag>
+		<English>Pre-chop</English>
+		<French>Pre-chop</French>
+		<German>Pre-chop</German>
+		<Italian>Pre-chop</Italian>
+		<Spanish>Pre-chop</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_ACTION_PRECHOP_HELP</Tag>
+		<English>Works on the chop until one worker-turn is left, then stops. The forest stays: a normal chop later removes it in one turn and delivers the hammers then.</English>
+		<French>Works on the chop until one worker-turn is left, then stops. The forest stays: a normal chop later removes it in one turn and delivers the hammers then.</French>
+		<German>Works on the chop until one worker-turn is left, then stops. The forest stays: a normal chop later removes it in one turn and delivers the hammers then.</German>
+		<Italian>Works on the chop until one worker-turn is left, then stops. The forest stays: a normal chop later removes it in one turn and delivers the hammers then.</Italian>
+		<Spanish>Works on the chop until one worker-turn is left, then stops. The forest stays: a normal chop later removes it in one turn and delivers the hammers then.</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_ACTION_STOP_SHORT_TURNS</Tag>
+		<English>[COLOR_HIGHLIGHT_TEXT]%d1_Num[COLOR_REVERT] [NUM1:Turn:Turns] of work, then one worker-turn left</English>
+		<French>[COLOR_HIGHLIGHT_TEXT]%d1_Num[COLOR_REVERT] [NUM1:Turn:Turns] of work, then one worker-turn left</French>
+		<German>[COLOR_HIGHLIGHT_TEXT]%d1_Num[COLOR_REVERT] [NUM1:Turn:Turns] of work, then one worker-turn left</German>
+		<Italian>[COLOR_HIGHLIGHT_TEXT]%d1_Num[COLOR_REVERT] [NUM1:Turn:Turns] of work, then one worker-turn left</Italian>
+		<Spanish>[COLOR_HIGHLIGHT_TEXT]%d1_Num[COLOR_REVERT] [NUM1:Turn:Turns] of work, then one worker-turn left</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_ACTION_CTRL_STOP_SHORT</Tag>
+		<English>[COLOR_LIGHT_GREY]Ctrl+click: stop one worker-turn before it is finished[COLOR_REVERT]</English>
+		<French>[COLOR_LIGHT_GREY]Ctrl+click: stop one worker-turn before it is finished[COLOR_REVERT]</French>
+		<German>[COLOR_LIGHT_GREY]Ctrl+click: stop one worker-turn before it is finished[COLOR_REVERT]</German>
+		<Italian>[COLOR_LIGHT_GREY]Ctrl+click: stop one worker-turn before it is finished[COLOR_REVERT]</Italian>
+		<Spanish>[COLOR_LIGHT_GREY]Ctrl+click: stop one worker-turn before it is finished[COLOR_REVERT]</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_BUILD_STOPPED_SHORT</Tag>
+		<English>%s1_Build: stopped one worker-turn before it is finished</English>
+		<French>%s1_Build: stopped one worker-turn before it is finished</French>
+		<German>%s1_Build: stopped one worker-turn before it is finished</German>
+		<Italian>%s1_Build: stopped one worker-turn before it is finished</Italian>
+		<Spanish>%s1_Build: stopped one worker-turn before it is finished</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_BUILD_STOPPED_SHORT_PRODUCTION</Tag>
+		<English>%s1_Build: stopped one worker-turn before it is finished (%d2[ICON_PRODUCTION] for %s3_City when it is)</English>
+		<French>%s1_Build: stopped one worker-turn before it is finished (%d2[ICON_PRODUCTION] for %s3_City when it is)</French>
+		<German>%s1_Build: stopped one worker-turn before it is finished (%d2[ICON_PRODUCTION] for %s3_City when it is)</German>
+		<Italian>%s1_Build: stopped one worker-turn before it is finished (%d2[ICON_PRODUCTION] for %s3_City when it is)</Italian>
+		<Spanish>%s1_Build: stopped one worker-turn before it is finished (%d2[ICON_PRODUCTION] for %s3_City when it is)</Spanish>
+	</TEXT>
+
+	<!-- Pre-build (city screen toggle for the first wonder or project in the queue) -->
+	<TEXT>
+		<Tag>TXT_KEY_PREBUILD</Tag>
+		<English>Pre-build</English>
+		<French>Pre-build</French>
+		<German>Pre-build</German>
+		<Italian>Pre-build</Italian>
+		<Spanish>Pre-build</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_PREBUILD_HELP</Tag>
+		<English>Builds the first wonder or project in the queue until one turn of production is left, then moves on to the next item. The hammers stay stored: queue it again later to finish it in one turn.</English>
+		<French>Builds the first wonder or project in the queue until one turn of production is left, then moves on to the next item. The hammers stay stored: queue it again later to finish it in one turn.</French>
+		<German>Builds the first wonder or project in the queue until one turn of production is left, then moves on to the next item. The hammers stay stored: queue it again later to finish it in one turn.</German>
+		<Italian>Builds the first wonder or project in the queue until one turn of production is left, then moves on to the next item. The hammers stay stored: queue it again later to finish it in one turn.</Italian>
+		<Spanish>Builds the first wonder or project in the queue until one turn of production is left, then moves on to the next item. The hammers stay stored: queue it again later to finish it in one turn.</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_PREBUILD_ON</Tag>
+		<English>[COLOR_POSITIVE_TEXT]On[COLOR_REVERT] for %s1_Name. Click to turn it off.</English>
+		<French>[COLOR_POSITIVE_TEXT]On[COLOR_REVERT] for %s1_Name. Click to turn it off.</French>
+		<German>[COLOR_POSITIVE_TEXT]On[COLOR_REVERT] for %s1_Name. Click to turn it off.</German>
+		<Italian>[COLOR_POSITIVE_TEXT]On[COLOR_REVERT] for %s1_Name. Click to turn it off.</Italian>
+		<Spanish>[COLOR_POSITIVE_TEXT]On[COLOR_REVERT] for %s1_Name. Click to turn it off.</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_PREBUILD_OFF</Tag>
+		<English>Off for %s1_Name. Click to turn it on.</English>
+		<French>Off for %s1_Name. Click to turn it on.</French>
+		<German>Off for %s1_Name. Click to turn it on.</German>
+		<Italian>Off for %s1_Name. Click to turn it on.</Italian>
+		<Spanish>Off for %s1_Name. Click to turn it on.</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_PREBUILD_NO_ORDER</Tag>
+		<English>[COLOR_WARNING_TEXT]Queue a wonder or project first.[COLOR_REVERT]</English>
+		<French>[COLOR_WARNING_TEXT]Queue a wonder or project first.[COLOR_REVERT]</French>
+		<German>[COLOR_WARNING_TEXT]Queue a wonder or project first.[COLOR_REVERT]</German>
+		<Italian>[COLOR_WARNING_TEXT]Queue a wonder or project first.[COLOR_REVERT]</Italian>
+		<Spanish>[COLOR_WARNING_TEXT]Queue a wonder or project first.[COLOR_REVERT]</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_PREBUILD_QUEUE_HELP</Tag>
+		<English>[COLOR_YELLOW]Pre-build:[COLOR_REVERT] pauses one turn before completion; the turns shown count down to that pause.</English>
+		<French>[COLOR_YELLOW]Pre-build:[COLOR_REVERT] pauses one turn before completion; the turns shown count down to that pause.</French>
+		<German>[COLOR_YELLOW]Pre-build:[COLOR_REVERT] pauses one turn before completion; the turns shown count down to that pause.</German>
+		<Italian>[COLOR_YELLOW]Pre-build:[COLOR_REVERT] pauses one turn before completion; the turns shown count down to that pause.</Italian>
+		<Spanish>[COLOR_YELLOW]Pre-build:[COLOR_REVERT] pauses one turn before completion; the turns shown count down to that pause.</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_PREBUILD_PAUSED</Tag>
+		<English>%s1_Name in %s2_City paused one turn before completion (pre-build): %d3/%d4[ICON_PRODUCTION] stored.</English>
+		<French>%s1_Name in %s2_City paused one turn before completion (pre-build): %d3/%d4[ICON_PRODUCTION] stored.</French>
+		<German>%s1_Name in %s2_City paused one turn before completion (pre-build): %d3/%d4[ICON_PRODUCTION] stored.</German>
+		<Italian>%s1_Name in %s2_City paused one turn before completion (pre-build): %d3/%d4[ICON_PRODUCTION] stored.</Italian>
+		<Spanish>%s1_Name in %s2_City paused one turn before completion (pre-build): %d3/%d4[ICON_PRODUCTION] stored.</Spanish>
+	</TEXT>
+</Civ4GameText>
