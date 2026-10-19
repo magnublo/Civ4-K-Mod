@@ -13,14 +13,18 @@
 Change log:
 
 v. 0.68 K-Mod-Magnus (2026, written with Claude for the K-Mod-Magnus mod; the plot types part is mostly new)
-- Percentage of ocean is exact now, of the whole map: "70%" gives 70% water. The land used to be lowered for the
-  continent separation and by another 5%, and lonely islands, land bridges and filled lakes came on top of it.
+- Percentage of ocean is exact now and leaves the islands out: "70%" means the continents cover exactly 30% of the
+  map, and the islands around them and the lonely islands come on top, as if they were ocean. The land used to be
+  lowered for the continent separation and by another 5%, and land bridges and filled lakes came on top of it.
 - Continents grow until the land is there: one continent that could not grow any more used to stop all of them.
 - Continent separation holds: grow candidates were checked when found, not when used, so continents could touch.
 - Each continent is one landmass: "Continent scattering" now puts islands near its coast instead of flinging parts
   of the continent away (those parts often were continents of their own). Archipelago continents are as before.
 - Lonely islands are placed by how far open water is from all land, so "Use every empty area in ocean" fills every
-  gap (big islands first, smaller ones in the gaps left); island sizes give way to the ocean percentage.
+  gap (big islands first, smaller ones in the gaps left), at the chosen size. A number of islands goes into smaller
+  gaps too when the open sea runs out, if an island of the chosen size still fits. More choices: 1 to 8, 10, 12, 15,
+  20, 25 or 30 islands, or 10% of the empty area.
+- Nobody starts on an island: civs start on the continents (the game's own choice could put one on a big island).
 - New option Coastline: Rugged, Very rugged or Maximum coast reshape the continents for more coast (fjords and
   peninsulas, no new lakes), keeping each continent in one piece, its size and the separation.
 - New option Minimum island size (replaces One tile islands allowed).
@@ -176,7 +180,7 @@ selection_defaults = [
 					0, #Rival civs on your continent
 					8, #Percentage of ocean
 					0, #Land near pole ice
-					7, #Lonely islands
+					4, #Lonely islands
 					1, #Lonely island size
 					1, #Minimum island size
 					7, #Mountains (peaks)
@@ -326,7 +330,7 @@ selection_names_and_values = [
 					["Random (50% - 60%)",[50,55,60],False],
 					["Random (40% - 70%)",[40,45,50,55,60,65,70],False],
 					["Minimize ocean size",0,True],
-					["30%",30,True], #K-Mod-Magnus: exact percentages now (these were "More than ..."); if the land does not fit, as much as fits
+					["30%",30,True], #K-Mod-Magnus: exact percentages now, of the map without the islands (these were "More than ..."); if the land does not fit, as much as fits
 					["40%",40,True],
 					["50%",50,True],
 					["60% (normal)",60,True],
@@ -338,18 +342,28 @@ selection_names_and_values = [
 					["Sometimes (default)",True,False],
 					["Never",False,False],
 					],
-					[ #Lonely islands:
+					[ #Lonely islands: (K-Mod-Magnus: in order, and more of them; the new ones are not in "Random")
 					["Random","random",False],
-					["Use every empty area in ocean",1.0,False],
-					["75% of empty area",0.75,True],
-					["50% of empty area",0.5,True],
-					["25% of empty area",0.25,True],
+					["No islands",0.0,True],
 					["One island somewhere (if possible)","lonely1",True],
 					["2 islands (if possible)","lonely2",True],
 					["3 islands (if possible, default)","lonely3",True],
 					["4 islands (if possible)","lonely4",True],
 					["5 islands (if possible)","lonely5",True],
-					["No islands",0.0,True],
+					["6 islands (if possible)","lonely6",False],
+					["7 islands (if possible)","lonely7",False],
+					["8 islands (if possible)","lonely8",False],
+					["10 islands (if possible)","lonely10",False],
+					["12 islands (if possible)","lonely12",False],
+					["15 islands (if possible)","lonely15",False],
+					["20 islands (if possible)","lonely20",False],
+					["25 islands (if possible)","lonely25",False],
+					["30 islands (if possible)","lonely30",False],
+					["10% of empty area",0.1,False],
+					["25% of empty area",0.25,True],
+					["50% of empty area",0.5,True],
+					["75% of empty area",0.75,True],
+					["Use every empty area in ocean",1.0,False],
 					],
 					[ #Lonely island size:
 					["Small","small",True],
@@ -472,6 +486,7 @@ continentPlayers = None # players each continent was made for ("By player count"
 landPlan = None # the LandPlan of the last map, and what the options came to (for checking maps outside the game)
 debugChecks = False # set by tests outside the game: check the continents after every step
 landSettings = None
+continentAreaIDs = None # the game's areas of continent land, made at the first findStartingArea of a game
 
 landTypes = [PlotTypes.PLOT_LAND,PlotTypes.PLOT_HILLS,PlotTypes.PLOT_PEAK]
 
@@ -1540,11 +1555,12 @@ class TileBuilder:
 """LAND PLANNING (K-Mod-Magnus)"""
 #------------------------------------------------------
 # Written for K-Mod-Magnus (2026) so that the land options do what they say. LandPlan knows the continent ("group")
-# and the landmass ("mass") of every land plot while the plot types are made. With it the ocean percentage is met
-# exactly, continents keep the chosen separation from each other and from islands, every continent stays one
-# landmass (scattering now puts islands near the coast instead of flinging parts of the continent away), lonely
-# islands fill the empty ocean as asked, and the Coastline option reshapes the continents for more coast plots
-# (the DLL makes every water plot next to land coast, the rest ocean).
+# and the landmass ("mass") of every land plot while the plot types are made. With it the continents get exactly
+# the land the ocean percentage leaves (islands are left out of it), continents keep the chosen separation from
+# each other and from islands, every continent stays one landmass (scattering now puts islands near the coast
+# instead of flinging parts of the continent away), lonely islands fill the empty ocean as asked, and the
+# Coastline option reshapes the continents for more coast plots (the DLL makes every water plot next to land
+# coast, the rest ocean).
 
 RING_DIRS = [[0,1],[1,1],[1,0],[1,-1],[0,-1],[-1,-1],[-1,0],[-1,1]] # N, NE, E, SE, S, SW, W, NW
 
@@ -1629,6 +1645,7 @@ class LandPlan:
 		self.claims = [0] * N # bit g: group g has land within the separation
 		self.landNb = [0] * N # land plots among the 8 neighbours
 		self.land = 0
+		self.contLand = 0 # land plots of the continents (landmasses below 1000): the islands do not count
 		self.massTiles = {}
 		self.massCoast = {} # land plots of the mass with water next to them
 		self.massGroup = {}
@@ -1707,6 +1724,8 @@ class LandPlan:
 			self.massGroup[m] = g
 		self.massTiles[m].add(o)
 		self.land += 1
+		if m < 1000:
+			self.contLand += 1
 		landNb = self.landNb
 		mass = self.mass
 		for n in self.nb8[o]:
@@ -1725,6 +1744,8 @@ class LandPlan:
 		self.massTiles[m].remove(o)
 		self.massCoast[m].remove(o)
 		self.land -= 1
+		if m < 1000:
+			self.contLand -= 1
 		landNb = self.landNb
 		mass = self.mass
 		for n in self.nb8[o]:
@@ -2191,29 +2212,46 @@ class LandPlan:
 			return 1 + self.growMass(m, g, size - 1, mode)
 		return 1
 
-	def placeIslands(self, spots, sizes, budget, smallest, mode):
-		"""Lonely islands in spots, each its own group: as big as sizes, all of them shrunk alike to fit budget, but
-		at least smallest. Returns the plots placed."""
-		seeds = []
+	def room(self, o, limit):
+		"""Plots a new landmass from water plot o could grow over (8-connected, outside the separation of all land),
+		counted up to limit"""
+		claims = self.claims
+		data = self.data
+		if claims[o] != 0 or data[o] != PlotTypes.PLOT_OCEAN or not self.rowOK(o):
+			return 0
+		seen = {o: True}
+		todo = [o]
+		i = 0
+		while i < len(todo) and len(todo) < limit:
+			for n in self.nb8[todo[i]]:
+				if not seen.has_key(n) and claims[n] == 0 and data[n] == PlotTypes.PLOT_OCEAN and self.rowOK(n):
+					seen[n] = True
+					todo.append(n)
+			i += 1
+		return len(todo)
+
+	def placeIslands(self, spots, sizes, smallest, mode):
+		"""Lonely islands in spots, each its own group, as big as sizes (at least smallest) where there is room. They
+		grow a plot each in turn, so that neighbours share the water between them. Returns the plots placed."""
+		growing = []
+		placed = 0
 		for i in range(len(spots)):
 			g = self.newGroup()
 			m = self.newIslandMass()
 			if self.canAdd(spots[i], g, m):
 				self.setLand(spots[i], m, g)
-				seeds.append([m, g, sizes[i]])
-		placed = len(seeds)
-		budget -= placed
-		for seed in seeds:
-			n = self.growMass(seed[0], seed[1], smallest - 1, mode)
-			placed += n
-			budget -= n
-		extra = 0
-		for seed in seeds:
-			extra += max(0, seed[2] - smallest)
-		if extra > 0 and budget > 0:
-			scale = min(1.0, budget / float(extra))
-			for seed in seeds:
-				placed += self.growMass(seed[0], seed[1], int(max(0, seed[2] - smallest) * scale), mode)
+				placed += 1
+				if max(smallest, sizes[i]) > 1:
+					growing.append([m, g, max(smallest, sizes[i]) - 1])
+		while len(growing) > 0:
+			still = []
+			for seed in growing:
+				if self.growMass(seed[0], seed[1], 1, mode) > 0:
+					placed += 1
+					seed[2] -= 1
+					if seed[2] > 0:
+						still.append(seed)
+			growing = still
 		return placed
 
 	def coastalIslands(self, g, share, sizeMin, sizeMax, maxDistance, mode, allowOneTile):
@@ -2376,18 +2414,12 @@ def growContinents(contList, targets, steps, total):
 		contList[i].stuck = stuck[i]
 	return grown
 
-def balanceLand(plan, contList, steps, target, coastline, minIslandSize, useBuilders):
-	"""K-Mod-Magnus: adds or removes land at the coasts until the map has exactly target land plots (as far as
-	there is room). Continents grow their own way first (TileBuilder), then at their sides; islands only grow when
-	no continent can."""
-	if coastline > 0:
-		growMode = "coast"
-		shrinkMode = "coast"
-	else:
-		growMode = "random"
-		shrinkMode = "compact"
+def balanceLand(plan, contList, steps, target, growMode, shrinkMode, useBuilders):
+	"""K-Mod-Magnus: adds or removes land at the coasts of the continents until they have exactly target land plots
+	(as far as there is room; the islands do not count). Continents grow their own way first (TileBuilder), then at
+	their sides."""
 	full = {}
-	while plan.land < target:
+	while plan.contLand < target:
 		progress = False
 		for i in range(len(contList)):
 			continent = contList[i]
@@ -2395,10 +2427,10 @@ def balanceLand(plan, contList, steps, target, coastline, minIslandSize, useBuil
 			if full.has_key(m):
 				continue
 			for k in range(steps[i]):
-				if plan.land >= target:
+				if plan.contLand >= target:
 					break
 				ok = False
-				if useBuilders and coastline == 0 and not continent.stuck:
+				if useBuilders and not continent.stuck:
 					ok = continent.grow()
 					if not ok:
 						continent.stuck = True
@@ -2409,42 +2441,21 @@ def balanceLand(plan, contList, steps, target, coastline, minIslandSize, useBuil
 				else:
 					full[m] = True
 					break
-		if not progress and useBuilders:
-			# no continent can grow: the islands, then new islands wherever they fit
-			for m in plan.massTiles.keys():
-				if m >= 1000 and not full.has_key(m) and plan.land < target:
-					if plan.growMass(m, plan.massGroup[m], 1, growMode) > 0:
-						progress = True
-					else:
-						full[m] = True
-			if not progress:
-				size = max(4, minIslandSize)
-				spots = plan.lonelySpots(0)
-				for o in spots:
-					if target - plan.land < minIslandSize:
-						break
-					if plan.islandAt(o, min(size, target - plan.land), plan.newGroup(), growMode) > 0:
-						progress = True
 		if not progress:
 			break
-	while plan.land > target:
+	while plan.contLand > target:
 		progress = False
 		order = []
 		for continent in contList:
 			order.append((-len(plan.massTiles[continent.mass]), continent.mass))
 		order.sort()
 		for item in order:
-			if plan.land <= target:
+			if plan.contLand <= target:
 				break
 			if plan.shrinkMass(item[1], 1, shrinkMode) > 0:
 				progress = True
 		if not progress:
-			for m in plan.massTiles.keys():
-				if m >= 1000 and plan.land > target and len(plan.massTiles[m]) > 0:
-					if plan.shrinkMass(m, 1, shrinkMode) > 0:
-						progress = True
-			if not progress:
-				break
+			break
 
 def generateRandomMap():
 	"""Can be overridden if you want to manually control the sequence in which plot types, heights, and terrain are generated.
@@ -2752,6 +2763,7 @@ def generatePlotTypes():
 	global homeRivals
 	global startAreaPlan
 	global continentPlayers
+	global continentAreaIDs
 
 	poleSeparation = 3
 
@@ -2803,6 +2815,7 @@ def generatePlotTypes():
 	if continentScatter[0] <= 7 and len(continentScatter) < 8: # settings from before K-Mod-Magnus
 		continentScatter = list(continentScatter) + [0.0, 0, 0, 0]
 	startAreaPlan = None
+	continentAreaIDs = None
 	# there is list of templates which are used for various continent shape types
 	# there are three parameters in this array (separated by commas): [builder tiles, active tiles, grow count]
 
@@ -2892,34 +2905,33 @@ def generatePlotTypes():
 			shapeData = tbsCrabLike
 
 	#calculate actual land tiles we must produce
-	# K-Mod-Magnus: exactly the chosen percentage of the whole map is ocean. The land used to be lowered for the
-	# separation and by another 5%, while islands, land bridges and filled lakes came on top of it.
+	# K-Mod-Magnus: the continents cover exactly what the chosen percentage of ocean leaves of the whole map; the
+	# islands come on top, as if they were ocean. The land used to be lowered for the separation and by another 5%,
+	# while land bridges and filled lakes came on top of it.
 	targetLand = landTargetPlots(iW, iH, oceanPercentage)
-	print "Planet Generator: land plots wanted:", targetLand, "of", iW * iH
+	print "Planet Generator: continent land plots wanted:", targetLand, "of", iW * iH
 
 	#world is two-dimensional array which wraps in X automagically, so you may not worry about edges
 	world = worldArray([iW,iH],PlotTypes.PLOT_OCEAN)
 	plan = LandPlan(world, continentSeparation, allowLandNearIce, dice)
 
-	# land kept back for the lonely islands until they are placed (what they do not use goes to the continents)
+	# lonely islands: the number asked for, or a share of all the empty spots
 	islandMin, islandMax, islandRadius = islandSizeRange(lonelyIslandSize)
 	lonelyNumber = 0
 	lonelyShare = 0.0
-	lonelyReserve = 0
 	if isinstance(lonelyIslands, str):
 		if lonelyIslands.startswith("lonely"):
 			lonelyNumber = int(lonelyIslands[6:])
-			lonelyReserve = min(targetLand * 0.4, lonelyNumber * (islandMin + islandMax) / 2.0)
 	elif lonelyIslands > 0:
 		lonelyNumber = -1 # a share of all the empty spots
 		lonelyShare = float(lonelyIslands)
-		lonelyReserve = targetLand * 0.35 * lonelyShare
 
 	archipelago = continentScatter[0] > 7
 	coastShare = 0.0
 	if not archipelago and len(continentScatter) >= 8:
 		coastShare = continentScatter[4]
-	bodyTotal = int((targetLand - lonelyReserve) / (1.0 + coastShare))
+	# the islands do not count (they come on top), so all of the land is for the continents
+	bodyTotal = targetLand
 	if bodyTotal < continentCount:
 		bodyTotal = continentCount
 
@@ -3052,6 +3064,14 @@ def generatePlotTypes():
 
 	if debugChecks and not archipelago:
 		plan.check("lakes", len(contList))
+	# K-Mod-Magnus: now exactly the land wanted on the continents (the islands come later and do not count). Pieces
+	# of archipelago continents below the minimum island size go, and the rest grows at its sides to make up for them.
+	balanceLand(plan, contList, steps, targetLand, "random", "compact", True)
+	if minIslandSize > 1 and plan.removeSmallPieces(minIslandSize) > 0:
+		balanceLand(plan, contList, steps, targetLand, "random", "compact", False)
+	print "Planet Generator: continents balanced to", plan.contLand, "plots"
+	if debugChecks and not archipelago:
+		plan.check("balance", len(contList))
 	# Coastline (K-Mod-Magnus): reshape the continents for more coast
 	if coastline > 0 and not archipelago:
 		iterations = [0, 0.5, 2, 10][coastline] # moves tried, per plot of the continent
@@ -3075,41 +3095,42 @@ def generatePlotTypes():
 			smallestBody = n
 	islandCap = max(minIslandSize, smallestBody // 2)
 
-	# continent scattering (K-Mod-Magnus): islands near each continent's coast
-	if coastShare > 0:
-		for continent in contList:
-			plan.coastalIslands(continent.group, coastShare, max(continentScatter[5], minIslandSize), max(minIslandSize, min(continentScatter[6], islandCap)), continentScatter[7], islandMode, allowOneTileIslands)
-
-	if debugChecks and not archipelago:
-		plan.check("scattering", len(contList))
 	# lonely islands (K-Mod-Magnus: found with a distance map, so every empty part of the ocean counts; they keep the
-	# separation from all other land, and their size gives way to the ocean percentage)
+	# separation from all other land and are as big as chosen, as they do not count toward the percentage of ocean.
+	# They come before the islands near the coasts, which would take the open sea they need.)
 	if lonelyNumber != 0:
 		smallest = max(1, minIslandSize)
-		budget = targetLand - plan.land
 		# the islands of the chosen size, in the most open spots (or a share of them, or the number asked for)
 		spots = plan.lonelySpots(islandRadius)
 		if lonelyNumber > 0:
 			spots = spots[:lonelyNumber]
 		elif lonelyShare < 1.0:
-			want = int(len(spots) * lonelyShare + 0.5)
+			want = max(1, int(len(spots) * lonelyShare + 0.5)) # at least one, if there is room for it
 			chosen = []
 			while len(chosen) < want and len(spots) > 0:
 				chosen.append(spots.pop(dice.get(len(spots), "Python - Planet Generator: lonely island")))
 			spots = chosen
-		if len(spots) > 0 and budget < len(spots) * smallest:
-			# make room on the continents for an island in every spot
-			for continent in contList:
-				plan.shrinkMass(continent.mass, (len(spots) * smallest - budget) // len(contList) + 1, "compact")
-			budget = targetLand - plan.land
-		reserve = 0
-		if lonelyShare >= 1.0:
-			reserve = budget // 5 # some land for the gaps
 		sizes = []
 		for o in spots:
 			sizes.append(min(islandCap, max(smallest, islandMin + dice.get(islandMax - islandMin + 1, "Python - Planet Generator: lonely island size"))))
-		placed = plan.placeIslands(spots, sizes, budget - reserve, smallest, islandMode)
+		placed = plan.placeIslands(spots, sizes, smallest, islandMode)
 		count = len(spots)
+		# too few open spots for the number asked for: smaller gaps, where an island of the chosen size still fits
+		need = min(islandCap, max(smallest, islandMin))
+		r = islandRadius - 1
+		while count < lonelyNumber and r >= 0:
+			spots = []
+			for o in plan.lonelySpots(r):
+				if count + len(spots) >= lonelyNumber:
+					break
+				if plan.room(o, need) >= need:
+					spots.append(o)
+			sizes = []
+			for o in spots:
+				sizes.append(min(islandCap, max(smallest, islandMin + dice.get(islandMax - islandMin + 1, "Python - Planet Generator: lonely island size"))))
+			placed += plan.placeIslands(spots, sizes, smallest, islandMode)
+			count += len(spots)
+			r -= 1
 		if lonelyShare >= 1.0:
 			# "every empty area": smaller islands in the gaps that are left, the biggest gaps first
 			r = islandRadius - 1
@@ -3119,29 +3140,33 @@ def generatePlotTypes():
 				sizes = []
 				for o in spots:
 					sizes.append(size)
-				placed += plan.placeIslands(spots, sizes, targetLand - plan.land, smallest, islandMode)
+				placed += plan.placeIslands(spots, sizes, smallest, islandMode)
 				count += len(spots)
 				r -= 1
 		print "Planet Generator: lonely islands", count, "with", placed, "plots"
 
 	if debugChecks and not archipelago:
 		plan.check("lonely", len(contList))
+	# continent scattering (K-Mod-Magnus): islands near each continent's coast
+	if coastShare > 0:
+		for continent in contList:
+			plan.coastalIslands(continent.group, coastShare, max(continentScatter[5], minIslandSize), max(minIslandSize, min(continentScatter[6], islandCap)), continentScatter[7], islandMode, allowOneTileIslands)
+
+	if debugChecks and not archipelago:
+		plan.check("scattering", len(contList))
 	# islands below the minimum size grow to it, or go if there is no room (K-Mod-Magnus; was: remove 1 - tile islands)
 	if minIslandSize > 1:
 		plan.fitIslands(minIslandSize, islandMode)
-
-	# and now exactly the land wanted
-	balanceLand(plan, contList, steps, targetLand, coastline, minIslandSize, True)
-	if minIslandSize > 1 and plan.removeSmallPieces(minIslandSize) > 0:
-		balanceLand(plan, contList, steps, targetLand, coastline, minIslandSize, False)
+		plan.removeSmallPieces(minIslandSize)
 
 	if debugChecks and not archipelago:
-		plan.check("balance", len(contList))
+		plan.check("islands", len(contList))
 	global landPlan
 	global landSettings
 	landPlan = plan
 	landSettings = {"ocean": oceanPercentage, "separation": continentSeparation, "continents": len(contList),
-		"minIslandSize": minIslandSize, "archipelago": archipelago, "coastline": coastline, "targetLand": targetLand}
+		"minIslandSize": minIslandSize, "archipelago": archipelago, "coastline": coastline, "targetLand": targetLand,
+		"continentLand": plan.contLand, "islandLand": plan.land - plan.contLand}
 
 	global continentAnchors
 	continentAnchors = []
@@ -3155,7 +3180,7 @@ def generatePlotTypes():
 		if m >= 1000 and len(plan.massTiles[m]) > 0:
 			islands += 1
 	# (no percent sign in the text: the game's log runs printed text through printf)
-	print "Planet Generator: %d land plots (wanted %d), %.1f percent water, %d coast plots, %d continents, %d islands" % (plan.land, targetLand, 100.0 * (iW * iH - plan.land) / (iW * iH), plan.coastCount(), len(contList), islands)
+	print "Planet Generator: %d continents with %d land plots (wanted %d: %.1f percent water without the islands), %d islands with %d plots, %.1f percent water, %d coast plots" % (len(contList), plan.contLand, targetLand, 100.0 * (iW * iH - plan.contLand) / (iW * iH), islands, plan.land - plan.contLand, 100.0 * (iW * iH - plan.land) / (iW * iH), plan.coastCount())
 
 	peakOptions = getSelValue("peaks")
 	if peakOptions is None:
@@ -4509,6 +4534,51 @@ def ensureEveryResource(minCount):
 		if added + forced > 0:
 			print "Planet Generator: %s %d more (%d where it could be, %d on a plot made to fit)%s" % (info.getType(), added + forced, added, forced, (missing > 0 and ", still missing %d" % missing) or "")
 
+def continentAreas():
+	"""K-Mod-Magnus: the game's land areas of the continents (an archipelago continent has several), not of the
+	islands"""
+	cymap = CyMap()
+	result = []
+	if landPlan is None or landPlan.N != cymap.numPlots():
+		return result
+	seen = {}
+	mass = landPlan.mass
+	for o in xrange(landPlan.N):
+		m = mass[o]
+		if m >= 0 and m < 1000:
+			plot = cymap.plotByIndex(o)
+			if not plot.isWater():
+				a = plot.getArea()
+				if not seen.has_key(a):
+					seen[a] = True
+					result.append(a)
+	return result
+
+def bestContinentArea():
+	"""K-Mod-Magnus: the area CvPlayer::findStartingArea would choose (the same value), among the continents only:
+	it looks at every land area, so a big island could get a civ. -1 if the continents are not known."""
+	global continentAreaIDs
+	if continentAreaIDs is None:
+		continentAreaIDs = continentAreas()
+	cymap = CyMap()
+	cityPlots = CyGlobalContext().getNUM_CITY_PLOTS()
+	best = -1
+	bestValue = 0
+	for a in continentAreaIDs:
+		area = cymap.getArea(a)
+		if area.isNone():
+			continue
+		onArea = area.getNumStartingPlots() + 1 # with this player
+		tiles = area.getNumTiles()
+		value = (area.calculateTotalBestNatureYield() + area.countCoastalLand() * 2 + area.getNumRiverEdges() + tiles + 1) // onArea
+		value = value * min(cityPlots + 1, tiles + 1) // (cityPlots + 1)
+		if onArea <= 2:
+			value = value * 4 // 3
+		if value > bestValue:
+			bestValue = value
+			best = a
+	return best
+
 def findStartingArea(argsList):
 	"""Can override	to return the ID of	the	area in	which the given	player should start. Return	an areaID to
 	force the player to	start in a certain area, or	-1 to specify that the player should start in the best
@@ -4517,17 +4587,19 @@ def findStartingArea(argsList):
 
 	WARNING: If	findStartingPlot() is overriden	then this function will	not	automatically be called."""
 	playerID = argsList[0]
-	# K-Mod-Magnus: "Rival civs on your continent". The DLL updates the found values and then asks for the area;
-	# the best plot in it is found by the default findStartingPlot.
+	# K-Mod-Magnus: "Rival civs on your continent", otherwise the area the game would choose among the continents
+	# (nobody starts on an island). The DLL updates the found values and then asks for the area; the best plot in it
+	# is found by the default findStartingPlot.
 	global startAreaPlan
 	if startAreaPlan is None:
 		startAreaPlan = makeStartAreaPlan()
-	if len(startAreaPlan) == 0:
-		CyPythonMgr().allowDefaultImpl()
-		return
 	if startAreaPlan.has_key(playerID):
 		return startAreaPlan[playerID]
-	return -1
+	area = bestContinentArea()
+	if area < 0:
+		CyPythonMgr().allowDefaultImpl()
+		return
+	return area
 
 def findStartingPlot(argsList):
 	"Can override to return	the	plot index at which	the	given player should	start"
