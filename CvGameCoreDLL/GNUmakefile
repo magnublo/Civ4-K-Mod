@@ -4,6 +4,7 @@
 #   make -j$(nproc)                 Release build -> Release/CvGameCoreDLL.dll
 #   make -j$(nproc) TARGET=LogAI    Release plus LOG_AI: every AI decision goes to Logs/BBAI.log -> LogAI/CvGameCoreDLL.dll
 #   make -j$(nproc) TARGET=Debug    unoptimised, asserts and LOG_AI -> Debug/CvGameCoreDLL.dll
+#   make -j$(nproc) CIVS=24         civ cap 24 instead of 48 (any TARGET) -> Release-24civs/CvGameCoreDLL.dll
 #   make clean                      removes the TARGET's build folder
 #
 # Paths can be overridden on the command line (make TOOLKIT=...) or in the environment.
@@ -21,6 +22,7 @@ PYTHON ?= $(CIV4_BUILD)/sdk-deps/Python24
 WINEPREFIX ?= $(HOME)/.local/share/wineprefixes/civ4-build
 WINE ?= wine32
 TARGET ?= Release
+CIVS ?=
 ifeq ($(filter $(TARGET),Release LogAI Debug),)
 $(error TARGET must be Release, LogAI or Debug)
 endif
@@ -37,7 +39,7 @@ winpath = Z:$(1)
 CL := $(WINE) $(TOOLKIT)/bin/cl.exe
 LINK := $(WINE) $(TOOLKIT)/bin/link.exe
 
-OUT := $(TARGET)
+OUT := $(TARGET)$(if $(CIVS),-$(CIVS)civs)
 DLL := $(OUT)/CvGameCoreDLL.dll
 PCH := $(OUT)/CvGameCoreDLL.pch
 PCH_OBJ := $(OUT)/_precompile.obj
@@ -49,6 +51,9 @@ OBJS := $(SOURCES:%.cpp=$(OUT)/%.obj)
 HEADERS := $(wildcard *.h)
 
 GLOBAL_CFLAGS := /nologo /GR /Gy /W3 /EHsc /Gd /Gm- /DWIN32 /D_WINDOWS /D_USRDLL /DCVGAMECOREDLL_EXPORTS
+ifneq ($(CIVS),)
+GLOBAL_CFLAGS += /DCIV_PLAYER_CAP=$(CIVS)
+endif
 ifeq ($(TARGET),Debug)
 # /Z7 instead of /Zi: debug info goes into each .obj, so parallel compiles don't fight over one PDB.
 CFLAGS := /MD /Z7 /Od /D_DEBUG /DLOG_AI /RTC1 $(GLOBAL_CFLAGS)

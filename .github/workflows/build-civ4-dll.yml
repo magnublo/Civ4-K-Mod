@@ -6,10 +6,12 @@ on:
     paths:
       - "CvGameCoreDLL/**"
       - ".github/workflows/build-civ4-dll.yml"
+      - ".github/scripts/**"
   pull_request:
     paths:
       - "CvGameCoreDLL/**"
       - ".github/workflows/build-civ4-dll.yml"
+      - ".github/scripts/**"
 
 concurrency:
   group: build-civ4-dll-${{ github.ref }}
@@ -17,8 +19,14 @@ concurrency:
 
 jobs:
   build-dll:
+    # One DLL per civ cap: more civ slots make every turn slower, and saves only load with the same cap.
+    name: build-dll (${{ matrix.civs }} civs)
     runs-on: windows-2022
     timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        civs: [24, 32, 48]
     env:
       VC2003_ROOT: C:\Program Files (x86)\Microsoft Visual C++ Toolkit 2003
       BUILD_DEPS_URL: https://github.com/magnublo/Civ4-K-Mod/releases/download/build-deps/v1
@@ -285,11 +293,16 @@ jobs:
           Write-Host "Using toolkit: $env:VC2003_ROOT"
           Write-Host "Using Windows SDK: $psdkPath"
 
-      - name: Build Release DLL
+      - name: Build Release DLL (${{ matrix.civs }} civs)
         working-directory: CvGameCoreDLL
         shell: cmd
         run: |
-          nmake TOOLKIT="%TOOLKIT_PATH%" PSDK="%PSDK_PATH%" Release
+          nmake TOOLKIT="%TOOLKIT_PATH%" PSDK="%PSDK_PATH%" "CUSTOM_CFLAGS=/DCIV_PLAYER_CAP=${{ matrix.civs }}" Release
+
+      - name: Check the DLL's civ cap
+        shell: pwsh
+        run: |
+          python .github/scripts/check_civ_cap.py "CvGameCoreDLL\Release\CvGameCoreDLL.dll" ${{ matrix.civs }}
 
       - name: Stage built DLL into Assets
         shell: pwsh
@@ -299,7 +312,7 @@ jobs:
       - name: Upload DLL artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: CvGameCoreDLL-Release
+          name: CvGameCoreDLL-${{ matrix.civs }}civs
           if-no-files-found: error
           path: |
             CvGameCoreDLL/Release/CvGameCoreDLL.dll

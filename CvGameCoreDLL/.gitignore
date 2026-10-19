@@ -1,5 +1,5 @@
-# build output of GNUmakefile / Makefile
-Release/
-LogAI/
-Debug/
+# build output of GNUmakefile / Makefile (Release-24civs etc. with CIVS=)
+Release*/
+LogAI*/
+Debug*/
 Profile/

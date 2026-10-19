@@ -55,7 +55,12 @@
 #define RANDPLOT_NOT_CITY											(0x00000040)
 
 #ifdef _USRDLL
-#define MAX_CIV_PLAYERS												(48) // note: K-Mod's default is 18; this fork uses 48. Saves only load with the same value
+// Civ slots. K-Mod's default is 18; this fork builds 48 by default and 24 or 32 with /DCIV_PLAYER_CAP=24 (fewer
+// slots make turns faster). Saves only load in a DLL with the same value.
+#ifndef CIV_PLAYER_CAP
+#define CIV_PLAYER_CAP												(48)
+#endif
+#define MAX_CIV_PLAYERS												(CIV_PLAYER_CAP)
 #else
 #define MAX_CIV_PLAYERS												(CvGlobals::getInstance().getMaxCivPlayers())
 #endif
