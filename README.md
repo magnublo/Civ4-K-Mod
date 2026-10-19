@@ -20,18 +20,27 @@ This README is written for both:
 
 ## Included Merge: Marathon Accelerated
 
-The Marathon Accelerated game-speed mod has been merged into this repository's K-Mod data files.
+The Marathon Accelerated 1.1 game-speed mod is included unchanged (the same content as its three XML files).
 
 Integrated behavior:
-- Marathon speed (`GAMESPEED_MARATHON`) keeps Marathon turn pacing, but uses accelerated production and research pacing from Marathon Accelerated:
+- Adds a fifth game speed, Marathon Accelerated (`GAMESPEED_MARATHONACCELERATED`, first entry in the XML). It keeps Marathon's 1500-turn calendar, growth, cottage growth and barbarian/war timing (`iBarbPercent = 400`), but uses Normal-speed unit, building and worker costs:
 	- `iTrainPercent = 100`
 	- `iConstructPercent = 100`
+	- `iBuildPercent = 100` (worker actions take Normal-speed turns, e.g. a road takes 2 turns)
+	- `iCreatePercent = 400`
 	- `iResearchPercent = 560`
+	- `iFeatureProductionPercent = 400` (chop yield)
+	- `iInflationPercent = 11`
+- Standard Marathon (`GAMESPEED_MARATHON`) and the other speeds are unchanged from BtS.
+- Marathon Accelerated culture thresholds are Refined 1750, Influential 17500 and Legendary 225000. The numbers in the mod's own readme (2100/21000/210000) are wrong.
 - Build Research (`PROCESS_RESEARCH`) is unlocked at `TECH_MYSTICISM` (instead of `TECH_ALPHABET`).
 
 Merged files are in:
 - `Assets/xml/GameInfo/CIV4GameSpeedInfo.xml`
 - `Assets/xml/GameInfo/CIV4ProcessInfo.xml`
+- `Assets/xml/GameInfo/CIV4CultureLevelInfo.xml` (also listed under the old personal snapshot below; it is the mod's file)
+
+If you edit the speed list, keep `CIV4CultureLevelInfo.xml` in step. Each culture level needs one `SpeedThreshold` per speed, because a missing one defaults to 0. Listing more speeds than exist triggers "XML Error" popups while loading.
 
 ## Included Merge: Old Personal Snapshot ("K-Mod, more resources")
 

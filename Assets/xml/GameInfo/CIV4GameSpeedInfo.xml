@@ -8,14 +8,75 @@
 <Civ4GameSpeedInfo xmlns="x-schema:CIV4GameInfoSchema.xml">
 	<GameSpeedInfos>
 		<GameSpeedInfo>
+			<Type>GAMESPEED_MARATHONACCELERATED</Type>
+			<Description>Marathon Accelerated</Description>
+			<Help>No Help Available</Help>
+			<iGrowthPercent>300</iGrowthPercent>
+			<iTrainPercent>100</iTrainPercent>
+			<iConstructPercent>100</iConstructPercent>
+			<iCreatePercent>400</iCreatePercent>
+			<iResearchPercent>560</iResearchPercent>
+			<iBuildPercent>100</iBuildPercent>
+			<iImprovementPercent>300</iImprovementPercent>
+			<iGreatPeoplePercent>300</iGreatPeoplePercent>
+			<iCulturePercent>300</iCulturePercent>
+			<iAnarchyPercent>200</iAnarchyPercent>
+			<iBarbPercent>400</iBarbPercent>
+			<iFeatureProductionPercent>400</iFeatureProductionPercent>
+			<iUnitDiscoverPercent>300</iUnitDiscoverPercent>
+			<iUnitHurryPercent>300</iUnitHurryPercent>
+			<iUnitTradePercent>300</iUnitTradePercent>
+			<iUnitGreatWorkPercent>300</iUnitGreatWorkPercent>
+			<iGoldenAgePercent>200</iGoldenAgePercent>
+			<iHurryPercent>33</iHurryPercent>
+			<iHurryConscriptAngerPercent>300</iHurryConscriptAngerPercent>
+			<iInflationPercent>11</iInflationPercent>
+			<iInflationOffset>-270</iInflationOffset>
+			<iVictoryDelayPercent>300</iVictoryDelayPercent>
+			<GameTurnInfos>
+				<GameTurnInfo>
+					<iMonthIncrement>180</iMonthIncrement>
+					<iTurnsPerIncrement>100</iTurnsPerIncrement>
+				</GameTurnInfo>
+				<GameTurnInfo>
+					<iMonthIncrement>120</iMonthIncrement>
+					<iTurnsPerIncrement>300</iTurnsPerIncrement>
+				</GameTurnInfo>
+				<GameTurnInfo>
+					<iMonthIncrement>60</iMonthIncrement>
+					<iTurnsPerIncrement>170</iTurnsPerIncrement>
+				</GameTurnInfo>
+				<GameTurnInfo>
+					<iMonthIncrement>24</iMonthIncrement>
+					<iTurnsPerIncrement>201</iTurnsPerIncrement>
+				</GameTurnInfo>
+				<GameTurnInfo>
+					<iMonthIncrement>12</iMonthIncrement>
+					<iTurnsPerIncrement>129</iTurnsPerIncrement>
+				</GameTurnInfo>
+				<GameTurnInfo>
+					<iMonthIncrement>6</iMonthIncrement>
+					<iTurnsPerIncrement>180</iTurnsPerIncrement>
+				</GameTurnInfo>
+				<GameTurnInfo>
+					<iMonthIncrement>3</iMonthIncrement>
+					<iTurnsPerIncrement>264</iTurnsPerIncrement>
+				</GameTurnInfo>
+				<GameTurnInfo>
+					<iMonthIncrement>1</iMonthIncrement>
+					<iTurnsPerIncrement>156</iTurnsPerIncrement>
+				</GameTurnInfo>
+			</GameTurnInfos>
+		</GameSpeedInfo>
+		<GameSpeedInfo>
 			<Type>GAMESPEED_MARATHON</Type>
 			<Description>TXT_KEY_GAMESPEED_MARATHON</Description>
 			<Help>TXT_KEY_GAMESPEED_MARATHON_HELP</Help>
 			<iGrowthPercent>300</iGrowthPercent>
-			<iTrainPercent>100</iTrainPercent>
-			<iConstructPercent>100</iConstructPercent>
+			<iTrainPercent>200</iTrainPercent>
+			<iConstructPercent>300</iConstructPercent>
 			<iCreatePercent>300</iCreatePercent>
-			<iResearchPercent>560</iResearchPercent>
+			<iResearchPercent>300</iResearchPercent>
 			<iBuildPercent>300</iBuildPercent>
 			<iImprovementPercent>300</iImprovementPercent>
 			<iGreatPeoplePercent>300</iGreatPeoplePercent>
