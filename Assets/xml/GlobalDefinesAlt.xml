@@ -196,4 +196,16 @@
 		<DefineName>AI_EARLY_WAR_RAND_PERCENT</DefineName>
 		<iDefineIntVal>300</iDefineIntVal> <!-- right after the gate the chance of a war plan is 100/this of the usual chance (300 = a third), fading to normal at the ramp's end; 100 = no ramp -->
 	</Define>
+	<!-- Turn times. Written by Claude for this fork (2026-10-19).
+		AUTOMATED_UNITS_MOVE_TOGETHER: at the end of the human's turn, the automated units (workers, explorers,
+		missionaries) act in the same time slice, so their moves are shown at the same time.
+		0 = as in BtS and K-Mod: after each automated unit whose move is animated, the next one waits for the next time
+		slice (a quarter of a second). With dozens of automated workers that adds seconds to every turn, on any computer.
+		The units decide as before, but the order of events at the end of the turn changes, so a game doesn't replay
+		exactly as with 0. Measured on a 14-civ Huge AD 1320 save with 51 automated workers: interturn 10.3 s -> 7.4 s,
+		with the same improvements and roads built. Details: CvGame::updateMoves. -->
+	<Define>
+		<DefineName>AUTOMATED_UNITS_MOVE_TOGETHER</DefineName>
+		<iDefineIntVal>1</iDefineIntVal>
+	</Define>
 </Civ4Defines>

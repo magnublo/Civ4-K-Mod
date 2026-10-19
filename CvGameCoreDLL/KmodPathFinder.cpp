@@ -48,7 +48,9 @@ KmodPathFinder::KmodPathFinder() :
 	end_node(0),
 	map_width(0),
 	map_height(0),
-	node_data(0)
+	node_data(0),
+	node_generation(0), // perf
+	current_generation(1)
 {
 	// Unfortunately, the pathfinder is constructed before the map width and height are determined.
 
@@ -61,6 +63,7 @@ KmodPathFinder::KmodPathFinder() :
 KmodPathFinder::~KmodPathFinder()
 {
 	free(node_data);
+	free(node_generation); // perf
 }
 
 bool KmodPathFinder::ValidateNodeMap()
@@ -74,6 +77,10 @@ bool KmodPathFinder::ValidateNodeMap()
 		map_width = GC.getMapINLINE().getGridWidthINLINE();
 		map_height = GC.getMapINLINE().getGridHeightINLINE();
 		node_data = (FAStarNode*)realloc(node_data, sizeof(*node_data)*map_width*map_height);
+		// perf: no node is valid in the current generation
+		node_generation = (unsigned*)realloc(node_generation, sizeof(*node_generation)*map_width*map_height);
+		memset(node_generation, 0, sizeof(*node_generation)*map_width*map_height);
+		current_generation = 1;
 		end_node = NULL;
 	}
 	return true;
@@ -261,7 +268,13 @@ void KmodPathFinder::SetSettings(const CvPathSettings& new_settings)
 
 void KmodPathFinder::Reset()
 {
-	memset(&node_data[0], 0, sizeof(*node_data)*map_width*map_height);
+	//memset(&node_data[0], 0, sizeof(*node_data)*map_width*map_height);
+	// perf: start a new generation instead; GetNode clears each node when it is first used in it.
+	if (++current_generation == 0)
+	{
+		memset(node_generation, 0, sizeof(*node_generation)*map_width*map_height);
+		current_generation = 1;
+	}
 	open_list.clear();
 	end_node = NULL;
 	// settings is set separately.

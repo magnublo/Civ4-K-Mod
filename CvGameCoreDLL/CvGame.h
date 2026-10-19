@@ -44,6 +44,7 @@ public:
 	DllExport void normalizeStartingPlots();
 
 	DllExport void update();
+	static int getUpdateCount(); // perf: number of the CvGame::update call that is running, -1 outside of update
 	DllExport void updateScore(bool bForce = false);
 
 	DllExport void updateColoredPlots();

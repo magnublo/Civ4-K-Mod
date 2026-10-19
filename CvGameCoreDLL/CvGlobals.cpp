@@ -212,6 +212,9 @@ m_iUSE_UNIT_CANNOT_MOVE_INTO_CALLBACK(0),
 m_iUSE_USE_CANNOT_SPREAD_RELIGION_CALLBACK(0),
 m_iUSE_FINISH_TEXT_CALLBACK(0),
 m_iUSE_ON_UNIT_SET_XY_CALLBACK(0),
+m_iUSE_ON_UNIT_MOVE_CALLBACK(0), // perf
+m_iUSE_GET_EXTRA_COST_CALLBACK(0), // perf
+m_iAUTOMATED_UNITS_MOVE_TOGETHER(0), // perf
 m_iUSE_ON_UNIT_SELECTED_CALLBACK(0),
 m_iUSE_ON_UPDATE_CALLBACK(0),
 m_iUSE_ON_UNIT_CREATED_CALLBACK(0),
@@ -2647,6 +2650,7 @@ FVariableSystem* CvGlobals::getDefinesVarSystem()
 
 void CvGlobals::cacheGlobals()
 {
+	clearDefineCache(); // perf: defines may have changed; must come before the getDefine calls below
 	m_iEXTRA_YIELD = getDefineINT("EXTRA_YIELD"); // K-Mod
 	m_iMOVE_DENOMINATOR = getDefineINT("MOVE_DENOMINATOR");
 	m_iNUM_UNIT_PREREQ_OR_BONUSES = getDefineINT("NUM_UNIT_PREREQ_OR_BONUSES");
@@ -2720,6 +2724,9 @@ void CvGlobals::cacheGlobals()
 	m_iUSE_USE_CANNOT_SPREAD_RELIGION_CALLBACK = getDefineINT("USE_USE_CANNOT_SPREAD_RELIGION_CALLBACK");
 	m_iUSE_FINISH_TEXT_CALLBACK = getDefineINT("USE_FINISH_TEXT_CALLBACK");
 	m_iUSE_ON_UNIT_SET_XY_CALLBACK = getDefineINT("USE_ON_UNIT_SET_XY_CALLBACK");
+	m_iUSE_ON_UNIT_MOVE_CALLBACK = getDefineINT("USE_ON_UNIT_MOVE_CALLBACK"); // perf
+	m_iUSE_GET_EXTRA_COST_CALLBACK = getDefineINT("USE_GET_EXTRA_COST_CALLBACK"); // perf
+	m_iAUTOMATED_UNITS_MOVE_TOGETHER = getDefineINT("AUTOMATED_UNITS_MOVE_TOGETHER"); // perf
 	m_iUSE_ON_UNIT_SELECTED_CALLBACK = getDefineINT("USE_ON_UNIT_SELECTED_CALLBACK");
 	m_iUSE_ON_UPDATE_CALLBACK = getDefineINT("USE_ON_UPDATE_CALLBACK");
 	m_iUSE_ON_UNIT_CREATED_CALLBACK = getDefineINT("USE_ON_UNIT_CREATED_CALLBACK");
@@ -2796,11 +2803,103 @@ void CvGlobals::cacheGlobals()
 /*                                                                                              */
 /*                                                                                              */
 /************************************************************************************************/
+// perf: Looking up a define by name builds a std::string from the name (a heap allocation for most names) and
+// searches a hash map; hot AI and trade code did that millions of times per turn. This cache remembers the result
+// for each name. An entry is keyed by the name's address and holds a copy of the name, so a reused string buffer
+// can't return another define's value. The cache is emptied whenever defines are set (cacheGlobals: after loading
+// the XML and in every setDefine call; SetPostGlobalsGlobalDefines).
+namespace
+{
+	const int DEFINE_CACHE_SIZE = 4096; // power of 2
+	const int DEFINE_CACHE_NAME_LENGTH = 64;
+
+	struct IntDefineCacheEntry
+	{
+		const char* szKey;
+		char szName[DEFINE_CACHE_NAME_LENGTH];
+		bool bFound;
+		int iValue;
+	};
+	struct FloatDefineCacheEntry
+	{
+		const char* szKey;
+		char szName[DEFINE_CACHE_NAME_LENGTH];
+		bool bFound;
+		float fValue;
+	};
+	IntDefineCacheEntry g_aIntDefineCache[DEFINE_CACHE_SIZE];
+	FloatDefineCacheEntry g_aFloatDefineCache[DEFINE_CACHE_SIZE];
+
+	inline int defineCacheSlot(const char* szName)
+	{
+		return (int)(((unsigned)szName * 2654435761U) >> 16) & (DEFINE_CACHE_SIZE - 1);
+	}
+
+	inline bool defineCacheHit(const char* szKey, const char* szCachedName, const char* szName)
+	{
+		return szKey == szName && strcmp(szCachedName, szName) == 0;
+	}
+
+	bool lookUpIntDefine(const char* szName, int& iValue)
+	{
+		IntDefineCacheEntry& kEntry = g_aIntDefineCache[defineCacheSlot(szName)];
+		if (defineCacheHit(kEntry.szKey, kEntry.szName, szName))
+		{
+#ifdef PERF_VERIFY
+			int iCheck = 0;
+			bool bCheck = GC.getDefinesVarSystem()->GetValue(szName, iCheck);
+			if (bCheck != kEntry.bFound || (bCheck && iCheck != kEntry.iValue))
+				gDLL->logMsg("perf_verify.log", CvString::format("define cache: %s cached %d/%d, actual %d/%d", szName, kEntry.bFound, kEntry.iValue, bCheck, iCheck).c_str());
+#endif
+			if (kEntry.bFound)
+				iValue = kEntry.iValue;
+			return kEntry.bFound;
+		}
+		bool bFound = GC.getDefinesVarSystem()->GetValue(szName, iValue);
+		if (strlen(szName) < DEFINE_CACHE_NAME_LENGTH)
+		{
+			kEntry.szKey = szName;
+			strcpy(kEntry.szName, szName);
+			kEntry.bFound = bFound;
+			kEntry.iValue = bFound ? iValue : 0;
+		}
+		return bFound;
+	}
+
+	bool lookUpFloatDefine(const char* szName, float& fValue)
+	{
+		FloatDefineCacheEntry& kEntry = g_aFloatDefineCache[defineCacheSlot(szName)];
+		if (defineCacheHit(kEntry.szKey, kEntry.szName, szName))
+		{
+			if (kEntry.bFound)
+				fValue = kEntry.fValue;
+			return kEntry.bFound;
+		}
+		bool bFound = GC.getDefinesVarSystem()->GetValue(szName, fValue);
+		if (strlen(szName) < DEFINE_CACHE_NAME_LENGTH)
+		{
+			kEntry.szKey = szName;
+			strcpy(kEntry.szName, szName);
+			kEntry.bFound = bFound;
+			kEntry.fValue = bFound ? fValue : 0;
+		}
+		return bFound;
+	}
+}
+
+void CvGlobals::clearDefineCache()
+{
+	memset(g_aIntDefineCache, 0, sizeof(g_aIntDefineCache));
+	memset(g_aFloatDefineCache, 0, sizeof(g_aFloatDefineCache));
+}
+
 int CvGlobals::getDefineINT( const char * szName, const int iDefault ) const
 {
+	SAMPLER_COUNT_DEFINE(szName); // perf
 	int iReturn = 0;
 
-	if( GC.getDefinesVarSystem()->GetValue( szName, iReturn ) )
+	//if( GC.getDefinesVarSystem()->GetValue( szName, iReturn ) )
+	if (lookUpIntDefine(szName, iReturn)) // perf
 	{
 		return iReturn;
 	}
@@ -2814,15 +2913,19 @@ int CvGlobals::getDefineINT( const char * szName, const int iDefault ) const
 
 int CvGlobals::getDefineINT( const char * szName ) const
 {
+	SAMPLER_COUNT_DEFINE(szName); // perf
 	int iReturn = 0;
-	GC.getDefinesVarSystem()->GetValue( szName, iReturn );
+	//GC.getDefinesVarSystem()->GetValue( szName, iReturn );
+	lookUpIntDefine(szName, iReturn); // perf
 	return iReturn;
 }
 
 float CvGlobals::getDefineFLOAT( const char * szName ) const
 {
+	SAMPLER_COUNT_DEFINE(szName); // perf
 	float fReturn = 0;
-	GC.getDefinesVarSystem()->GetValue( szName, fReturn );
+	//GC.getDefinesVarSystem()->GetValue( szName, fReturn );
+	lookUpFloatDefine(szName, fReturn); // perf
 	return fReturn;
 }
 
@@ -3199,6 +3302,22 @@ int CvGlobals::getUSE_FINISH_TEXT_CALLBACK()
 int CvGlobals::getUSE_ON_UNIT_SET_XY_CALLBACK()
 {
 	return m_iUSE_ON_UNIT_SET_XY_CALLBACK;
+}
+
+// perf
+int CvGlobals::getUSE_ON_UNIT_MOVE_CALLBACK()
+{
+	return m_iUSE_ON_UNIT_MOVE_CALLBACK;
+}
+
+int CvGlobals::getUSE_GET_EXTRA_COST_CALLBACK()
+{
+	return m_iUSE_GET_EXTRA_COST_CALLBACK;
+}
+
+int CvGlobals::getAUTOMATED_UNITS_MOVE_TOGETHER()
+{
+	return m_iAUTOMATED_UNITS_MOVE_TOGETHER;
 }
 
 int CvGlobals::getUSE_ON_UNIT_SELECTED_CALLBACK()

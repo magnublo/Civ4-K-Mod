@@ -128,10 +128,20 @@ void CvPlotGroup::recalculatePlots()
 	{
 		pPlot = GC.getMapINLINE().plotSorenINLINE(pPlotNode->m_data.iX, pPlotNode->m_data.iY);
 
+		/* original bts code
 		iCount = 0;
 
 		gDLL->getFAStarIFace()->SetData(&GC.getPlotGroupFinder(), &iCount);
+		gDLL->getFAStarIFace()->GeneratePath(&GC.getPlotGroupFinder(), pPlot->getX_INLINE(), pPlot->getY_INLINE(), -1, -1, false, eOwner); */
+		// perf: the same count without the exe's pathfinder
+		iCount = countConnectedPlots(*pPlot);
+#ifdef PERF_VERIFY
+		int iExeCount = 0;
+		gDLL->getFAStarIFace()->SetData(&GC.getPlotGroupFinder(), &iExeCount);
 		gDLL->getFAStarIFace()->GeneratePath(&GC.getPlotGroupFinder(), pPlot->getX_INLINE(), pPlot->getY_INLINE(), -1, -1, false, eOwner);
+		if (iExeCount != iCount)
+			gDLL->logMsg("perf_verify.log", CvString::format("recalculatePlots: exe count %d, DLL count %d (player %d, plot %d,%d, %d plots)", iExeCount, iCount, eOwner, pPlot->getX_INLINE(), pPlot->getY_INLINE(), getLengthPlots()).c_str());
+#endif
 
 		if (iCount == getLengthPlots())
 		{
@@ -179,6 +189,61 @@ void CvPlotGroup::recalculatePlots()
 			pPlotNode = oldPlotGroup.deleteNode(pPlotNode);
 		}
 	}
+}
+
+
+// perf: the number of plots reachable from kStart through plots of this group, as counted by the exe's plot group
+// finder (FAStar with plotGroupValid and countPlotGroup) that recalculatePlots used: a plot is reached from an
+// adjacent reached plot if both are in the same group and it is trade network connected to it. A plain breadth-first
+// search finds the same plots without the exe's pathfinder overhead, which was the most expensive part of the check.
+int CvPlotGroup::countConnectedPlots(const CvPlot& kStart) const
+{
+	PROFILE_FUNC();
+
+	static std::vector<unsigned> aiReached; // search in which each plot was reached
+	static std::vector<int> aiQueue;
+	static unsigned iSearch = 0;
+
+	const CvMap& kMap = GC.getMapINLINE();
+	if ((int)aiReached.size() != kMap.numPlotsINLINE())
+	{
+		aiReached.assign(kMap.numPlotsINLINE(), 0);
+		iSearch = 0;
+	}
+	if (++iSearch == 0)
+	{
+		std::fill(aiReached.begin(), aiReached.end(), 0);
+		iSearch = 1;
+	}
+
+	PlayerTypes eOwner = getOwnerINLINE();
+	TeamTypes eTeam = GET_PLAYER(eOwner).getTeam();
+
+	aiQueue.clear();
+	aiQueue.push_back(kMap.plotNumINLINE(kStart.getX_INLINE(), kStart.getY_INLINE()));
+	aiReached[aiQueue[0]] = iSearch;
+	for (size_t i = 0; i < aiQueue.size(); i++)
+	{
+		CvPlot* pPlot = kMap.plotByIndexINLINE(aiQueue[i]);
+		CvPlotGroup* pPlotGroup = pPlot->getPlotGroup(eOwner);
+		for (int iDir = 0; iDir < NUM_DIRECTION_TYPES; iDir++)
+		{
+			CvPlot* pAdjacentPlot = plotDirection(pPlot->getX_INLINE(), pPlot->getY_INLINE(), (DirectionTypes)iDir);
+			if (pAdjacentPlot == NULL)
+				continue;
+			int iAdjacent = kMap.plotNumINLINE(pAdjacentPlot->getX_INLINE(), pAdjacentPlot->getY_INLINE());
+			if (aiReached[iAdjacent] == iSearch)
+				continue;
+			// plotGroupValid(pPlot -> pAdjacentPlot)
+			if (pAdjacentPlot->getPlotGroup(eOwner) == pPlotGroup && pAdjacentPlot->isTradeNetwork(eTeam) &&
+				pAdjacentPlot->isTradeNetworkConnected(pPlot, eTeam))
+			{
+				aiReached[iAdjacent] = iSearch;
+				aiQueue.push_back(iAdjacent);
+			}
+		}
+	}
+	return (int)aiQueue.size();
 }
 
 
@@ -231,6 +296,7 @@ void CvPlotGroup::changeNumBonuses(BonusTypes eBonus, int iChange)
 		// It's an unfortuante side effect of the way the update is implemented. ... and so this assert is invalid.
 		// (This isn't my fault. I haven't changed it. It has always been like this.)
 
+		/* original bts code
 		CLLNode<XYCoords>* pPlotNode = headPlotsNode();
 
 		while (pPlotNode != NULL)
@@ -246,6 +312,20 @@ void CvPlotGroup::changeNumBonuses(BonusTypes eBonus, int iChange)
 			}
 
 			pPlotNode = nextPlotsNode(pPlotNode);
+		} */
+		// perf: The cities to update are the owner's cities whose plot is in this group (also while plots are being
+		// moved between groups: a plot's group changes right before it leaves the old group's list and right after
+		// it joins the new one's). Going through the owner's cities is much faster than through every plot of the
+		// group, thousands for a big trade network. Only the order of the city updates changes, and each one
+		// changes just that city (and player totals).
+		CvPlayer& kOwner = GET_PLAYER(getOwnerINLINE());
+		int iLoop;
+		for (CvCity* pLoopCity = kOwner.firstCity(&iLoop); pLoopCity != NULL; pLoopCity = kOwner.nextCity(&iLoop))
+		{
+			if (pLoopCity->plot()->getPlotGroup(getOwnerINLINE()) == this)
+			{
+				pLoopCity->changeNumBonuses(eBonus, iChange);
+			}
 		}
 	}
 }

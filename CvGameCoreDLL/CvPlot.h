@@ -63,6 +63,7 @@ public:
 	void updateSymbolDisplay();
 	void updateSymbolVisibility();
 	void updateSymbols();
+	void updateSymbolsIfYieldsChanged(); // perf
 
 	void updateMinimapColor();
 
@@ -618,6 +619,9 @@ protected:
 	CLinkList<IDInfo> m_units;
 
 	std::vector<CvSymbol*> m_symbols;
+	// perf: the displayed yields that m_symbols were built for (valid if m_bSymbolYieldsKnown)
+	short m_aiSymbolYields[NUM_YIELD_TYPES];
+	bool m_bSymbolYieldsKnown;
 
 	void doFeature();
 	void doCulture();

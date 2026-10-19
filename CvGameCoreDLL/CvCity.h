@@ -151,6 +151,9 @@ public:
 	int getBonusHappiness(BonusTypes eBonus) const;															// Exposed to Python - getBonusHappiness
 	int getBonusPower(BonusTypes eBonus, bool bDirty) const;										// Exposed to Python 
 	int getBonusYieldRateModifier(YieldTypes eIndex, BonusTypes eBonus) const;	// Exposed to Python 
+	// perf: the buildings whose XML gives eBonus a health, happiness, power or yield modifier effect
+	static const std::vector<BuildingTypes>& getBonusEffectBuildings(BonusTypes eBonus);
+	static void clearBonusEffectBuildings(); // perf: called whenever the building infos are (re)loaded
 
 	void processBonus(BonusTypes eBonus, int iChange);
 	void processBuilding(BuildingTypes eBuilding, int iChange, bool bObsolete = false);

@@ -50,6 +50,7 @@ public:
 	void write(FDataStreamBase* pStream);
 
 protected:
+	int countConnectedPlots(const CvPlot& kStart) const; // perf
 
 	int m_iID;
 

@@ -15,9 +15,26 @@ bool CvDllPythonEvents::postEvent(CyArgsList& eventData)
 {
 	eventData.add(GC.getGameINLINE().isDebugMode());
 	eventData.add(false);
+	/* original bts code
 	eventData.add(GC.altKey());
 	eventData.add(GC.ctrlKey());
-	eventData.add(GC.shiftKey());
+	eventData.add(GC.shiftKey()); */
+	// perf: Every event passes the Alt/Ctrl/Shift state, and each GetKeyState is a system call (a slow one under
+	// Wine). While the exe runs CvGame::update it processes no window messages, so the key state can't change:
+	// read it once per update. Outside of updates (UI events) it is read every time, as before.
+	static int iKeyStateUpdate = -1;
+	static bool bAlt = false, bCtrl = false, bShift = false;
+	int iUpdate = CvGame::getUpdateCount();
+	if (iUpdate < 0 || iUpdate != iKeyStateUpdate)
+	{
+		bAlt = GC.altKey();
+		bCtrl = GC.ctrlKey();
+		bShift = GC.shiftKey();
+		iKeyStateUpdate = iUpdate;
+	}
+	eventData.add(bAlt);
+	eventData.add(bCtrl);
+	eventData.add(bShift);
 	eventData.add(gDLL->getChtLvl() > 0);
 
 	long lResult = -1;
@@ -600,6 +617,10 @@ void CvDllPythonEvents::reportSelectionGroupPushMission(CvSelectionGroup* pSelec
 
 void CvDllPythonEvents::reportUnitMove(CvPlot* pPlot, CvUnit* pUnit, CvPlot* pOldPlot)
 {
+	// perf: sent for every step of every unit, usually to a handler that does nothing (BtS's onUnitMove only logs
+	// when its logging flag is set). Mods with an onUnitMove handler that matters set USE_ON_UNIT_MOVE_CALLBACK.
+	if (!GC.getUSE_ON_UNIT_MOVE_CALLBACK())
+		return;
 	if (preEvent())
 	{
 		CyArgsList eventData;

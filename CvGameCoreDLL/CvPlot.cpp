@@ -78,6 +78,7 @@ CvPlot::CvPlot()
 	m_pFlagSymbol = NULL;
 	m_pFlagSymbolOffset = NULL;
 	m_pCenterUnit = NULL;
+	m_bSymbolYieldsKnown = false; // perf
 
 	m_szScriptData = NULL;
 
@@ -697,11 +698,13 @@ void CvPlot::updateSymbols()
 	{
 		int iYield = calculateYield(((YieldTypes)iYieldType), true);
 		yieldAmounts[iYieldType] = iYield;
+		m_aiSymbolYields[iYieldType] = iYield; // perf
 		if(iYield>maxYield)
 		{
 			maxYield = iYield;
 		}
 	}
+	m_bSymbolYieldsKnown = true; // perf
 
 	if(maxYield>0)
 	{
@@ -732,6 +735,34 @@ void CvPlot::updateSymbols()
 
 	updateSymbolDisplay();
 	updateSymbolVisibility();
+}
+
+// perf: updateSymbols destroys the plot's yield symbols and makes new ones in the exe, and it ran whenever a
+// plot's yield or owner changed, also on plots the active player can't see (whose shown yields don't change).
+// This keeps the symbols when the yields to show are the ones they were made for; their alpha, size, position
+// and visibility are set again as updateSymbols would. The picture is the same either way.
+void CvPlot::updateSymbolsIfYieldsChanged()
+{
+	if (!GC.IsGraphicsInitialized())
+	{
+		return;
+	}
+
+	if (m_bSymbolYieldsKnown)
+	{
+		bool bSame = true;
+		for (int iYieldType = 0; iYieldType < NUM_YIELD_TYPES && bSame; iYieldType++)
+		{
+			bSame = (calculateYield((YieldTypes)iYieldType, true) == m_aiSymbolYields[iYieldType]);
+		}
+		if (bSame)
+		{
+			updateSymbolDisplay();
+			updateSymbolVisibility();
+			return;
+		}
+	}
+	updateSymbols();
 }
 
 
@@ -5078,7 +5109,8 @@ void CvPlot::setOwner(PlayerTypes eNewValue, bool bCheckUnits, bool bUpdatePlotG
 
 		invalidateBorderDangerCache(); // K-Mod. (based on BBAI)
 
-		updateSymbols();
+		//updateSymbols();
+		updateSymbolsIfYieldsChanged(); // perf
 	}
 }
 
@@ -6499,7 +6531,8 @@ void CvPlot::updateYield()
 
 	if (bChange)
 	{
-		updateSymbols();
+		//updateSymbols();
+		updateSymbolsIfYieldsChanged(); // perf
 	}
 }
 
@@ -8545,6 +8578,7 @@ CvSymbol* CvPlot::addSymbol()
 void CvPlot::deleteSymbol(int iID)			
 {
 	m_symbols.erase(m_symbols.begin()+iID);
+	m_bSymbolYieldsKnown = false; // perf
 }
 
 
@@ -8556,6 +8590,7 @@ void CvPlot::deleteAllSymbols()
 		gDLL->getSymbolIFace()->destroy(m_symbols[i]);
 	}
 	m_symbols.clear();
+	m_bSymbolYieldsKnown = false; // perf
 }
 
 CvString CvPlot::getScriptData() const

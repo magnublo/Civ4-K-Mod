@@ -50,8 +50,21 @@ protected:
 		bool operator()(const FAStarNode* &left, const FAStarNode* &right);
 	};
 
-	FAStarNode& GetNode(int x, int y) { return node_data[y*map_width+x]; }
+	// perf: Reset doesn't clear the node map any more (about 1 MB on a Huge map, and it happened before most path
+	// searches). A node is cleared the first time it is used after a reset, which gives exactly the same nodes.
+	FAStarNode& GetNode(int x, int y)
+	{
+		int i = y*map_width+x;
+		if (node_generation[i] != current_generation)
+		{
+			memset(&node_data[i], 0, sizeof(*node_data));
+			node_generation[i] = current_generation;
+		}
+		return node_data[i];
+	}
 	FAStarNode* node_data;
+	unsigned* node_generation; // perf: the reset generation in which each node was last cleared
+	unsigned current_generation;
 	OpenList_t open_list;
 
 	int dest_x, dest_y;

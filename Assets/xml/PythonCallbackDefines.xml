@@ -88,6 +88,16 @@
 		<DefineName>USE_ON_UNIT_SET_XY_CALLBACK</DefineName>
 		<iDefineIntVal>0</iDefineIntVal>
 	</Define>
+	<!-- perf: the onUnitMove Python event, sent for every step of every unit; BtS's handler only logs -->
+	<Define>
+		<DefineName>USE_ON_UNIT_MOVE_CALLBACK</DefineName>
+		<iDefineIntVal>0</iDefineIntVal>
+	</Define>
+	<!-- perf: getExtraCost (added to a player's costs before inflation), asked for very often by the AI; BtS's returns 0 -->
+	<Define>
+		<DefineName>USE_GET_EXTRA_COST_CALLBACK</DefineName>
+		<iDefineIntVal>0</iDefineIntVal>
+	</Define>
 	<Define>
 		<DefineName>USE_ON_UNIT_SELECTED_CALLBACK</DefineName>
 		<iDefineIntVal>0</iDefineIntVal>

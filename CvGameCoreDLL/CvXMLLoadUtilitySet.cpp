@@ -272,6 +272,8 @@ bool CvXMLLoadUtility::SetPostGlobalsGlobalDefines()
 	const char* szVal=NULL;		// holds the string value from the define queue
 	int idx;
 
+	GC.clearDefineCache(); // perf: this function sets defines directly (cleared again at the end)
+
 	if (GC.getDefinesVarSystem()->GetSize() > 0)
 	{
 		SetGlobalDefine("LAND_TERRAIN", szVal);
@@ -399,6 +401,7 @@ bool CvXMLLoadUtility::SetPostGlobalsGlobalDefines()
 		idx = FindInInfoClass(szVal);
 		GC.getDefinesVarSystem()->SetValue("BARBARIAN_LEADER", idx);
 
+		GC.clearDefineCache(); // perf
 		return true;
 	}
 
@@ -735,6 +738,7 @@ bool CvXMLLoadUtility::LoadPreMenuGlobals()
 	LoadGlobalClassInfo(GC.getImprovementInfo(), "CIV4ImprovementInfos", "Terrain", "Civ4ImprovementInfos/ImprovementInfos/ImprovementInfo", true, &CvDLLUtilityIFaceBase::createImprovementInfoCacheObject);
 	LoadGlobalClassInfo(GC.getBuildingClassInfo(), "CIV4BuildingClassInfos", "Buildings", "Civ4BuildingClassInfos/BuildingClassInfos/BuildingClassInfo", false);
 	LoadGlobalClassInfo(GC.getBuildingInfo(), "CIV4BuildingInfos", "Buildings", "Civ4BuildingInfos/BuildingInfos/BuildingInfo", false, &CvDLLUtilityIFaceBase::createBuildingInfoCacheObject);
+	CvCity::clearBonusEffectBuildings(); // perf
 	for (int i=0; i < GC.getNumBuildingClassInfos(); ++i)
 	{
 		GC.getBuildingClassInfo((BuildingClassTypes)i).readPass3();

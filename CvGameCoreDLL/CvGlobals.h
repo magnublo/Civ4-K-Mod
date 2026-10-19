@@ -686,6 +686,7 @@ public:
 
 	DllExport FVariableSystem* getDefinesVarSystem();
 	DllExport void cacheGlobals();
+	void clearDefineCache(); // perf
 
 	// ***** EXPOSED TO PYTHON *****
 	DllExport int getDefineINT( const char * szName ) const;
@@ -768,6 +769,9 @@ public:
 	int getUSE_USE_CANNOT_SPREAD_RELIGION_CALLBACK();
 	DllExport int getUSE_FINISH_TEXT_CALLBACK();
 	int getUSE_ON_UNIT_SET_XY_CALLBACK();
+	int getUSE_ON_UNIT_MOVE_CALLBACK(); // perf
+	int getUSE_GET_EXTRA_COST_CALLBACK(); // perf
+	int getAUTOMATED_UNITS_MOVE_TOGETHER(); // perf
 	int getUSE_ON_UNIT_SELECTED_CALLBACK();
 	int getUSE_ON_UPDATE_CALLBACK();
 	int getUSE_ON_UNIT_CREATED_CALLBACK();
@@ -1333,6 +1337,10 @@ protected:
 /************************************************************************************************/
 /* BETTER_BTS_AI_MOD                       END                                                  */
 /************************************************************************************************/
+	// perf
+	int m_iUSE_ON_UNIT_MOVE_CALLBACK;
+	int m_iUSE_GET_EXTRA_COST_CALLBACK;
+	int m_iAUTOMATED_UNITS_MOVE_TOGETHER;
 };
 
 extern CvGlobals gGlobals;	// for debugging

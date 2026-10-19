@@ -7417,10 +7417,15 @@ int CvPlayer::calculateUnitSupply(int& iPaidUnits, int& iBaseSupplyCost) const
 
 int CvPlayer::calculatePreInflatedCosts() const
 {
-	CyArgsList argsList;
-	argsList.add(getID());
-	long lResult;
-	gDLL->getPythonIFace()->callFunction(PYGameModule, "getExtraCost", argsList.makeFunctionArgs(), &lResult);
+	// perf: the AI asks for this very often, and BtS's getExtraCost just returns 0. Mods that use the callback
+	// set USE_GET_EXTRA_COST_CALLBACK.
+	long lResult = 0;
+	if (GC.getUSE_GET_EXTRA_COST_CALLBACK())
+	{
+		CyArgsList argsList;
+		argsList.add(getID());
+		gDLL->getPythonIFace()->callFunction(PYGameModule, "getExtraCost", argsList.makeFunctionArgs(), &lResult);
+	}
 
 	return (calculateUnitCost() + calculateUnitSupply() + getTotalMaintenance() + getCivicUpkeep() + (int)lResult);
 }
@@ -11158,6 +11163,7 @@ void CvPlayer::setTurnActive(bool bNewValue, bool bDoTurn)
 
 		if (getID() == GC.getGameINLINE().getActivePlayer())
 		{
+			SAMPLER_SET_PHASE(SAMPLER_HUMAN_TURN); // perf
 			if (gDLL->getInterfaceIFace()->getLengthSelectionList() == 0)
 			{
 				GC.getGameINLINE().cycleSelectionGroups_delayed(1, false);
@@ -11189,6 +11195,7 @@ void CvPlayer::setTurnActive(bool bNewValue, bool bDoTurn)
 		if (getID() == GC.getGameINLINE().getActivePlayer())
 		{
 			startProfilingDLL(true);
+			SAMPLER_SET_PHASE(SAMPLER_AI_TURNS); // perf
 		}
 
 		GC.getGameINLINE().changeNumGameTurnActive(-1);
@@ -11421,6 +11428,8 @@ void CvPlayer::setEndTurn(bool bNewValue)
 
 		if (isEndTurn())
 		{
+			if (getID() == GC.getGameINLINE().getActivePlayer())
+				SAMPLER_SET_PHASE(SAMPLER_HUMAN_MOVES); // perf: the interturn starts when the human ends the turn
 			setAutoMoves(true);
 		}
 	}

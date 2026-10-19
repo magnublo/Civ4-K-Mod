@@ -22,12 +22,33 @@ This README is written for both:
 
 Search the sources for the tags in brackets.
 
-- **24, 32 or 48 civilizations** (`CIV_PLAYER_CAP` in `CvDefines.h`, default 48; K-Mod's default is 18). More civ slots make every turn slower, even with few civs in the game, so pick the smallest cap you need. The CI build uploads one DLL per cap (artifacts `CvGameCoreDLL-24civs`, `-32civs`, `-48civs`) and checks each with `.github/scripts/check_civ_cap.py`. Locally: `make CIVS=24` → `Release-24civs/`; nmake: `nmake "CUSTOM_CFLAGS=/DCIV_PLAYER_CAP=24" Release`. Saves only load in a DLL with the same cap.
+- **24, 32 or 48 civilizations** (`CIV_PLAYER_CAP` in `CvDefines.h`, default 48; K-Mod's default is 18). Unused civ slots cost little in this DLL: the same 24-civ game (Huge, 200 turns of AI autoplay, identical on both) took 2% longer with the 48-civ DLL than with the 24-civ one. The CI build uploads one DLL per cap (artifacts `CvGameCoreDLL-24civs`, `-32civs`, `-48civs`) and checks each with `.github/scripts/check_civ_cap.py`. Locally: `make CIVS=24` → `Release-24civs/`; nmake: `nmake "CUSTOM_CFLAGS=/DCIV_PLAYER_CAP=24" Release`. Saves only load in a DLL with the same cap.
 - **Fewer early AI wars** [`early war`]: the AI starts no war plans of its own before turn 50 (K-Mod: 30), and until turn 150 its war plans are less likely: a third of the usual chance at turn 50, back to normal by turn 150. Both are Normal-speed turns, scaled by the game speed's `iBarbPercent` (Marathon and Marathon Accelerated ×4: turns 200 and 600). Early rushes ("dagger" strategy) are damped the same way. Unlike K-Mod, a "crowded" world no longer ends the no-war period early (cities don't scale with game speed). Tune it in `Assets/xml/GlobalDefinesAlt.xml`: `AI_EARLY_WAR_GATE_TURNS`, `AI_EARLY_WAR_CROWDED_WORLD` (1 = K-Mod's exception), `AI_EARLY_WAR_RAMP_TURNS`, `AI_EARLY_WAR_RAND_PERCENT` (100 turns the damping off).
 - **Pre-chop** [`pre-chop`]: workers on a forest get a second chop button (axe with a pause badge). They chop until one worker-turn is left and stop, so a normal chop later finishes in one turn and delivers the hammers then. Ctrl+click on any build button does the same for that build. The flag rides in `MissionData::iData2` (`BUILD_MISSION_STOP_SHORT`).
 - **Pre-build** [`pre-build`]: a toggle at the start of the city screen's wonder row (or the project row) marks the first wonder or project in the queue. The city builds it until one turn of production is left, then pauses it with the hammers stored and moves on. Queue it again to finish it in one turn. The queue shows flagged items in yellow. The flag rides in `OrderData::iData2` (`ORDER_DATA_PREBUILD`) and is set through `TASK_PREBUILD`. Whipping or buying a flagged wonder clears the flag.
 
 Texts: `Assets/xml/Text/CIV4GameText_PreChopPreBuild.xml`. Buttons: `Assets/Art/Interface/Buttons/Actions/PreChop.dds`, `PreBuild.dds` and `PreBuildOn.dds`. UI: `Assets/Python/Screens/CvMainInterface.py`. None of this changes the savegame format.
+
+## Faster Turns (DLL) [`perf`]
+
+Written by Claude (2026-10) after profiling late-game saves. Unless noted, each change leaves every game decision as it was: a save played with and without it ends in the same game state (checked with a full fingerprint of all units, cities and players after 8 turns of a 14-civ Huge save). Search the sources for `perf`.
+
+- **Trade networks** (`CvPlotGroup`): checking whether a network split used the exe's pathfinder; it is now a plain search in the DLL (`countConnectedPlots`). A resource gained or lost by a network now updates the owner's cities in it instead of walking every plot of the network (`changeNumBonuses`). Trade-network updates had been a quarter of AI turn time in big games, mostly set off by ships blockading coasts.
+- **Pathfinder** (`KmodPathFinder`): a reset no longer clears the whole node map (about 1 MB on a Huge map); nodes are cleared when first used.
+- **GlobalDefines by name** (`CvGlobals::getDefineINT/FLOAT`): the result is remembered per name; the cache is emptied whenever defines are set (XML loading, `setDefine*`).
+- **Buildings and resources** (`CvCity::getBonusEffectBuildings`): when a city gains or loses a resource, only buildings with an effect for that resource are summed (the list is made from the building XML when it loads). `updateBuildingCommerce` checks each building once.
+- **Python**: `onUnitMove` (sent for every step of every unit) and `getExtraCost` (asked very often by the AI) are behind switches in `PythonCallbackDefines.xml`, `USE_ON_UNIT_MOVE_CALLBACK` and `USE_GET_EXTRA_COST_CALLBACK`, both 0 as BtS's handlers do nothing. Python events get the Alt/Ctrl/Shift state once per engine update instead of three system calls per event. The scoreboard ranking calls the Python score function once per player instead of once per player per rank.
+- **Map symbols** (`CvPlot::updateSymbolsIfYieldsChanged`): the yield icons of a plot are only rebuilt when the yields they show change.
+- **Automated units move together** (`AUTOMATED_UNITS_MOVE_TOGETHER` in `GlobalDefinesAlt.xml`, 1): at the end of your turn all automated units (workers, explorers, missionaries) act in the same quarter-second time slice instead of one per slice, so their moves are shown at the same time. Same decisions, same work done (measured), but the order of events changes, so games don't replay exactly as with 0. See the comment in `CvGame::updateMoves`.
+- **Build**: `GNUmakefile` compiles with whole-program optimization (`/GL`, `/LTCG`; `make WPO=0` without). It rounds some floating-point intermediate results differently, so AI evaluations can differ in close calls and games don't replay exactly like a `WPO=0` build. New targets for this work: `make TARGET=Sample` (sampling profiler), `TARGET=Profile` (K-Mod's profiler), `VERIFY=1` (runs the original code next to the new one and logs differences).
+
+Seconds from ending the turn to having the next one, on late-game saves (Huge, Marathon Accelerated, under Wine; "K-Mod 1.45" is the 48-civ DLL these games were played with, a build with assertions; "fork" is this repository before these changes):
+
+| Save | K-Mod 1.45 | fork | with these changes |
+|---|---|---|---|
+| AD 1320, 14 civs, 268 cities, 4739 units (7 turns) | 15.2 | 13.7 | 6.8 |
+| AD 1448, 8 civs, 333 cities, 4336 units (2 turns) | 54.2 | 37.3 | 12.2 |
+| AD 1748, 17 civs, 281 cities, 3795 units (1 turn) | 41.1 | 15.7 | 6.3 |
 
 ## Building On Linux (Wine)
 

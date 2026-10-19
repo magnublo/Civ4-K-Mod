@@ -3747,6 +3747,46 @@ int CvCity::getBonusHappiness(BonusTypes eBonus) const
 }
 
 
+// perf: These functions (and processBonus) sum the effects that the city's buildings give one bonus, and they ran
+// whenever a city gained or lost a bonus: many times per turn while trade networks are rebuilt. Summing over the
+// few buildings that have any effect for the bonus gives the same totals as summing over all buildings, because
+// every other building adds 0. The lists come from the building XML whenever it is loaded, so XML changes count.
+namespace
+{
+	std::vector<std::vector<BuildingTypes> > g_aaBonusEffectBuildings; // [bonus] -> buildings, built when needed
+}
+
+const std::vector<BuildingTypes>& CvCity::getBonusEffectBuildings(BonusTypes eBonus)
+{
+	if ((int)g_aaBonusEffectBuildings.size() != GC.getNumBonusInfos())
+	{
+		g_aaBonusEffectBuildings.assign(GC.getNumBonusInfos(), std::vector<BuildingTypes>());
+		for (int iBuilding = 0; iBuilding < GC.getNumBuildingInfos(); iBuilding++)
+		{
+			const CvBuildingInfo& kBuilding = GC.getBuildingInfo((BuildingTypes)iBuilding);
+			for (int iBonus = 0; iBonus < GC.getNumBonusInfos(); iBonus++)
+			{
+				bool bEffect = kBuilding.getBonusHealthChanges(iBonus) != 0 ||
+					kBuilding.getBonusHappinessChanges(iBonus) != 0 || kBuilding.getPowerBonus() == iBonus;
+				for (int iYield = 0; iYield < NUM_YIELD_TYPES && !bEffect; iYield++)
+				{
+					bEffect = kBuilding.getBonusYieldModifier(iBonus, iYield) != 0;
+				}
+				if (bEffect)
+				{
+					g_aaBonusEffectBuildings[iBonus].push_back((BuildingTypes)iBuilding);
+				}
+			}
+		}
+	}
+	return g_aaBonusEffectBuildings[eBonus];
+}
+
+void CvCity::clearBonusEffectBuildings()
+{
+	g_aaBonusEffectBuildings.clear();
+}
+
 int CvCity::getBonusPower(BonusTypes eBonus, bool bDirty) const
 {
 	int iCount;
@@ -3754,8 +3794,13 @@ int CvCity::getBonusPower(BonusTypes eBonus, bool bDirty) const
 
 	iCount = 0;
 
+	/* original bts code
 	for (iI = 0; iI < GC.getNumBuildingInfos(); iI++)
+	{ */
+	const std::vector<BuildingTypes>& aeBuildings = getBonusEffectBuildings(eBonus); // perf
+	for (size_t i = 0; i < aeBuildings.size(); i++)
 	{
+		iI = aeBuildings[i];
 		if (getNumActiveBuilding((BuildingTypes)iI) > 0)
 		{
 			if (GC.getBuildingInfo((BuildingTypes) iI).getPowerBonus() == eBonus)
@@ -3779,10 +3824,23 @@ int CvCity::getBonusYieldRateModifier(YieldTypes eIndex, BonusTypes eBonus) cons
 
 	iModifier = 0;
 
+	/* original bts code
 	for (iI = 0; iI < GC.getNumBuildingInfos(); iI++)
+	{ */
+	const std::vector<BuildingTypes>& aeBuildings = getBonusEffectBuildings(eBonus); // perf
+	for (size_t i = 0; i < aeBuildings.size(); i++)
 	{
+		iI = aeBuildings[i];
 		iModifier += getNumActiveBuilding((BuildingTypes)iI) * GC.getBuildingInfo((BuildingTypes) iI).getBonusYieldModifier(eBonus, eIndex);
 	}
+
+#ifdef PERF_VERIFY
+	int iCheck = 0;
+	for (iI = 0; iI < GC.getNumBuildingInfos(); iI++)
+		iCheck += getNumActiveBuilding((BuildingTypes)iI) * GC.getBuildingInfo((BuildingTypes) iI).getBonusYieldModifier(eBonus, eIndex);
+	if (iCheck != iModifier)
+		gDLL->logMsg("perf_verify.log", CvString::format("getBonusYieldRateModifier: %d instead of %d (bonus %d, yield %d)", iModifier, iCheck, eBonus, eIndex).c_str());
+#endif
 
 	return iModifier;
 }
@@ -3799,8 +3857,12 @@ void CvCity::processBonus(BonusTypes eBonus, int iChange)
 	iGoodValue = std::max(0, iValue);
 	iBadValue = std::min(0, iValue);
 
-	for (iI = 0; iI < GC.getNumBuildingInfos(); iI++)
+	// perf: only the buildings with an effect for eBonus (the others add 0)
+	const std::vector<BuildingTypes>& aeBuildings = getBonusEffectBuildings(eBonus);
+	//for (iI = 0; iI < GC.getNumBuildingInfos(); iI++)
+	for (size_t i = 0; i < aeBuildings.size(); i++)
 	{
+		iI = aeBuildings[i]; // perf
 		iValue = GC.getBuildingInfo((BuildingTypes) iI).getBonusHealthChanges(eBonus) * getNumActiveBuilding((BuildingTypes)iI);
 
 		if (iValue >= 0)
@@ -3821,8 +3883,10 @@ void CvCity::processBonus(BonusTypes eBonus, int iChange)
 	iGoodValue = std::max(0, iValue);
 	iBadValue = std::min(0, iValue);
 
-	for (iI = 0; iI < GC.getNumBuildingInfos(); iI++)
+	//for (iI = 0; iI < GC.getNumBuildingInfos(); iI++)
+	for (size_t i = 0; i < aeBuildings.size(); i++) // perf
 	{
+		iI = aeBuildings[i]; // perf
 		iValue = getNumActiveBuilding((BuildingTypes)iI) * GC.getBuildingInfo((BuildingTypes) iI).getBonusHappinessChanges(eBonus);
 
 		if (iValue >= 0)
@@ -9295,14 +9359,30 @@ void CvCity::updateBuildingCommerce()
 	int iNewBuildingCommerce;
 	int iI, iJ;
 
+	// perf: getBuildingCommerceByBuilding is 0 for buildings the city doesn't have; find those once
+	// instead of once per commerce type.
+	int aiNewBuildingCommerce[NUM_COMMERCE_TYPES] = {0};
+	for (iJ = 0; iJ < GC.getNumBuildingInfos(); iJ++)
+	{
+		if (getNumBuilding((BuildingTypes)iJ) > 0)
+		{
+			for (iI = 0; iI < NUM_COMMERCE_TYPES; iI++)
+			{
+				aiNewBuildingCommerce[iI] += getBuildingCommerceByBuilding(((CommerceTypes)iI), ((BuildingTypes)iJ));
+			}
+		}
+	}
+
 	for (iI = 0; iI < NUM_COMMERCE_TYPES; iI++)
 	{
+		/* original bts code
 		iNewBuildingCommerce = 0;
 
 		for (iJ = 0; iJ < GC.getNumBuildingInfos(); iJ++)
 		{
 			iNewBuildingCommerce += getBuildingCommerceByBuilding(((CommerceTypes)iI), ((BuildingTypes)iJ));
-		}
+		} */
+		iNewBuildingCommerce = aiNewBuildingCommerce[iI]; // perf
 
 		if (getBuildingCommerce((CommerceTypes)iI) != iNewBuildingCommerce)
 		{

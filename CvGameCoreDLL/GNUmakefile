@@ -4,7 +4,14 @@
 #   make -j$(nproc)                 Release build -> Release/CvGameCoreDLL.dll
 #   make -j$(nproc) TARGET=LogAI    Release plus LOG_AI: every AI decision goes to Logs/BBAI.log -> LogAI/CvGameCoreDLL.dll
 #   make -j$(nproc) TARGET=Debug    unoptimised, asserts and LOG_AI -> Debug/CvGameCoreDLL.dll
+#   make -j$(nproc) TARGET=Profile  Release plus K-Mod's internal profiler (PROFILE_FUNC etc.): one table per AI
+#                                   interturn and per human-turn update in Logs/IFP_log.txt -> Profile/CvGameCoreDLL.dll
+#   make -j$(nproc) TARGET=Sample   Release plus the sampling profiler (SampleProfiler.h) and a linker map file
+#                                   -> Sample/CvGameCoreDLL.dll, Sample/CvGameCoreDLL.map
 #   make -j$(nproc) CIVS=24         civ cap 24 instead of 48 (any TARGET) -> Release-24civs/CvGameCoreDLL.dll
+#   make -j$(nproc) VERIFY=1        also run the replaced original code next to each speed change marked PERF_VERIFY
+#                                   and log differences to Logs/perf_verify.log (any TARGET) -> Release-verify/...
+#   make -j$(nproc) WPO=0           without whole-program optimization (/GL, /LTCG), which the optimized targets use
 #   make clean                      removes the TARGET's build folder
 #
 # Paths can be overridden on the command line (make TOOLKIT=...) or in the environment.
@@ -22,9 +29,10 @@ PYTHON ?= $(CIV4_BUILD)/sdk-deps/Python24
 WINEPREFIX ?= $(HOME)/.local/share/wineprefixes/civ4-build
 WINE ?= wine32
 TARGET ?= Release
+WPO ?= 1
 CIVS ?=
-ifeq ($(filter $(TARGET),Release LogAI Debug),)
-$(error TARGET must be Release, LogAI or Debug)
+ifeq ($(filter $(TARGET),Release LogAI Debug Profile Sample),)
+$(error TARGET must be Release, LogAI, Debug, Profile or Sample)
 endif
 
 # cl.exe and link.exe are console programs; keep Wine away from the X display and quiet.
@@ -39,7 +47,7 @@ winpath = Z:$(1)
 CL := $(WINE) $(TOOLKIT)/bin/cl.exe
 LINK := $(WINE) $(TOOLKIT)/bin/link.exe
 
-OUT := $(TARGET)$(if $(CIVS),-$(CIVS)civs)
+OUT := $(TARGET)$(if $(CIVS),-$(CIVS)civs)$(if $(VERIFY),-verify)$(if $(filter 0,$(WPO)),-nowpo)
 DLL := $(OUT)/CvGameCoreDLL.dll
 PCH := $(OUT)/CvGameCoreDLL.pch
 PCH_OBJ := $(OUT)/_precompile.obj
@@ -54,6 +62,9 @@ GLOBAL_CFLAGS := /nologo /GR /Gy /W3 /EHsc /Gd /Gm- /DWIN32 /D_WINDOWS /D_USRDLL
 ifneq ($(CIVS),)
 GLOBAL_CFLAGS += /DCIV_PLAYER_CAP=$(CIVS)
 endif
+ifneq ($(VERIFY),)
+GLOBAL_CFLAGS += /DPERF_VERIFY
+endif
 ifeq ($(TARGET),Debug)
 # /Z7 instead of /Zi: debug info goes into each .obj, so parallel compiles don't fight over one PDB.
 CFLAGS := /MD /Z7 /Od /D_DEBUG /DLOG_AI /RTC1 $(GLOBAL_CFLAGS)
@@ -64,10 +75,30 @@ else ifeq ($(TARGET),LogAI)
 CFLAGS := /MD /O2 /Oy /Oi /Og /G7 /DNDEBUG /DFINAL_RELEASE /DLOG_AI $(GLOBAL_CFLAGS)
 LDFLAGS := /OPT:REF /OPT:ICF
 EXTRA_LIBS :=
+else ifeq ($(TARGET),Profile)
+# The same flags as the nmake Makefile's Profile target; the profiler's timers make every PROFILE'd call slower.
+CFLAGS := /MD /O2 /Oy /Oi /Og /G7 /DNDEBUG /DFINAL_RELEASE /DFP_PROFILE_ENABLE /DUSE_INTERNAL_PROFILER $(GLOBAL_CFLAGS)
+LDFLAGS := /OPT:REF /OPT:ICF
+EXTRA_LIBS :=
+else ifeq ($(TARGET),Sample)
+# Release code plus the sampler; the map file lets tools/wine/sampler-report.py name the sampled functions.
+CFLAGS := /MD /O2 /Oy /Oi /Og /G7 /DNDEBUG /DFINAL_RELEASE /DSAMPLE_PROFILER $(GLOBAL_CFLAGS)
+# No /OPT:ICF: folding identical functions would give several functions one address and name in the report.
+LDFLAGS := /OPT:REF /OPT:NOICF /MAP:$(OUT)/CvGameCoreDLL.map
+EXTRA_LIBS :=
 else
 CFLAGS := /MD /O2 /Oy /Oi /Og /G7 /DNDEBUG /DFINAL_RELEASE $(GLOBAL_CFLAGS)
 LDFLAGS := /OPT:REF /OPT:ICF
 EXTRA_LIBS :=
+endif
+
+# perf: whole-program optimization lets the compiler inline across source files (AdvCiv measured ~10% shorter
+# AI turns with the same toolkit). It makes linking slower and incremental builds pointless, so Debug goes without.
+ifneq ($(WPO),0)
+ifneq ($(TARGET),Debug)
+CFLAGS += /GL
+LDFLAGS += /LTCG
+endif
 endif
 
 INCS := /I$(call winpath,$(BOOST)/include) /I$(call winpath,$(PYTHON)/include) \
@@ -77,19 +108,24 @@ LIBPATHS := /LIBPATH:$(call winpath,$(TOOLKIT)/lib) /LIBPATH:$(call winpath,$(WI
 	/LIBPATH:$(call winpath,$(PYTHON)/libs) /LIBPATH:$(call winpath,$(BOOST)/libs)
 LIBS := boost_python-vc71-mt-1_32.lib winmm.lib user32.lib $(EXTRA_LIBS)
 
-.PHONY: all clean
+.PHONY: all clean FORCE
 all: $(DLL)
 
 $(OUT):
 	mkdir -p $@
 
-$(PCH) $(PCH_OBJ) &: _precompile.cpp $(HEADERS) | $(OUT)
+# The compiler and linker flags of the last build: when they change, everything is rebuilt.
+FLAGS_FILE := $(OUT)/build-flags.txt
+$(FLAGS_FILE): FORCE | $(OUT)
+	@echo '$(CFLAGS) $(LDFLAGS)' | cmp -s - $@ || echo '$(CFLAGS) $(LDFLAGS)' >$@
+
+$(PCH) $(PCH_OBJ) &: _precompile.cpp $(HEADERS) $(FLAGS_FILE) | $(OUT)
 	$(CL) $(CFLAGS) $(INCS) /YcCvGameCoreDLL.h /Fp$(PCH) /Fo$(PCH_OBJ) /c _precompile.cpp
 
 $(OUT)/%.obj: %.cpp $(PCH) | $(OUT)
 	$(CL) $(CFLAGS) $(INCS) /YuCvGameCoreDLL.h /Fp$(PCH) /Fo$@ /c $<
 
-$(DLL): $(PCH_OBJ) $(OBJS)
+$(DLL): $(PCH_OBJ) $(OBJS) $(FLAGS_FILE)
 	printf '%s\n' $(PCH_OBJ) $(OBJS) > $(OUT)/objects.rsp
 	$(LINK) /nologo /DLL /SUBSYSTEM:WINDOWS /LARGEADDRESSAWARE /TLBID:1 /INCREMENTAL:NO $(LDFLAGS) \
 		/out:$@ /IMPLIB:$(OUT)/CvGameCoreDLL.lib $(LIBPATHS) $(LIBS) @$(OUT)/objects.rsp

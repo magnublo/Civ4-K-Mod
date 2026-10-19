@@ -271,6 +271,7 @@ namespace python = boost::python;
 #include "CvCityAI.h"
 #include "CvSelectionGroupAI.h"
 #include "CvUnitAI.h"
+#include "SampleProfiler.h" // perf
 
 #ifdef FINAL_RELEASE
 // Undefine OutputDebugString in final release builds

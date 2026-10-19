@@ -2160,10 +2160,26 @@ int CvGame::getTeamClosenessScore(int** aaiDistances, int* aiStartingLocs)
 }
 
 
+// perf: see getUpdateCount
+namespace
+{
+	int g_iUpdateCount = 0;
+	bool g_bInUpdate = false;
+}
+
+int CvGame::getUpdateCount()
+{
+	return g_bInUpdate ? g_iUpdateCount : -1;
+}
+
 void CvGame::update()
 {
 	startProfilingDLL(false);
 	PROFILE_BEGIN("CvGame::update");
+	SAMPLER_UPDATE_BEGIN(getActivePlayer() == NO_PLAYER ? SAMPLER_HUMAN_TURN : !GET_PLAYER(getActivePlayer()).isTurnActive() ? SAMPLER_AI_TURNS :
+		GET_PLAYER(getActivePlayer()).isEndTurn() ? SAMPLER_HUMAN_MOVES : SAMPLER_HUMAN_TURN); // perf
+	g_iUpdateCount++; // perf
+	g_bInUpdate = true; // perf
 
 	if (!gDLL->GetWorldBuilderMode() || isInAdvancedStart())
 	{
@@ -2217,6 +2233,8 @@ void CvGame::update()
 			gDLL->getInterfaceIFace()->setWorldBuilder(true);
 		}
 	}
+	g_bInUpdate = false; // perf
+	SAMPLER_UPDATE_END(); // perf
 	PROFILE_END();
 	stopProfilingDLL(false);
 }
@@ -2239,9 +2257,13 @@ void CvGame::updateScore(bool bForce)
 
 	setScoreDirty(false);
 
+	// perf: calculateScore calls Python for every living player, and the selection sort below asked for each
+	// unranked player's score once per rank (1176 times with 48 players). The scores don't change in between.
+	int aiPlayerScore[MAX_CIV_PLAYERS];
 	for (iI = 0; iI < MAX_CIV_PLAYERS; iI++)
 	{
 		abPlayerScored[iI] = false;
+		aiPlayerScore[iI] = GET_PLAYER((PlayerTypes)iI).calculateScore(false); // perf
 	}
 
 	for (iI = 0; iI < MAX_CIV_PLAYERS; iI++)
@@ -2253,7 +2275,8 @@ void CvGame::updateScore(bool bForce)
 		{
 			if (!abPlayerScored[iJ])
 			{
-				iScore = GET_PLAYER((PlayerTypes)iJ).calculateScore(false);
+				//iScore = GET_PLAYER((PlayerTypes)iJ).calculateScore(false);
+				iScore = aiPlayerScore[iJ]; // perf
 
 				if (iScore >= iBestScore)
 				{
@@ -6140,6 +6163,7 @@ void CvGame::doTurn()
 	PROFILE_END();
 
 	stopProfilingDLL(true);
+	SAMPLER_DUMP(); // perf
 
 	gDLL->getEngineIFace()->AutoSave();
 }
@@ -7309,7 +7333,26 @@ void CvGame::updateMoves()
 							if (pLoopSelectionGroup->AI_update())
 							{
 								FAssert(player.hasBusyUnit());
-								break;
+								// perf (written by Claude for this fork, 2026-10): AUTOMATED_UNITS_MOVE_TOGETHER.
+								// BtS stopped here after the first automated group that became busy and went on with
+								// the next one in the next time slice (a quarter of a second): with dozens of automated
+								// workers, several seconds at the end of every turn. With the switch on, the other
+								// automated groups act in the same slice, still one after the other, so each decides
+								// after the previous one's move has been made.
+								// - "Busy" here can only be a move being animated: automated human units never attack
+								//   (the explore AI's attacks and pillaging are for AI players only), and a unit's new
+								//   plot is set when it moves, not when the animation ends.
+								// - BtS's reason for stopping ("pointers could become invalid") was its loop over the
+								//   group cycle list, which kept a pointer to the next node that acting could delete.
+								//   This loop goes through the group array by index and skips deleted groups; it
+								//   already continues when AI_update returns false after groups split or died.
+								// - K-Mod's loop for AI players (CvPlayerAI::AI_unitUpdate) still stops at busy
+								//   groups: there, busy can also mean a combat whose result isn't applied yet.
+								// Only the order of events at the end of the turn changes (the time slice's other
+								// updates come after these moves instead of between them), so games don't replay
+								// exactly as without the switch.
+								if (!GC.getAUTOMATED_UNITS_MOVE_TOGETHER())
+									break;
 							}
 						}
 						// Refresh the gorup cycle for human players.
