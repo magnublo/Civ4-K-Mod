@@ -55,8 +55,8 @@
 #define RANDPLOT_NOT_CITY											(0x00000040)
 
 #ifdef _USRDLL
-// Civ slots. K-Mod's default is 18; this fork builds 48 by default and 24 or 32 with /DCIV_PLAYER_CAP=24 (fewer
-// slots make turns faster). Saves only load in a DLL with the same value.
+// Civ slots. K-Mod's default is 18; this fork builds 48, other caps with e.g. /DCIV_PLAYER_CAP=24 (unused slots
+// cost about 2% of turn time, see README). Saves only load in a DLL with the same value.
 #ifndef CIV_PLAYER_CAP
 #define CIV_PLAYER_CAP												(48)
 #endif

@@ -19,15 +19,12 @@ concurrency:
 
 jobs:
   build-dll:
-    # One DLL per civ cap: more civ slots make every turn slower, and saves only load with the same cap.
-    name: build-dll (${{ matrix.civs }} civs)
+    # One DLL, with 48 civ slots (CvDefines.h's default). Unused slots cost about 2% of turn time (README), so smaller
+    # caps aren't built here; they still build locally. Saves only load in a DLL with the same cap.
     runs-on: windows-2022
     timeout-minutes: 90
-    strategy:
-      fail-fast: false
-      matrix:
-        civs: [24, 32, 48]
     env:
+      CIVS: 48
       VC2003_ROOT: C:\Program Files (x86)\Microsoft Visual C++ Toolkit 2003
       BUILD_DEPS_URL: https://github.com/magnublo/Civ4-K-Mod/releases/download/build-deps/v1
       SDK_DEPS_REPO: FinalFrontierPlus/CvGameCoreDLL
@@ -293,16 +290,16 @@ jobs:
           Write-Host "Using toolkit: $env:VC2003_ROOT"
           Write-Host "Using Windows SDK: $psdkPath"
 
-      - name: Build Release DLL (${{ matrix.civs }} civs)
+      - name: Build Release DLL (${{ env.CIVS }} civs)
         working-directory: CvGameCoreDLL
         shell: cmd
         run: |
-          nmake TOOLKIT="%TOOLKIT_PATH%" PSDK="%PSDK_PATH%" "CUSTOM_CFLAGS=/DCIV_PLAYER_CAP=${{ matrix.civs }}" Release
+          nmake TOOLKIT="%TOOLKIT_PATH%" PSDK="%PSDK_PATH%" "CUSTOM_CFLAGS=/DCIV_PLAYER_CAP=%CIVS%" Release
 
       - name: Check the DLL's civ cap
         shell: pwsh
         run: |
-          python .github/scripts/check_civ_cap.py "CvGameCoreDLL\Release\CvGameCoreDLL.dll" ${{ matrix.civs }}
+          python .github/scripts/check_civ_cap.py "CvGameCoreDLL\Release\CvGameCoreDLL.dll" $env:CIVS
 
       - name: Stage built DLL into Assets
         shell: pwsh
@@ -312,7 +309,7 @@ jobs:
       - name: Upload DLL artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: CvGameCoreDLL-${{ matrix.civs }}civs
+          name: CvGameCoreDLL-${{ env.CIVS }}civs
           if-no-files-found: error
           path: |
             CvGameCoreDLL/Release/CvGameCoreDLL.dll

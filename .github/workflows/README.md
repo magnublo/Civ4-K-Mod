@@ -64,6 +64,11 @@ The workflow is not a literal port of appveyor.yml. It was adapted to the curren
 7. Artifact handling:
    - Uploads built DLL and PDB artifacts.
    - Also stages a DLL copy into Assets for convenience in downstream workflows or manual download.
+8. Build output:
+   - One DLL with 48 civ slots (`CIVS` in the workflow), checked by `.github/scripts/check_civ_cap.py`. Unused slots
+     cost about 2% of turn time (measured, see the main README), so smaller caps aren't built.
+   - The Makefile's Release target compiles with whole-program optimization (`/GL`, `/LTCG`), like AdvCiv's and
+     C2C's final-release builds made with the same toolkit: about 10% shorter AI turns, longer links.
 
 ## Why These Choices
 
