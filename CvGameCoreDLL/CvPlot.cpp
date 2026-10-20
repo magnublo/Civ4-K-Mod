@@ -3610,10 +3610,11 @@ bool CvPlot::isFriendlyCity(const CvUnit& kUnit, bool bCheckImprovement) const
 		return false;
 	}
 
-	if (isVisibleEnemyUnit(&kUnit))
+	/*if (isVisibleEnemyUnit(&kUnit))
 	{
 		return false;
-	}
+	}*/ // perf: moved below the team checks, which are much cheaper than going through every unit in the city.
+	// All of these only read the game state, so the order doesn't change the result.
 
 	TeamTypes ePlotTeam = getTeam();
 
@@ -3626,7 +3627,11 @@ bool CvPlot::isFriendlyCity(const CvUnit& kUnit, bool bCheckImprovement) const
 
 		TeamTypes eTeam = GET_PLAYER(kUnit.getCombatOwner(ePlotTeam, this)).getTeam();
 
-		if (eTeam == ePlotTeam)
+		if (eTeam == ePlotTeam || GET_TEAM(eTeam).isOpenBorders(ePlotTeam) || GET_TEAM(ePlotTeam).isVassal(eTeam))
+		{
+			return !isVisibleEnemyUnit(&kUnit); // perf
+		}
+		/*if (eTeam == ePlotTeam)
 		{
 			return true;
 		}
@@ -3639,7 +3644,7 @@ bool CvPlot::isFriendlyCity(const CvUnit& kUnit, bool bCheckImprovement) const
 		if (GET_TEAM(ePlotTeam).isVassal(eTeam))
 		{
 			return true;
-		}
+		}*/
 	}
 
 	return false;

@@ -109,6 +109,16 @@ void CvPlotGroup::removePlot(CvPlot* pPlot)
 }
 
 
+namespace
+{
+	const std::vector<int>* g_paiLostNetworkPlots = NULL; // perf: indexed by team
+}
+
+void CvPlotGroup::setLostNetworkPlots(const std::vector<int>* paiLostPlotsByTeam)
+{
+	g_paiLostNetworkPlots = paiLostPlotsByTeam;
+}
+
 void CvPlotGroup::recalculatePlots()
 {
 	PROFILE_FUNC();
@@ -133,13 +143,29 @@ void CvPlotGroup::recalculatePlots()
 
 		gDLL->getFAStarIFace()->SetData(&GC.getPlotGroupFinder(), &iCount);
 		gDLL->getFAStarIFace()->GeneratePath(&GC.getPlotGroupFinder(), pPlot->getX_INLINE(), pPlot->getY_INLINE(), -1, -1, false, eOwner); */
+		// perf: The count is certainly short of the group's length if a plot of the group other than the first is no
+		// longer trade network: the search never enters such a plot. Then the group is rebuilt without counting.
+		// (The plots a blockade took out of the network are named by CvUnit::updatePlunder.)
+		bool bKnownShort = false;
+		if (g_paiLostNetworkPlots != NULL)
+		{
+			TeamTypes eTeam = GET_PLAYER(eOwner).getTeam();
+			const std::vector<int>& aiLost = g_paiLostNetworkPlots[eTeam];
+			for (size_t i = 0; i < aiLost.size() && !bKnownShort; i++)
+			{
+				CvPlot* pLostPlot = GC.getMapINLINE().plotByIndexINLINE(aiLost[i]);
+				if (pLostPlot != pPlot && pLostPlot->getPlotGroup(eOwner) == this && !pLostPlot->isTradeNetwork(eTeam))
+					bKnownShort = true;
+			}
+		}
+
 		// perf: the same count without the exe's pathfinder
-		iCount = countConnectedPlots(*pPlot);
+		iCount = bKnownShort ? -1 : countConnectedPlots(*pPlot);
 #ifdef PERF_VERIFY
 		int iExeCount = 0;
 		gDLL->getFAStarIFace()->SetData(&GC.getPlotGroupFinder(), &iExeCount);
 		gDLL->getFAStarIFace()->GeneratePath(&GC.getPlotGroupFinder(), pPlot->getX_INLINE(), pPlot->getY_INLINE(), -1, -1, false, eOwner);
-		if (iExeCount != iCount)
+		if (bKnownShort ? iExeCount == getLengthPlots() : iExeCount != iCount)
 			gDLL->logMsg("perf_verify.log", CvString::format("recalculatePlots: exe count %d, DLL count %d (player %d, plot %d,%d, %d plots)", iExeCount, iCount, eOwner, pPlot->getX_INLINE(), pPlot->getY_INLINE(), getLengthPlots()).c_str());
 #endif
 

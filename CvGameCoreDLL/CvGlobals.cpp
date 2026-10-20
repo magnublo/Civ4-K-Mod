@@ -2816,6 +2816,7 @@ namespace
 		const char* szKey;
 		char szName[DEFINE_CACHE_NAME_LENGTH];
 		bool bFound;
+		bool bLiteral; // the key points to read-only memory of this DLL (a string literal): the address is enough
 		int iValue;
 	};
 	struct FloatDefineCacheEntry
@@ -2823,6 +2824,7 @@ namespace
 		const char* szKey;
 		char szName[DEFINE_CACHE_NAME_LENGTH];
 		bool bFound;
+		bool bLiteral;
 		float fValue;
 	};
 	IntDefineCacheEntry g_aIntDefineCache[DEFINE_CACHE_SIZE];
@@ -2833,15 +2835,40 @@ namespace
 		return (int)(((unsigned)szName * 2654435761U) >> 16) & (DEFINE_CACHE_SIZE - 1);
 	}
 
-	inline bool defineCacheHit(const char* szKey, const char* szCachedName, const char* szName)
+	inline bool defineCacheHit(const char* szKey, const char* szCachedName, const char* szName, bool bLiteral)
 	{
-		return szKey == szName && strcmp(szCachedName, szName) == 0;
+		return szKey == szName && (bLiteral || strcmp(szCachedName, szName) == 0);
+	}
+
+	// Is the whole name in read-only memory of this DLL? Then it is a string literal: its address never holds another
+	// name, so a hit needs no string comparison. (Nearly all getDefineINT calls pass literals.)
+	bool isReadOnlyDllString(const char* szName)
+	{
+		static DWORD s_iDllBase = 0;
+		static DWORD s_iDllEnd = 0;
+		if (s_iDllBase == 0)
+		{
+			MEMORY_BASIC_INFORMATION mbi;
+			if (VirtualQuery((LPCVOID)&isReadOnlyDllString, &mbi, sizeof(mbi)) == 0)
+				return false;
+			const IMAGE_DOS_HEADER* pDos = (const IMAGE_DOS_HEADER*)mbi.AllocationBase;
+			const IMAGE_NT_HEADERS* pNt = (const IMAGE_NT_HEADERS*)((const BYTE*)pDos + pDos->e_lfanew);
+			s_iDllBase = (DWORD)pDos;
+			s_iDllEnd = s_iDllBase + pNt->OptionalHeader.SizeOfImage;
+		}
+		const char* szEnd = szName + strlen(szName); // the terminating zero must be read-only too
+		if ((DWORD)szName < s_iDllBase || (DWORD)szEnd >= s_iDllEnd)
+			return false;
+		MEMORY_BASIC_INFORMATION mbi;
+		if (VirtualQuery(szName, &mbi, sizeof(mbi)) == 0 || (mbi.Protect != PAGE_READONLY && mbi.Protect != PAGE_EXECUTE_READ))
+			return false;
+		return (DWORD)szEnd < (DWORD)mbi.BaseAddress + mbi.RegionSize;
 	}
 
 	bool lookUpIntDefine(const char* szName, int& iValue)
 	{
 		IntDefineCacheEntry& kEntry = g_aIntDefineCache[defineCacheSlot(szName)];
-		if (defineCacheHit(kEntry.szKey, kEntry.szName, szName))
+		if (defineCacheHit(kEntry.szKey, kEntry.szName, szName, kEntry.bLiteral))
 		{
 #ifdef PERF_VERIFY
 			int iCheck = 0;
@@ -2859,6 +2886,7 @@ namespace
 			kEntry.szKey = szName;
 			strcpy(kEntry.szName, szName);
 			kEntry.bFound = bFound;
+			kEntry.bLiteral = isReadOnlyDllString(szName);
 			kEntry.iValue = bFound ? iValue : 0;
 		}
 		return bFound;
@@ -2867,7 +2895,7 @@ namespace
 	bool lookUpFloatDefine(const char* szName, float& fValue)
 	{
 		FloatDefineCacheEntry& kEntry = g_aFloatDefineCache[defineCacheSlot(szName)];
-		if (defineCacheHit(kEntry.szKey, kEntry.szName, szName))
+		if (defineCacheHit(kEntry.szKey, kEntry.szName, szName, kEntry.bLiteral))
 		{
 			if (kEntry.bFound)
 				fValue = kEntry.fValue;
@@ -2879,6 +2907,7 @@ namespace
 			kEntry.szKey = szName;
 			strcpy(kEntry.szName, szName);
 			kEntry.bFound = bFound;
+			kEntry.bLiteral = isReadOnlyDllString(szName);
 			kEntry.fValue = bFound ? fValue : 0;
 		}
 		return bFound;

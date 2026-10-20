@@ -7,7 +7,7 @@ K-Mod-Magnus is a fork of [K-Mod](https://github.com/karadoc/Civ4-K-Mod) 1.46 by
 - more Stone, Marble and seafood on generated maps, and other starting techs for five civilizations;
 - pre-chop and pre-build buttons;
 - fewer early AI wars;
-- AI turns about twice as fast in big late games;
+- turns 1.6 to 2.5 times faster than K-Mod 1.46 in big late games;
 - the Planet Generator map script, reworked so that its options hold, with more coast on request;
 - Blue Marble terrain textures;
 - the unit, building and city graphics of the Realism Invictus mod, each civilization in its own look (an option, on by default).
@@ -154,23 +154,66 @@ python3 tools/ri_art/port_ri_art.py --ri "<extracted>/$_4_" --civ4 "<Civilizatio
 
 ## Faster turns
 
-Written by Claude (2026-10) after profiling late-game saves; tagged [`perf`]. Unless noted, each change leaves every game decision as it was: a save played with and without it ends in the same game state (checked with a full fingerprint of all units, cities and players after 8 turns of a 14-civ Huge save).
+In big late games, the wait from ending your turn to having the next one is 1.6 to 2.5 times shorter than with K-Mod 1.46. The rules and the AI's logic stay as they were. Claude made these changes in October 2026 after profiling late-game saves; they are tagged [`perf`] in the source.
 
-- **Trade networks** (`CvPlotGroup`): checking whether a network split used the exe's pathfinder; it is now a plain search in the DLL (`countConnectedPlots`). A resource gained or lost by a network now updates the owner's cities in it instead of walking every plot of the network (`changeNumBonuses`). Trade-network updates had been a quarter of AI turn time in big games, mostly set off by ships blockading coasts.
-- **Pathfinder** (`KmodPathFinder`): a reset no longer clears the whole node map (about 1 MB on a Huge map); nodes are cleared when first used.
-- **GlobalDefines by name** (`CvGlobals::getDefineINT/FLOAT`): the result is remembered per name; the cache is emptied whenever defines are set (XML loading, `setDefine*`).
-- **Buildings and resources** (`CvCity::getBonusEffectBuildings`): when a city gains or loses a resource, only buildings with an effect for that resource are summed (the list is made from the building XML when it loads). `updateBuildingCommerce` checks each building once.
-- **Python**: `onUnitMove` (sent for every step of every unit) and `getExtraCost` (asked very often by the AI) are behind switches in `PythonCallbackDefines.xml`, `USE_ON_UNIT_MOVE_CALLBACK` and `USE_GET_EXTRA_COST_CALLBACK`, both 0 as BtS's handlers do nothing. Python events get the Alt/Ctrl/Shift state once per engine update instead of three system calls per event. The scoreboard ranking calls the Python score function once per player instead of once per player per rank.
-- **Map symbols** (`CvPlot::updateSymbolsIfYieldsChanged`): the yield icons of a plot are only rebuilt when the yields they show change.
-- **Build**: Release builds use whole-program optimization (`/GL`, `/LTCG`), in the `GNUmakefile` (`make WPO=0` without), the nmake `Makefile` and so the CI: about 10% shorter AI turns. It rounds some floating-point intermediate results differently, so AI evaluations can differ in close calls and games don't replay exactly like a `WPO=0` build. New targets for this work: `make TARGET=Sample` (sampling profiler), `TARGET=Profile` (K-Mod's profiler), `VERIFY=1` (runs the original code next to the new one and logs differences).
+### How much faster than K-Mod 1.46
 
-Seconds from ending the turn to having the next one, on late-game saves (Huge, Marathon Accelerated, under Wine; "K-Mod 1.45" is the 48-civ DLL these games were played with, a build with assertions; "fork" is this repository before these changes):
+Seconds from ending your turn to having the next one, on three late-game saves (Huge map, Marathon Accelerated):
 
-| Save | K-Mod 1.45 | fork | with these changes |
+| Save | K-Mod 1.46 | K-Mod-Magnus | Faster |
 |---|---|---|---|
-| AD 1320, 14 civs, 268 cities, 4739 units (7 turns) | 15.2 | 13.7 | 6.8 |
-| AD 1448, 8 civs, 333 cities, 4336 units (2 turns) | 54.2 | 37.3 | 12.2 |
-| AD 1748, 17 civs, 281 cities, 3795 units (1 turn) | 41.1 | 15.7 | 6.3 |
+| AD 1320: 14 civs, 268 cities, 4,739 units | 13.68 | 8.71 | 1.6× |
+| AD 1448: 8 civs, 333 cities (243 of them yours), 4,336 units | 16.45 | 8.93 | 1.8× |
+| AD 1748: 17 civs, 281 cities, 3,795 units | 15.40 | 6.16 | 2.5× |
+
+The gain grows with the game. In a new game (Huge, 24 civs, Normal speed, AI autoplay), turns 0 to 198 took 303 s with K-Mod 1.46 and 231 s with K-Mod-Magnus, 24% less: 6% less in turns 0–49, 26% less in turns 150–198. The exact changes alone (see [Why](#why)), which play the very same game as K-Mod 1.46, took 247 s.
+
+How this was measured:
+
+- "K-Mod 1.46" is karadoc's code (tag `v1.46`) built with K-Mod's own release settings; only its civ cap is raised to 48, which these saves need. Unused civ slots cost little (about 2%, see [Rules and AI](#rules-and-ai-dll)).
+- Under Wine on an i9-9900K without a GPU (software rendering), with logs and autosaves off; means of two runs, which differed by at most 1.1%. AD 1320: the 7 turns after the first one after loading, which is slower with every DLL. AD 1448: the 2 turns after loading; AD 1748: 1 turn (both games end in victory soon after).
+- The mod folder used for these tests lacks this fork's early-war settings and the Realism Invictus art, so K-Mod-Magnus played by K-Mod's rules there, with K-Mod's graphics, and the games can be compared.
+
+### Why
+
+The changes are of two kinds. Measured one after the other, in seconds per turn (in brackets the part spent moving your units after you end the turn):
+
+| | AD 1320 | AD 1448 | AD 1748 |
+|---|---|---|---|
+| K-Mod 1.46 | 13.7 (4.5) | 16.5 (8.1) | 15.4 (5.7) |
+| Exact changes | 9.3 (3.9) | 10.1 (5.7) | 7.1 (1.5) |
+| … and whole-program optimization: K-Mod-Magnus | 8.7 (3.7) | 8.9 (5.4) | 6.2 (1.2) |
+
+- **Exact changes** compute the same results with less work, so the game plays out exactly as with K-Mod 1.46. Checked with a fingerprint of all units, cities and players: on the three saves after the measured turns, and in the new 24-civ game after each of its 199 turns. Test builds that run the original code next to the new one (`make VERIFY=1`) found no difference either.
+- **Whole-program optimization** lets the compiler optimize across source files. It doesn't change the rules or how any decision is made, but it rounds some floating-point results differently, so a game doesn't replay exactly as with K-Mod 1.46. Saves load either way.
+
+Where K-Mod 1.46 spent the time, and what changed. The shares are of the time per turn on AD 1320, from profiles of K-Mod 1.46's code; the two items marked "later" are shares of what was left after the others:
+
+- **Trade networks, about a quarter** (`CvPlotGroup`, `CvUnit::updatePlunder`). A ship blockading a coast, a culture flip or a deal makes K-Mod rebuild every player's trade networks: each plot leaves its network and joins again. Along the way, the game engine's pathfinder checked whether a network had split (16,669 times in 7 turns on this save), and each resource a network gained or lost walked all its plots (about 8,000 in these games) to find its cities. Now the split check is a plain search in the DLL (`countConnectedPlots`). It is skipped after a blockade when the blockade took a plot out of the network, because the network can't still be whole. Resource changes go straight to the owner's cities in the network (`changeNumBonuses`).
+- **Unit pathfinding, about 15%** (`KmodPathFinder`; about 15,000 path searches per turn on this save). A search that couldn't continue the previous one began by clearing the whole node map, about 1 MB on a Huge map: a third of the pathfinding time. Now nodes are cleared when first used. Each step's movement cost was computed twice; now it is computed once per search. The search itself stays A*: the other algorithms don't fit Civ4's movement rules (costs that depend on the unit, turn boundaries), or they would make units take other paths.
+- **Settings looked up by name, 5–7%** (`CvGlobals::getDefineINT/FLOAT`): about 5.6 million lookups per turn, each building a string and hashing it. Each value is now remembered under its name, and names written in the code are recognized by their address. The cache is emptied whenever defines are set (XML loading, `setDefine*`).
+- **Python, 3–4%**. Every Python event read the Alt, Ctrl and Shift keys, three system calls that are slow under Wine; now the keys are read once per engine update. `onUnitMove` (sent for every step of every unit) and `getExtraCost` (asked very often by the AI) are behind switches in `PythonCallbackDefines.xml`, `USE_ON_UNIT_MOVE_CALLBACK` and `USE_GET_EXTRA_COST_CALLBACK`. Both are 0, as BtS's handlers do nothing. The scoreboard ranking asks Python for each player's score once instead of once per rank.
+- **Cities** (`CvCity`):
+    - When a city gains or loses a resource, only the buildings with an effect for that resource are summed, not every building type; the lists are made from the building XML when it loads.
+    - `updateBuildingCommerce` looks at each of the city's buildings once for all commerce types, and skips those with no commerce of their own.
+    - Corporation bonuses are counted in arrays on the stack instead of new heap vectors per call.
+    - `allUpgradesAvailable` follows each unit's own upgrades instead of trying every unit class at every step.
+    - The maintenance distance (to the nearest palace or other government center) is remembered per city until a city is added or removed or a government center changes.
+- **Map symbols** (`CvPlot::updateSymbolsIfYieldsChanged`): a plot's yield icons are rebuilt only when the yields they show change.
+- **Later: AI loops over all units, about 5%** (`CvUnitAI::AI_shadow`, `AI_omniGroup`, `AI_guardBonus`, `CvPlot::isFriendlyCity`). For each candidate, the expensive test came first: is the plot a friendly city, which looks through all the units in the city for enemies. The cheap ones (the unit's AI type, cargo, ownership) came after it. Now the cheap ones come first.
+- **Later: units, cities and networks by ID, 3–4%** (`FFreeListTrashArray.h`, `CvPlayer::getUnit` and the like): every lookup, and every step of a loop over a player's units or cities, was a virtual function call the compiler can't inline. Now they are direct calls.
+- **Whole-program optimization** (`/GL`, `/LTCG`): Release builds use it in the `GNUmakefile` (`make WPO=0` builds without it), in the nmake `Makefile` and so in the CI. It rounds some floating-point intermediate results differently, so AI evaluations can come out the other way in close calls, and games don't replay exactly like a `WPO=0` build.
+
+Build options made for this work: `make TARGET=Sample` (sampling profiler), `TARGET=Profile` (K-Mod's profiler), `VERIFY=1` (runs the original code next to the new one and logs differences).
+
+### What is left
+
+Much of the remaining wait is not the DLL computing:
+
+- **Your automated units.** At the end of your turn, K-Mod moves your automated units (workers, explorers, missionaries) one group per engine update, and the engine updates four times a second. With dozens of automated workers that adds seconds to every turn, mostly spent waiting for the next update (it is part of the bracketed times above). Letting all of them act in the same update was tried and saved about 3 s per turn on AD 1320 and 4 s on AD 1448, but your units then choose their moves in another order, which changes the course of your game, so it was left out.
+- **The game engine's own work** between its updates: mostly drawing frames, plus its own unit and interface work. The engine is the exe, which a mod can't change. In this test copy, without a GPU, a frame takes about 120 ms; with a graphics card, much less. Drawing fewer frames during AI turns would make the screen refresh less often, so that trade-off was left out (AdvCiv offers it as an option).
+
+The DLL's own time is spread thin: no function takes more than about 2% of a turn.
 
 ## Building the DLL
 

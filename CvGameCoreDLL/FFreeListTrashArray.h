@@ -40,6 +40,62 @@ public:
 	virtual void uninit();
 	virtual T* getAt(int iID) const;
 
+	// perf: getAt and FFreeListArrayBase's iteration without virtual calls, so that they can be inlined. Same results.
+	// These hide the base class's beginIter etc., which call the virtual getAt for every slot. (Nothing here changes
+	// the class layout or its virtual functions.)
+	T* getAtFast(int iID) const
+	{
+		if ((iID == FFreeList::INVALID_INDEX) || (m_pArray == NULL))
+		{
+			return NULL;
+		}
+		int iIndex = (iID & FLTA_INDEX_MASK);
+		if ((iIndex <= m_iLastIndex) && (m_pArray[iIndex].pData != NULL))
+		{
+			if (((iID & FLTA_ID_MASK) == 0) || (m_pArray[iIndex].pData->getID() == iID))
+			{
+				return m_pArray[iIndex].pData;
+			}
+		}
+		return NULL;
+	}
+	T* beginIter(int* pIterIdx) const
+	{
+		*pIterIdx = 0;
+		return nextIter(pIterIdx);
+	}
+	T* nextIter(int* pIterIdx) const
+	{
+		for( ; (*pIterIdx) < getIndexAfterLast(); (*pIterIdx)++)
+		{
+			T* pObj = getAtFast(*pIterIdx);
+			if (pObj)
+			{
+				(*pIterIdx)++;	// prime for next call
+				return pObj;
+			}
+		}
+		return NULL;
+	}
+	T* endIter(int* pIterIdx) const
+	{
+		*pIterIdx = getIndexAfterLast() - 1;
+		return prevIter(pIterIdx);
+	}
+	T* prevIter(int* pIterIdx) const
+	{
+		for( ; (*pIterIdx) >= 0; (*pIterIdx)--)
+		{
+			T* pObj = getAtFast(*pIterIdx);
+			if (pObj)
+			{
+				(*pIterIdx)--;	// prime for next call
+				return pObj;
+			}
+		}
+		return NULL;
+	}
+
 	T* add();
 	bool remove(T* pData);
 	bool removeAt(int iID);

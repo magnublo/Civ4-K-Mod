@@ -10700,15 +10700,17 @@ bool CvUnitAI::AI_shadow(UnitAITypes eUnitAI, int iMax, int iMaxRatio, bool bWit
 
 	for(pLoopUnit = GET_PLAYER(getOwnerINLINE()).firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = GET_PLAYER(getOwnerINLINE()).nextUnit(&iLoop))
 	{
-		if (pLoopUnit != this)
+		// perf: the cheap tests first. AI_plotValid looks for enemies among all units in a city, for every unit of
+		// the player; it and these tests only read the game state, so the order doesn't change the result.
+		if (pLoopUnit != this && pLoopUnit->AI_getUnitAIType() == eUnitAI && pLoopUnit->isGroupHead() && !pLoopUnit->isCargo())
 		{
 			if (AI_plotValid(pLoopUnit->plot()))
 			{
-				if (pLoopUnit->isGroupHead())
+				//if (pLoopUnit->isGroupHead())
 				{
-					if (!(pLoopUnit->isCargo()))
+					//if (!(pLoopUnit->isCargo()))
 					{
-						if (pLoopUnit->AI_getUnitAIType() == eUnitAI)
+						//if (pLoopUnit->AI_getUnitAIType() == eUnitAI)
 						{
 							if (pLoopUnit->getGroup()->baseMoves() <= getGroup()->baseMoves())
 							{
@@ -10827,6 +10829,11 @@ bool CvUnitAI::AI_omniGroup(UnitAITypes eUnitAI, int iMaxGroup, int iMaxOwnUnitA
 	{
 		CvUnit* pLoopUnit = pLoopGroup->getHeadUnit();
 		if (pLoopUnit == NULL)
+			continue;
+
+		// perf: AI_allowGroup below rejects these first; checking them before AI_plotValid (which looks for enemies
+		// among all units in a city) gives the same result, as both only read the game state.
+		if (pLoopUnit->AI_getUnitAIType() != eUnitAI || pLoopUnit == this || pLoopGroup == getGroup() || pLoopUnit->isCargo())
 			continue;
 
 		CvPlot* pPlot = pLoopUnit->plot();
@@ -11699,9 +11706,10 @@ bool CvUnitAI::AI_guardBonus(int iMinValue)
 	{
 		pLoopPlot = GC.getMapINLINE().plotByIndexINLINE(iI);
 
-		if (AI_plotValid(pLoopPlot))
+		// perf: ownership first (same result: both only read the game state)
+		if (pLoopPlot->getOwnerINLINE() == getOwnerINLINE() && AI_plotValid(pLoopPlot))
 		{
-			if (pLoopPlot->getOwnerINLINE() == getOwnerINLINE())
+			//if (pLoopPlot->getOwnerINLINE() == getOwnerINLINE())
 			{
 				eNonObsoleteBonus = pLoopPlot->getNonObsoleteBonusType(getTeam(), true);
 

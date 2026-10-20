@@ -354,6 +354,7 @@ int pathValid_join(FAStarNode* parent, FAStarNode* node, CvSelectionGroup* pSele
 int pathValid_source(FAStarNode* parent, CvSelectionGroup* pSelectionGroup, int iFlags); // K-Mod
 int pathValid(FAStarNode* parent, FAStarNode* node, int data, const void* pointer, FAStar* finder);
 int pathAdd(FAStarNode* parent, FAStarNode* node, int data, const void* pointer, FAStar* finder);
+void pathMoveCostNewSearch(); // perf: forget the move costs remembered for the last path search
 int stepDestValid(int iToX, int iToY, const void* pointer, FAStar* finder);
 int stepHeuristic(int iFromX, int iFromY, int iToX, int iToY);
 int stepValid(FAStarNode* parent, FAStarNode* node, int data, const void* pointer, FAStar* finder);

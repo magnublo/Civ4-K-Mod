@@ -22,17 +22,27 @@ void SampleProfilerUpdateEnd();
 void SampleProfilerSetPhase(SamplerPhase ePhase);
 void SampleProfilerDump();
 void SampleProfilerCountDefine(const char* szName);
+// Event counters for the interturn, dumped as "COUNTER name total max" (max: the largest single amount added)
+enum SamplerCounter
+{
+	SAMPLER_PF_SEARCHES, SAMPLER_PF_REUSED, SAMPLER_PF_FOUND, SAMPLER_PF_EXPANSIONS, SAMPLER_PF_OPEN_SCANNED,
+	SAMPLER_PF_EDGES, SAMPLER_PF_NEW_NODES, SAMPLER_PF_PATH_STEPS, SAMPLER_PF_EXPANSIONS_FOUND, SAMPLER_PF_FRESH,
+	SAMPLER_PF_EXPANSIONS_FRESH, SAMPLER_PF_WEIGHT_TINY, NUM_SAMPLER_COUNTERS
+};
+void SampleProfilerCount(SamplerCounter eCounter, int iAmount);
 #define SAMPLER_UPDATE_BEGIN(ePhase) SampleProfilerUpdateBegin(ePhase)
 #define SAMPLER_UPDATE_END() SampleProfilerUpdateEnd()
 #define SAMPLER_SET_PHASE(ePhase) SampleProfilerSetPhase(ePhase)
 #define SAMPLER_DUMP() SampleProfilerDump()
 #define SAMPLER_COUNT_DEFINE(szName) SampleProfilerCountDefine(szName)
+#define SAMPLER_COUNT(eCounter, iAmount) SampleProfilerCount(eCounter, iAmount)
 #else
 #define SAMPLER_UPDATE_BEGIN(ePhase)
 #define SAMPLER_UPDATE_END()
 #define SAMPLER_SET_PHASE(ePhase)
 #define SAMPLER_DUMP()
 #define SAMPLER_COUNT_DEFINE(szName)
+#define SAMPLER_COUNT(eCounter, iAmount)
 #endif
 
 #endif

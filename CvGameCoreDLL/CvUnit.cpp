@@ -5084,6 +5084,10 @@ void CvUnit::updatePlunder(int iChange, bool bUpdatePlotGroups)
 
 	bool bOldTradeNet;
 	bool bChanged = false;
+	// perf: the plots that this takes out of each team's trade network (for CvPlotGroup::recalculatePlots)
+	static std::vector<int> aiLostPlots[MAX_TEAMS];
+	for (int iTeam = 0; iTeam < MAX_TEAMS; iTeam++)
+		aiLostPlots[iTeam].clear();
 
 /************************************************************************************************/
 /* BETTER_BTS_AI_MOD                      06/01/09                                jdog5000      */
@@ -5129,16 +5133,25 @@ void CvUnit::updatePlunder(int iChange, bool bUpdatePlotGroups)
 
 							if( bValid )
 							{
-								if (!bChanged)
+								/*if (!bChanged)
 								{
 									bOldTradeNet = pLoopPlot->isTradeNetwork((TeamTypes)iTeam);
-								}
+								}*/
+								bOldTradeNet = pLoopPlot->isTradeNetwork((TeamTypes)iTeam); // perf: for every plot
 
 								pLoopPlot->changeBlockadedCount((TeamTypes)iTeam, iChange);
 
-								if (!bChanged)
+								/*if (!bChanged)
 								{
 									bChanged = (bOldTradeNet != pLoopPlot->isTradeNetwork((TeamTypes)iTeam));
+								}*/
+								// perf (same bChanged: true once any plot changed)
+								bool bNewTradeNet = pLoopPlot->isTradeNetwork((TeamTypes)iTeam);
+								if (bOldTradeNet != bNewTradeNet)
+								{
+									bChanged = true;
+									if (!bNewTradeNet)
+										aiLostPlots[iTeam].push_back(GC.getMapINLINE().plotNumINLINE(pLoopPlot->getX_INLINE(), pLoopPlot->getY_INLINE()));
 								}
 							}
 						}
@@ -5154,7 +5167,9 @@ void CvUnit::updatePlunder(int iChange, bool bUpdatePlotGroups)
 
 		if (bUpdatePlotGroups)
 		{
+			CvPlotGroup::setLostNetworkPlots(aiLostPlots); // perf
 			GC.getGameINLINE().updatePlotGroups();
+			CvPlotGroup::setLostNetworkPlots(NULL); // perf
 		}
 	}
 /************************************************************************************************/

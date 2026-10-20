@@ -1579,6 +1579,53 @@ int pathDestValid(int iToX, int iToY, const void* pointer, FAStar* finder)
 }
 
 
+// perf: pathAdd and pathCost both need every unit's move cost for a step, and KmodPathFinder asks for nearly every step
+// twice (moves left, then cost), so the costs of recent steps are remembered. Nothing changes the game during a path
+// search, and KmodPathFinder::GeneratePath starts a new generation for each search, so a remembered cost is exactly
+// what movementCost would return. (Only for KmodPathFinder; the exe's FAStar callbacks, finder != NULL, don't use it.)
+namespace
+{
+	struct PathMoveCost
+	{
+		const CvUnit* pUnit;
+		const CvPlot* pFromPlot;
+		const CvPlot* pToPlot;
+		unsigned iGeneration;
+		int iCost;
+	};
+	const int NUM_PATH_MOVE_COSTS = 256;
+	PathMoveCost g_aPathMoveCosts[NUM_PATH_MOVE_COSTS];
+	unsigned g_iPathMoveCostGeneration = 1;
+
+	inline int pathMoveCost(const CvUnit* pUnit, const CvPlot* pFromPlot, const CvPlot* pToPlot)
+	{
+		unsigned i = ((unsigned)pToPlot / 64 * 31 + (unsigned)pFromPlot / 64 * 7 + (unsigned)pUnit / 64) % NUM_PATH_MOVE_COSTS;
+		PathMoveCost& kEntry = g_aPathMoveCosts[i];
+		if (kEntry.iGeneration != g_iPathMoveCostGeneration || kEntry.pUnit != pUnit || kEntry.pFromPlot != pFromPlot || kEntry.pToPlot != pToPlot)
+		{
+			kEntry.pUnit = pUnit;
+			kEntry.pFromPlot = pFromPlot;
+			kEntry.pToPlot = pToPlot;
+			kEntry.iGeneration = g_iPathMoveCostGeneration;
+			kEntry.iCost = pToPlot->movementCost(pUnit, pFromPlot);
+		}
+#ifdef PERF_VERIFY
+		if (kEntry.iCost != pToPlot->movementCost(pUnit, pFromPlot))
+			gDLL->logMsg("perf_verify.log", CvString::format("pathMoveCost: remembered %d, movementCost %d", kEntry.iCost, pToPlot->movementCost(pUnit, pFromPlot)).c_str());
+#endif
+		return kEntry.iCost;
+	}
+}
+
+void pathMoveCostNewSearch()
+{
+	if (++g_iPathMoveCostGeneration == 0)
+	{
+		memset(g_aPathMoveCosts, 0, sizeof(g_aPathMoveCosts));
+		g_iPathMoveCostGeneration = 1;
+	}
+}
+
 int pathHeuristic(int iFromX, int iFromY, int iToX, int iToY)
 {
 	return (stepDistance(iFromX, iFromY, iToX, iToY) * PATH_MOVEMENT_WEIGHT);
@@ -1632,7 +1679,8 @@ int pathCost(FAStarNode* parent, FAStarNode* node, int data, const void* pointer
 			FAssert(pLoopUnit->getDomainType() != DOMAIN_AIR);
 
 			int iMaxMoves = parent->m_iData1 > 0 ? parent->m_iData1 : pLoopUnit->maxMoves();
-			int iMoveCost = pToPlot->movementCost(pLoopUnit, pFromPlot);
+			//int iMoveCost = pToPlot->movementCost(pLoopUnit, pFromPlot);
+			int iMoveCost = finder ? pToPlot->movementCost(pLoopUnit, pFromPlot) : pathMoveCost(pLoopUnit, pFromPlot, pToPlot); // perf
 			int iMovesLeft = std::max(0, (iMaxMoves - iMoveCost));
 
 			iWorstMovesLeft = std::min(iWorstMovesLeft, iMovesLeft);
@@ -2128,14 +2176,16 @@ int pathAdd(FAStarNode* parent, FAStarNode* node, int data, const void* pointer,
 		}
 
 		CLLNode<IDInfo>* pUnitNode = pSelectionGroup->headUnitNode();
-		int iMoveCost = pToPlot->movementCost(::getUnit(pUnitNode->m_data), pFromPlot);
+		//int iMoveCost = pToPlot->movementCost(::getUnit(pUnitNode->m_data), pFromPlot);
+		int iMoveCost = finder ? pToPlot->movementCost(::getUnit(pUnitNode->m_data), pFromPlot) : pathMoveCost(::getUnit(pUnitNode->m_data), pFromPlot, pToPlot); // perf
 		bool bUniformCost = true;
 
 		for (pUnitNode = pSelectionGroup->nextUnitNode(pUnitNode); pUnitNode && bUniformCost; pUnitNode = pSelectionGroup->nextUnitNode(pUnitNode))
 		{
 			CvUnit* pLoopUnit = ::getUnit(pUnitNode->m_data);
 
-			int iLoopCost = pToPlot->movementCost(pLoopUnit, pFromPlot);
+			//int iLoopCost = pToPlot->movementCost(pLoopUnit, pFromPlot);
+			int iLoopCost = finder ? pToPlot->movementCost(pLoopUnit, pFromPlot) : pathMoveCost(pLoopUnit, pFromPlot, pToPlot); // perf
 			if (iLoopCost != iMoveCost)
 			{
 				bUniformCost = false;

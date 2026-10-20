@@ -1307,6 +1307,16 @@ protected:
 
 	virtual bool AI_addBestCitizen(bool bWorkers, bool bSpecialists, int* piBestPlot = NULL, SpecialistTypes* peBestSpecialist = NULL) = 0;
 	virtual bool AI_removeWorstCitizen(SpecialistTypes eIgnoreSpecialist = NO_SPECIALIST) = 0;
+
+	// perf: calculateMaintenanceDistance depends only on where the owner's cities are and which of them are
+	// government centers. Its result is kept until a city is added or removed anywhere or a government center
+	// changes (s_iMaintenanceDistanceEpoch). Not saved.
+public:
+	static void invalidateMaintenanceDistances();
+protected:
+	static unsigned s_iMaintenanceDistanceEpoch;
+	mutable unsigned m_iMaintenanceDistanceEpoch;
+	mutable int m_iMaintenanceDistance;
 };
 
 #endif

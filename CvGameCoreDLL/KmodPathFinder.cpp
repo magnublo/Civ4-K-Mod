@@ -3,6 +3,7 @@
 #include "CvGameCoreDLL.h"
 #include "KmodPathFinder.h"
 #include "CvGameCoreUtils.h"
+#include "SampleProfiler.h" // perf: counters in Sample builds
 
 int KmodPathFinder::admissible_scaled_weight = 1;
 int KmodPathFinder::admissible_base_weight = 1;
@@ -100,6 +101,8 @@ bool KmodPathFinder::GeneratePath(int x1, int y1, int x2, int y2)
 	if (!settings.pGroup)
 		return false;
 
+	pathMoveCostNewSearch(); // perf: the game may have changed since the last search
+
 	if (!pathDestValid(x2, y2, &settings, 0))
 		return false;
 
@@ -121,8 +124,10 @@ bool KmodPathFinder::GeneratePath(int x1, int y1, int x2, int y2)
 	dest_x = x2;
 	dest_y = y2;
 
+	SAMPLER_COUNT(SAMPLER_PF_SEARCHES, 1);
 	if (GetNode(x1, y1).m_bOnStack)
 	{
+		SAMPLER_COUNT(SAMPLER_PF_REUSED, 1);
 		int iMoves = (settings.iFlags & MOVE_MAX_MOVES) ? settings.pGroup->maxMoves() : settings.pGroup->movesLeft();
 		if (iMoves != GetNode(x1,  y1).m_iData1)
 		{
@@ -149,10 +154,34 @@ bool KmodPathFinder::GeneratePath(int x1, int y1, int x2, int y2)
 	if (bRecalcHeuristics)
 		RecalculateHeuristics();
 
+#ifdef SAMPLE_PROFILER
+	bool bFresh = open_list.size() == 1 && GetNode(x1, y1).m_eFAStarListType == FASTARLIST_OPEN;
+	int iExpansions = 0;
+	while (ProcessNode())
+		iExpansions++;
+	SAMPLER_COUNT(SAMPLER_PF_EXPANSIONS, iExpansions);
+	if (bFresh)
+	{
+		SAMPLER_COUNT(SAMPLER_PF_FRESH, 1);
+		SAMPLER_COUNT(SAMPLER_PF_EXPANSIONS_FRESH, iExpansions);
+	}
+	if (settings.iHeuristicWeight < GC.getMOVE_DENOMINATOR() / 4)
+		SAMPLER_COUNT(SAMPLER_PF_WEIGHT_TINY, 1);
+	if (end_node && (settings.iMaxPath < 0 || end_node->m_iData2 <= settings.iMaxPath))
+	{
+		int iSteps = 0;
+		for (FAStarNode* p = end_node; p->m_pParent; p = p->m_pParent)
+			iSteps++;
+		SAMPLER_COUNT(SAMPLER_PF_FOUND, 1);
+		SAMPLER_COUNT(SAMPLER_PF_PATH_STEPS, iSteps);
+		SAMPLER_COUNT(SAMPLER_PF_EXPANSIONS_FOUND, iExpansions);
+	}
+#else
 	while (ProcessNode())
 	{
 		// nothing
 	}
+#endif
 
 	if (end_node && (settings.iMaxPath < 0 || end_node->m_iData2 <= settings.iMaxPath))
 		return true;
@@ -316,6 +345,7 @@ void KmodPathFinder::RecalculateHeuristics()
 bool KmodPathFinder::ProcessNode()
 {
 	OpenList_t::iterator best_it = open_list.end();
+	SAMPLER_COUNT(SAMPLER_PF_OPEN_SCANNED, (int)open_list.size());
 	{
 		int iLowestCost = end_node ? end_node->m_iKnownCost : MAX_INT;
 		for (OpenList_t::iterator it = open_list.begin(); it != open_list.end(); ++it)
@@ -361,8 +391,10 @@ bool KmodPathFinder::ProcessNode()
 		FAStarNode* child_node = &GetNode(x, y);
 		bool bNewNode = !child_node->m_bOnStack;
 
+		SAMPLER_COUNT(SAMPLER_PF_EDGES, 1);
 		if (bNewNode)
 		{
+			SAMPLER_COUNT(SAMPLER_PF_NEW_NODES, 1);
 			child_node->m_iX = x;
 			child_node->m_iY = y;
 			pathAdd(parent_node, child_node, ASNC_NEWADD, &settings, 0);

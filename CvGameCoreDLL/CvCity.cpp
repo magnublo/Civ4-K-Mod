@@ -392,6 +392,9 @@ void CvCity::reset(int iID, PlayerTypes eOwner, int iX, int iY, bool bConstructo
 	m_iGovernmentCenterCount = 0;
 	m_iMaintenance = 0;
 	m_iMaintenanceModifier = 0;
+	m_iMaintenanceDistanceEpoch = 0; // perf
+	m_iMaintenanceDistance = 0; // perf
+	invalidateMaintenanceDistances(); // perf: this city's position changes
 	m_iWarWearinessModifier = 0;
 	m_iHurryAngerModifier = 0;
 	m_iHealRate = 0;
@@ -1699,6 +1702,30 @@ int CvCity::findCommerceRateRank(CommerceTypes eCommerce) const
 }
 
 
+// perf: the unit classes each unit upgrades to, in class order, from the XML. allUpgradesAvailable went through every
+// unit class at every level of its recursion (and canTrain calls it for every unit).
+namespace
+{
+	std::vector<std::vector<int> > g_aaiUpgradeUnitClasses;
+
+	inline const std::vector<int>& upgradeUnitClasses(UnitTypes eUnit)
+	{
+		if ((int)g_aaiUpgradeUnitClasses.size() != GC.getNumUnitInfos())
+		{
+			g_aaiUpgradeUnitClasses.assign(GC.getNumUnitInfos(), std::vector<int>());
+			for (int iUnit = 0; iUnit < GC.getNumUnitInfos(); iUnit++)
+			{
+				for (int iClass = 0; iClass < GC.getNumUnitClassInfos(); iClass++)
+				{
+					if (GC.getUnitInfo((UnitTypes)iUnit).getUpgradeUnitClass(iClass))
+						g_aaiUpgradeUnitClasses[iUnit].push_back(iClass);
+				}
+			}
+		}
+		return g_aaiUpgradeUnitClasses[eUnit];
+	}
+}
+
 // Returns one of the upgrades...
 UnitTypes CvCity::allUpgradesAvailable(UnitTypes eUnit, int iUpgradeCount) const
 {
@@ -1723,9 +1750,12 @@ UnitTypes CvCity::allUpgradesAvailable(UnitTypes eUnit, int iUpgradeCount) const
 	bUpgradeAvailable = false;
 	bUpgradeUnavailable = false;
 
-	for (iI = 0; iI < GC.getNumUnitClassInfos(); iI++)
+	//for (iI = 0; iI < GC.getNumUnitClassInfos(); iI++)
+	const std::vector<int>& aiUpgradeClasses = upgradeUnitClasses(eUnit); // perf: the same classes in the same order
+	for (size_t iUpgrade = 0; iUpgrade < aiUpgradeClasses.size(); iUpgrade++)
 	{
-		if (GC.getUnitInfo(eUnit).getUpgradeUnitClass(iI))
+		iI = aiUpgradeClasses[iUpgrade];
+		//if (GC.getUnitInfo(eUnit).getUpgradeUnitClass(iI))
 		{
 			eLoopUnit = (UnitTypes)GC.getCivilizationInfo(getCivilizationType()).getCivilizationUnits(iI);
 
@@ -5906,6 +5936,7 @@ void CvCity::changeGovernmentCenterCount(int iChange)
 	{
 		m_iGovernmentCenterCount = (m_iGovernmentCenterCount + iChange);
 		FAssert(getGovernmentCenterCount() >= 0);
+		invalidateMaintenanceDistances(); // perf
 
 		GET_PLAYER(getOwnerINLINE()).updateMaintenance();
 	}
@@ -5976,8 +6007,25 @@ void CvCity::updateMaintenance()
 }
 
 // K-Mod. new function to help with maintenance calculations
+// perf
+unsigned CvCity::s_iMaintenanceDistanceEpoch = 1;
+
+void CvCity::invalidateMaintenanceDistances()
+{
+	if (++s_iMaintenanceDistanceEpoch == 0)
+		s_iMaintenanceDistanceEpoch = 1; // 0 marks a city that has nothing remembered
+}
+
 int CvCity::calculateMaintenanceDistance() const
 {
+	// perf: remembered (see invalidateMaintenanceDistances)
+	if (m_iMaintenanceDistanceEpoch == s_iMaintenanceDistanceEpoch)
+	{
+#ifndef PERF_VERIFY
+		return m_iMaintenanceDistance;
+#endif
+	}
+
 	CvCity* pLoopCity;
 	int iLoop;
 
@@ -5991,7 +6039,15 @@ int CvCity::calculateMaintenanceDistance() const
 		if (pLoopCity->isGovernmentCenter())
 			iShortestGovernment = std::min(iShortestGovernment, plotDistance(getX_INLINE(), getY_INLINE(), pLoopCity->getX_INLINE(), pLoopCity->getY_INLINE()));
 	}
-	return std::min(iLongest, iShortestGovernment);
+	//return std::min(iLongest, iShortestGovernment);
+	int iDistance = std::min(iLongest, iShortestGovernment); // perf
+#ifdef PERF_VERIFY
+	if (m_iMaintenanceDistanceEpoch == s_iMaintenanceDistanceEpoch && m_iMaintenanceDistance != iDistance)
+		gDLL->logMsg("perf_verify.log", CvString::format("calculateMaintenanceDistance: remembered %d, actual %d (city %d of player %d)", m_iMaintenanceDistance, iDistance, getID(), getOwnerINLINE()).c_str());
+#endif
+	m_iMaintenanceDistance = iDistance;
+	m_iMaintenanceDistanceEpoch = s_iMaintenanceDistanceEpoch;
+	return iDistance;
 }
 // K-mod end
 
@@ -9360,6 +9416,36 @@ int CvCity::getBuildingCommerceByBuilding(CommerceTypes eIndex, BuildingTypes eB
 }
 
 
+// perf: for each building, the commerce types for which getBuildingCommerceByBuilding can be nonzero other than
+// through a city's building commerce changes (getBuildingCommerceChange): the building's own commerce, or a religion or
+// corporation (state religion, shrine and headquarters commerce). Built once from the XML.
+namespace
+{
+	std::vector<int> g_aiBuildingStaticCommerce;
+
+	inline int buildingStaticCommerceMask(BuildingTypes eBuilding)
+	{
+		if ((int)g_aiBuildingStaticCommerce.size() != GC.getNumBuildingInfos())
+		{
+			g_aiBuildingStaticCommerce.assign(GC.getNumBuildingInfos(), 0);
+			for (int iB = 0; iB < GC.getNumBuildingInfos(); iB++)
+			{
+				const CvBuildingInfo& kBuilding = GC.getBuildingInfo((BuildingTypes)iB);
+				for (int iC = 0; iC < NUM_COMMERCE_TYPES; iC++)
+				{
+					if (kBuilding.getObsoleteSafeCommerceChange(iC) != 0 || kBuilding.getCommerceChange(iC) != 0 ||
+						kBuilding.getReligionType() != NO_RELIGION || kBuilding.getGlobalReligionCommerce() != NO_RELIGION ||
+						kBuilding.getGlobalCorporationCommerce() != NO_CORPORATION)
+					{
+						g_aiBuildingStaticCommerce[iB] |= 1 << iC;
+					}
+				}
+			}
+		}
+		return g_aiBuildingStaticCommerce[eBuilding];
+	}
+}
+
 void CvCity::updateBuildingCommerce()
 {
 	int iNewBuildingCommerce;
@@ -9372,6 +9458,9 @@ void CvCity::updateBuildingCommerce()
 	{
 		if (getNumBuilding((BuildingTypes)iJ) > 0)
 		{
+			// perf: and 0 for buildings without commerce of their own if the city has no building commerce changes
+			if (m_aBuildingCommerceChange.empty() && buildingStaticCommerceMask((BuildingTypes)iJ) == 0)
+				continue;
 			for (iI = 0; iI < NUM_COMMERCE_TYPES; iI++)
 			{
 				aiNewBuildingCommerce[iI] += getBuildingCommerceByBuilding(((CommerceTypes)iI), ((BuildingTypes)iJ));
@@ -9860,16 +9949,37 @@ void CvCity::updateCorporation()
 
 void CvCity::updateCorporationBonus()
 {
+	/* original bts code
 	std::vector<int> aiExtraCorpProducedBonuses;
 	std::vector<int> aiLastCorpProducedBonuses;
-	std::vector<bool> abHadBonuses;
+	std::vector<bool> abHadBonuses; */
+	// perf: the same arrays on the stack instead of three heap vectors per call (this runs for every corporation
+	// resource change, thousands of times while trade networks are rebuilt); vectors only for very many resources.
+	const int MAX_STACK_BONUSES = 512;
+	int aiExtraStack[MAX_STACK_BONUSES];
+	int aiLastStack[MAX_STACK_BONUSES];
+	bool abHadStack[MAX_STACK_BONUSES];
+	std::vector<int> aiExtraHeap, aiLastHeap;
+	std::vector<char> abHadHeap;
+	int* aiExtraCorpProducedBonuses = aiExtraStack;
+	int* aiLastCorpProducedBonuses = aiLastStack;
+	bool* abHadBonuses = abHadStack;
+	if (GC.getNumBonusInfos() > MAX_STACK_BONUSES)
+	{
+		aiExtraHeap.resize(GC.getNumBonusInfos());
+		aiLastHeap.resize(GC.getNumBonusInfos());
+		abHadHeap.resize(GC.getNumBonusInfos());
+		aiExtraCorpProducedBonuses = &aiExtraHeap[0];
+		aiLastCorpProducedBonuses = &aiLastHeap[0];
+		abHadBonuses = (bool*)&abHadHeap[0];
+	}
 
 	for (int iI = 0; iI < GC.getNumBonusInfos(); ++iI)
 	{
-		abHadBonuses.push_back(hasBonus((BonusTypes)iI));
+		abHadBonuses[iI] = hasBonus((BonusTypes)iI);
 		m_paiNumCorpProducedBonuses[iI] = 0; 
-		aiLastCorpProducedBonuses.push_back(getNumBonuses((BonusTypes)iI));
-		aiExtraCorpProducedBonuses.push_back(0);
+		aiLastCorpProducedBonuses[iI] = getNumBonuses((BonusTypes)iI);
+		aiExtraCorpProducedBonuses[iI] = 0;
 	}
 
 	for (int iIter = 0; iIter < GC.getNumCorporationInfos(); ++iIter)
@@ -13963,6 +14073,8 @@ void CvCity::read(FDataStreamBase* pStream)
 		pStream->Read(&iChange);
 		m_aBuildingHealthChange.push_back(std::make_pair((BuildingClassTypes)iBuildingClass, iChange));
 	}
+	m_iMaintenanceDistanceEpoch = 0; // perf
+	invalidateMaintenanceDistances(); // perf
 }
 
 void CvCity::write(FDataStreamBase* pStream)

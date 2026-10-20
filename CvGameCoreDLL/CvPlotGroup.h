@@ -51,6 +51,11 @@ public:
 
 protected:
 	int countConnectedPlots(const CvPlot& kStart) const; // perf
+public:
+	// perf: the plots (by index) that a blockade just took out of each team's trade network, or NULL; while set,
+	// recalculatePlots knows that a group containing one of them has to be rebuilt (see there)
+	static void setLostNetworkPlots(const std::vector<int>* paiLostPlotsByTeam);
+protected:
 
 	int m_iID;
 

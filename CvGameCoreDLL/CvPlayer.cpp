@@ -13732,7 +13732,7 @@ int CvPlayer::getNumPlotGroups() const
 
 CvPlotGroup* CvPlayer::getPlotGroup(int iID) const															
 {
-	return((CvPlotGroup *)(m_plotGroups.getAt(iID)));
+	return((CvPlotGroup *)(m_plotGroups.getAtFast(iID))); // perf: was getAt (virtual)
 }
 
 
@@ -13768,12 +13768,13 @@ int CvPlayer::getNumCities() const
 
 CvCity* CvPlayer::getCity(int iID) const
 {
-	return(m_cities.getAt(iID));
+	return(m_cities.getAtFast(iID)); // perf: was getAt (virtual)
 }
 
 
 CvCity* CvPlayer::addCity()
 {
+	CvCity::invalidateMaintenanceDistances(); // perf
 	return(m_cities.add());
 }
 
@@ -13781,6 +13782,7 @@ CvCity* CvPlayer::addCity()
 void CvPlayer::deleteCity(int iID)
 {
 	m_cities.removeAt(iID);
+	CvCity::invalidateMaintenanceDistances(); // perf
 }
 
 
@@ -13804,7 +13806,7 @@ int CvPlayer::getNumUnits() const
 
 CvUnit* CvPlayer::getUnit(int iID) const
 {
-	return (m_units.getAt(iID));
+	return (m_units.getAtFast(iID)); // perf: was getAt (virtual)
 }
 
 
@@ -13840,7 +13842,7 @@ int CvPlayer::getNumSelectionGroups() const
 
 CvSelectionGroup* CvPlayer::getSelectionGroup(int iID) const												
 {
-	return ((CvSelectionGroup *)(m_selectionGroups.getAt(iID)));
+	return ((CvSelectionGroup *)(m_selectionGroups.getAtFast(iID))); // perf: was getAt (virtual)
 }
 
 
