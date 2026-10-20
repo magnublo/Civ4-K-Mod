@@ -86,7 +86,7 @@ Pre-chop and pre-build texts: `Assets/xml/Text/CIV4GameText_PreChopPreBuild.xml`
     | Netherlands | Mysticism, Fishing | Agriculture, Fishing |
     | Rome | Agriculture, Mining | Fishing, Mining |
 - **Sid's Sushi** (`buildings/CIV4BuildingInfos.xml`, `BUILDING_CORPORATION_2`): founded with Medicine as in BtS (K-Mod: Refrigeration).
-- **Switches**: `GlobalDefinesAlt.xml` adds the early-war settings above and `AUTOMATED_UNITS_MOVE_TOGETHER`; `PythonCallbackDefines.xml` adds `USE_ON_UNIT_MOVE_CALLBACK` and `USE_GET_EXTRA_COST_CALLBACK` (see [Faster turns](#faster-turns)).
+- **Switches**: `GlobalDefinesAlt.xml` adds the early-war settings above; `PythonCallbackDefines.xml` adds `USE_ON_UNIT_MOVE_CALLBACK` and `USE_GET_EXTRA_COST_CALLBACK` (see [Faster turns](#faster-turns)).
 - **Texts** for the new buttons: `Text/CIV4GameText_PreChopPreBuild.xml`.
 
 ### Interface and art
@@ -162,7 +162,6 @@ Written by Claude (2026-10) after profiling late-game saves; tagged [`perf`]. Un
 - **Buildings and resources** (`CvCity::getBonusEffectBuildings`): when a city gains or loses a resource, only buildings with an effect for that resource are summed (the list is made from the building XML when it loads). `updateBuildingCommerce` checks each building once.
 - **Python**: `onUnitMove` (sent for every step of every unit) and `getExtraCost` (asked very often by the AI) are behind switches in `PythonCallbackDefines.xml`, `USE_ON_UNIT_MOVE_CALLBACK` and `USE_GET_EXTRA_COST_CALLBACK`, both 0 as BtS's handlers do nothing. Python events get the Alt/Ctrl/Shift state once per engine update instead of three system calls per event. The scoreboard ranking calls the Python score function once per player instead of once per player per rank.
 - **Map symbols** (`CvPlot::updateSymbolsIfYieldsChanged`): the yield icons of a plot are only rebuilt when the yields they show change.
-- **Automated units move together** (`AUTOMATED_UNITS_MOVE_TOGETHER` in `GlobalDefinesAlt.xml`, 1): at the end of your turn all automated units (workers, explorers, missionaries) act in the same quarter-second time slice instead of one per slice, so their moves are shown at the same time. Same decisions, same work done (measured), but the order of events changes, so games don't replay exactly as with 0. See the comment in `CvGame::updateMoves`.
 - **Build**: Release builds use whole-program optimization (`/GL`, `/LTCG`), in the `GNUmakefile` (`make WPO=0` without), the nmake `Makefile` and so the CI: about 10% shorter AI turns. It rounds some floating-point intermediate results differently, so AI evaluations can differ in close calls and games don't replay exactly like a `WPO=0` build. New targets for this work: `make TARGET=Sample` (sampling profiler), `TARGET=Profile` (K-Mod's profiler), `VERIFY=1` (runs the original code next to the new one and logs differences).
 
 Seconds from ending the turn to having the next one, on late-game saves (Huge, Marathon Accelerated, under Wine; "K-Mod 1.45" is the 48-civ DLL these games were played with, a build with assertions; "fork" is this repository before these changes):
