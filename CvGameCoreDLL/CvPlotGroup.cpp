@@ -313,20 +313,42 @@ void CvPlotGroup::changeNumBonuses(BonusTypes eBonus, int iChange)
 
 			pPlotNode = nextPlotsNode(pPlotNode);
 		} */
-		// perf: The cities to update are the owner's cities whose plot is in this group (also while plots are being
-		// moved between groups: a plot's group changes right before it leaves the old group's list and right after
-		// it joins the new one's). Going through the owner's cities is much faster than through every plot of the
-		// group, thousands for a big trade network. Only the order of the city updates changes, and each one
-		// changes just that city (and player totals).
+		// perf: The cities to update are the owner's cities that stand on a plot of this group, as in the plot walk
+		// above. A plot's group changes right before it leaves the old group's list and right after it joins the new
+		// one's, so "the plot's group is this one" is "the plot is in this group's list" whenever this is called.
+		// The city must also be the plot's city: a new city is in its owner's list a little before it is put on its
+		// plot, and a dying one a little after it is taken off; the plot walk never reaches those. (Without that
+		// check, a 200-turn autoplay game left K-Mod's game at turn 113; found on 2026-10-20.) Going through the
+		// owner's cities is much faster than through every plot of the group, thousands for a big trade network.
+		// Only the order of the city updates changes, and each one changes just that city (and player totals).
 		CvPlayer& kOwner = GET_PLAYER(getOwnerINLINE());
+#ifdef PERF_VERIFY
+		std::vector<int> aiWalkCities, aiCities;
+		for (CLLNode<XYCoords>* pPlotNode = headPlotsNode(); pPlotNode != NULL; pPlotNode = nextPlotsNode(pPlotNode))
+		{
+			CvCity* pCity = GC.getMapINLINE().plotSorenINLINE(pPlotNode->m_data.iX, pPlotNode->m_data.iY)->getPlotCity();
+			if (pCity != NULL && pCity->getOwnerINLINE() == getOwnerINLINE())
+				aiWalkCities.push_back(pCity->getID());
+		}
+#endif
 		int iLoop;
 		for (CvCity* pLoopCity = kOwner.firstCity(&iLoop); pLoopCity != NULL; pLoopCity = kOwner.nextCity(&iLoop))
 		{
-			if (pLoopCity->plot()->getPlotGroup(getOwnerINLINE()) == this)
+			CvPlot* pCityPlot = pLoopCity->plot();
+			if (pCityPlot->getPlotGroup(getOwnerINLINE()) == this && pCityPlot->getPlotCity() == pLoopCity)
 			{
+#ifdef PERF_VERIFY
+				aiCities.push_back(pLoopCity->getID());
+#endif
 				pLoopCity->changeNumBonuses(eBonus, iChange);
 			}
 		}
+#ifdef PERF_VERIFY
+		std::sort(aiWalkCities.begin(), aiWalkCities.end());
+		std::sort(aiCities.begin(), aiCities.end());
+		if (aiWalkCities != aiCities)
+			gDLL->logMsg("perf_verify.log", CvString::format("changeNumBonuses: %d cities, the plot walk %d (player %d, bonus %d)", (int)aiCities.size(), (int)aiWalkCities.size(), getOwnerINLINE(), eBonus).c_str());
+#endif
 	}
 }
 
