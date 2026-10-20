@@ -527,11 +527,11 @@ bool CvXMLLoadUtility::SetGlobalArtDefines()
 	LoadGlobalClassInfo(ARTFILEMGR.getUnitArtInfo(), "CIV4ArtDefines_Unit", "Art", "Civ4ArtDefines/UnitArtInfos/UnitArtInfo", false);
 	LoadGlobalClassInfo(ARTFILEMGR.getBuildingArtInfo(), "CIV4ArtDefines_Building", "Art", "Civ4ArtDefines/BuildingArtInfos/BuildingArtInfo", false);
 	// RI art: Realism Invictus' art defines (types prefixed RI_), used only through CvRIArt
-	if (LoadCivXml(m_pFXml, "xml\\Art/RI_CIV4ArtDefines_Unit.xml"))
+	if (CvRIArt::loadXml(this, m_pFXml, "xml\\Art\\RI_CIV4ArtDefines_Unit.xml"))
 	{
 		SetGlobalClassInfo(ARTFILEMGR.getUnitArtInfo(), "Civ4ArtDefines/UnitArtInfos/UnitArtInfo", false);
 	}
-	if (LoadCivXml(m_pFXml, "xml\\Art/RI_CIV4ArtDefines_Building.xml"))
+	if (CvRIArt::loadXml(this, m_pFXml, "xml\\Art\\RI_CIV4ArtDefines_Building.xml"))
 	{
 		SetGlobalClassInfo(ARTFILEMGR.getBuildingArtInfo(), "Civ4ArtDefines/BuildingArtInfos/BuildingArtInfo", false);
 	}

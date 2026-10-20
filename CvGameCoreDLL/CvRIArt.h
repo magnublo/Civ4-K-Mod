@@ -7,7 +7,8 @@
 // CvInitCore::getArtStyle (the city style: houses, walls, RI's regional versions of buildings; setArtStyle never
 // stores one of RI's styles).
 // The data is xml/Art/RI_CIV4ArtInfos.xml plus RI's art defines (types prefixed RI_), all written by
-// tools/ri_art/port_ri_art.py; without these files the option does nothing.
+// tools/ri_art/port_ri_art.py; without these files (a mod folder given only this DLL) nothing is loaded and the option
+// does nothing.
 // Graphics only: nothing the game logic sees depends on the option, so players of a multiplayer game may set it
 // differently. Battles are planned with each unit's figure count (its group size), so RI's figure groups are fitted
 // to K-Mod's group sizes, and CvUnit::isRanged keeps looking at K-Mod's art.
@@ -18,6 +19,7 @@
 class CvArtInfoUnit;
 class CvArtInfoBuilding;
 class CvXMLLoadUtility;
+class FXml;
 
 class CvRIArt
 {
@@ -39,6 +41,8 @@ public:
 	static CvRIArt& get() { return m_kInstance; }
 
 	void read(CvXMLLoadUtility* pXML); // after the units, buildings and civilizations
+	// LoadCivXml for one of the port's files: false, without the exe's error dialog, if the mod folder doesn't have it
+	static bool loadXml(CvXMLLoadUtility* pXML, FXml* pFXml, const char* szFilename);
 
 	bool isAvailable() const { return m_bAvailable; }
 	bool isEnabled() const { return m_bEnabled && m_bAvailable; }

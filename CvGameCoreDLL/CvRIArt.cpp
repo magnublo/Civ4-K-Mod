@@ -59,10 +59,18 @@ static std::vector<int> readCivilizations(CvXMLLoadUtility* pXML)
 	return aiCivs;
 }
 
+// The exe's LoadXml shows an error dialog for a missing file, so look for the file first
+bool CvRIArt::loadXml(CvXMLLoadUtility* pXML, FXml* pFXml, const char* szFilename)
+{
+	std::vector<CvString> aszFiles;
+	gDLL->enumerateFiles(aszFiles, szFilename);
+	return !aszFiles.empty() && pXML->LoadCivXml(pFXml, szFilename);
+}
+
 void CvRIArt::read(CvXMLLoadUtility* pXML)
 {
 	clear();
-	if (!pXML->LoadCivXml(pXML->GetXML(), "xml\\Art/RI_CIV4ArtInfos.xml"))
+	if (!loadXml(pXML, pXML->GetXML(), "xml\\Art\\RI_CIV4ArtInfos.xml"))
 	{
 		return; // not installed: K-Mod's art only
 	}
