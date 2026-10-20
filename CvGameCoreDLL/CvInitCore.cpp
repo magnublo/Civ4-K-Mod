@@ -9,6 +9,7 @@
 #include "CvDLLUtilityIFaceBase.h"
 #include "CvGameAI.h"
 #include "CvGameCoreUtils.h"
+#include "CvRIArt.h" // RI art
 
 // Public Functions...
 
@@ -703,7 +704,7 @@ void CvInitCore::resetPlayer(PlayerTypes eID, CvInitCore * pSource, bool bClear,
 			setTeam(eID, pSource->getTeam(eID));
 			setLeader(eID, pSource->getLeader(eID));
 			setColor(eID, pSource->getColor(eID));
-			setArtStyle(eID, pSource->getArtStyle(eID));
+			setArtStyle(eID, pSource->m_aeArtStyle[eID]); // RI art (was pSource->getArtStyle(eID))
 
 			setPlayableCiv(eID, pSource->getPlayableCiv(eID));
 			setMinorNationCiv(eID, pSource->getMinorNationCiv(eID));
@@ -1617,6 +1618,13 @@ ArtStyleTypes CvInitCore::getArtStyle(PlayerTypes eID) const
 	FASSERT_BOUNDS(0, MAX_PLAYERS, eID, "CvInitCore::getArtStyle");
 	if ( checkBounds(eID, 0, MAX_PLAYERS) )
 	{
+		// RI art: Realism Invictus' city style, only shown (setArtStyle never stores it)
+		ArtStyleTypes eRIArtStyle = CvRIArt::get().getArtStyle(getCiv(eID));
+		if (eRIArtStyle != NO_ARTSTYLE)
+		{
+			return eRIArtStyle;
+		}
+		// RI art end
 		return m_aeArtStyle[eID];
 	}
 	else
@@ -1630,6 +1638,11 @@ void CvInitCore::setArtStyle(PlayerTypes eID, ArtStyleTypes eArtStyle)
 	FASSERT_BOUNDS(0, MAX_PLAYERS, eID, "CvInitCore::setArtStyle");
 	if ( checkBounds(eID, 0, MAX_PLAYERS) )
 	{
+		// RI art: Realism Invictus' city styles are only shown, never stored (the exe may store what getArtStyle gave)
+		if (CvRIArt::isRIArtStyle(eArtStyle) && getCiv(eID) != NO_CIVILIZATION)
+		{
+			eArtStyle = (ArtStyleTypes)GC.getCivilizationInfo(getCiv(eID)).getArtStyleType();
+		}
 		m_aeArtStyle[eID] = eArtStyle;
 	}
 }

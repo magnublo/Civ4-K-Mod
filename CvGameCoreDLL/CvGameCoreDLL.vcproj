@@ -249,6 +249,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CvRIArt.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CvSelectionGroup.cpp"
 				>
 			</File>
@@ -724,6 +728,10 @@
 			</File>
 			<File
 				RelativePath=".\CvReplayMessage.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CvRIArt.h"
 				>
 			</File>
 			<File

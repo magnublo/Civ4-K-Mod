@@ -14,6 +14,7 @@
 #include "CvInfos.h"
 #include "CvRandom.h"
 #include "CvArtFileMgr.h"
+#include "CvRIArt.h" // RI art
 #include "CvPopupInfo.h"
 #include "CyCity.h"
 #include "CyArgsList.h"
@@ -4192,6 +4193,11 @@ CitySizeTypes CvCity::getCitySizeType() const
 
 const CvArtInfoBuilding* CvCity::getBuildingArtInfo(BuildingTypes eBuilding) const
 {
+	// RI art: Realism Invictus' building for the owner's civ
+	const CvArtInfoBuilding* pRIArt = CvRIArt::get().getBuildingArtInfo(eBuilding, getCivilizationType());
+	if (pRIArt != NULL)
+		return pRIArt;
+	// RI art end
 	return GC.getBuildingInfo(eBuilding).getArtInfo();
 }
 

@@ -26,6 +26,7 @@
 #include "FProfiler.h"
 #include "CvPopupInfo.h"
 #include "CvArtFileMgr.h"
+#include "CvRIArt.h" // RI art
 
 /************************************************************************************************/
 /* BETTER_BTS_AI_MOD                      02/24/10                                jdog5000      */
@@ -9077,7 +9078,9 @@ bool CvUnit::isRanged() const
 	CvUnitInfo * pkUnitInfo = &getUnitInfo();
 	for ( i = 0; i < pkUnitInfo->getGroupDefinitions(); i++ )
 	{
-		if ( !getArtInfo(i, GET_PLAYER(getOwnerINLINE()).getCurrentEra())->getActAsRanged() )
+		// RI art: K-Mod's art, not Realism Invictus' (planBattle times battles with this)
+		//if ( !getArtInfo(i, GET_PLAYER(getOwnerINLINE()).getCurrentEra())->getActAsRanged() )
+		if (!pkUnitInfo->getArtInfo(i, GET_PLAYER(getOwnerINLINE()).getCurrentEra(), (UnitArtStyleTypes)GC.getCivilizationInfo(getCivilizationType()).getUnitArtStyleType())->getActAsRanged())
 		{
 			return false;
 		}
@@ -13247,8 +13250,19 @@ void CvUnit::applyEvent(EventTypes eEvent)
 	}
 }
 
+// RI art: Realism Invictus' figures for a unit, or NULL for K-Mod's. The group size stays K-Mod's.
+static const CvRIArt::UnitArt* getRIArt(const CvUnit* pUnit)
+{
+	return CvRIArt::get().getUnitArt(pUnit->getUnitType(), pUnit->getCivilizationType());
+}
+
 const CvArtInfoUnit* CvUnit::getArtInfo(int i, EraTypes eEra) const
 {
+	// RI art
+	const CvRIArt::UnitArt* pRIArt = getRIArt(this);
+	if (pRIArt != NULL)
+		return CvRIArt::get().getUnitArtInfo(*pRIArt, i, eEra);
+	// RI art end
 	return m_pUnitInfo->getArtInfo(i, eEra, (UnitArtStyleTypes) GC.getCivilizationInfo(getCivilizationType()).getUnitArtStyleType());
 }
 
@@ -13271,11 +13285,17 @@ int CvUnit::getGroupSize() const
 
 int CvUnit::getGroupDefinitions() const
 {
+	const CvRIArt::UnitArt* pRIArt = getRIArt(this); // RI art
+	if (pRIArt != NULL)
+		return (int)pRIArt->aGroups.size();
 	return m_pUnitInfo->getGroupDefinitions();
 }
 
 int CvUnit::getUnitGroupRequired(int i) const
 {
+	const CvRIArt::UnitArt* pRIArt = getRIArt(this); // RI art
+	if (pRIArt != NULL)
+		return pRIArt->aGroups[range(i, 0, (int)pRIArt->aGroups.size() - 1)].iRequired;
 	return m_pUnitInfo->getUnitGroupRequired(i);
 }
 
@@ -13286,11 +13306,17 @@ bool CvUnit::isRenderAlways() const
 
 float CvUnit::getAnimationMaxSpeed() const
 {
+	const CvRIArt::UnitArt* pRIArt = getRIArt(this); // RI art
+	if (pRIArt != NULL)
+		return pRIArt->fMaxSpeed;
 	return m_pUnitInfo->getUnitMaxSpeed();
 }
 
 float CvUnit::getAnimationPadTime() const
 {
+	const CvRIArt::UnitArt* pRIArt = getRIArt(this); // RI art
+	if (pRIArt != NULL)
+		return pRIArt->fPadTime;
 	return m_pUnitInfo->getUnitPadTime();
 }
 

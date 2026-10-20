@@ -20,6 +20,9 @@ void CyGlobalContextPythonInterface1(python::class_<CyGlobalContext>& x)
 
 	x
 		.def("isDebugBuild", &CyGlobalContext::isDebugBuild, "() - returns true if running a debug build")
+		.def("isRealismInvictusArt", &CyGlobalContext::isRealismInvictusArt, "bool () - Realism Invictus' unit and building art shown (RI art)")
+		.def("isRealismInvictusArtAvailable", &CyGlobalContext::isRealismInvictusArtAvailable, "bool () - Realism Invictus' art installed (RI art)")
+		.def("setRealismInvictusArt", &CyGlobalContext::setRealismInvictusArt, "void (bool bEnabled) - show Realism Invictus' unit and building art; refreshes the map (RI art)")
 		.def("getGame", &CyGlobalContext::getCyGame, python::return_value_policy<python::reference_existing_object>(), "() - CyGame()")
 		.def("getMap", &CyGlobalContext::getCyMap, python::return_value_policy<python::reference_existing_object>(), "() - CyMap()")
 		.def("getPlayer", &CyGlobalContext::getCyPlayer, python::return_value_policy<python::reference_existing_object>(), "(iPlayer) - iPlayer instance")

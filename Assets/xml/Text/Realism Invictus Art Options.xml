@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Texts for the option "Realism Invictus graphics" of K-Mod-Magnus (English text in every language). -->
+<Civ4GameText xmlns="http://www.firaxis.com">
+	<TEXT>
+		<Tag>TXT_KEY_BUG_OPTLABEL_REALISMINVICTUSART</Tag>
+		<English>Graphics:</English>
+		<French>Graphics:</French>
+		<German>Graphics:</German>
+		<Italian>Graphics:</Italian>
+		<Spanish>Graphics:</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_BUG_OPT_REALISMINVICTUSART__ENABLED_TEXT</Tag>
+		<English>Realism Invictus graphics</English>
+		<French>Realism Invictus graphics</French>
+		<German>Realism Invictus graphics</German>
+		<Italian>Realism Invictus graphics</Italian>
+		<Spanish>Realism Invictus graphics</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_BUG_OPT_REALISMINVICTUSART__ENABLED_HOVER</Tag>
+		<English>When checked, units, buildings and cities look as in the Realism Invictus mod: each civilization has its own soldiers, ships and planes, and its own houses, walls and versions of many buildings. Only the looks change. A setting of this computer; it takes effect at once.</English>
+		<French>When checked, units, buildings and cities look as in the Realism Invictus mod: each civilization has its own soldiers, ships and planes, and its own houses, walls and versions of many buildings. Only the looks change. A setting of this computer; it takes effect at once.</French>
+		<German>When checked, units, buildings and cities look as in the Realism Invictus mod: each civilization has its own soldiers, ships and planes, and its own houses, walls and versions of many buildings. Only the looks change. A setting of this computer; it takes effect at once.</German>
+		<Italian>When checked, units, buildings and cities look as in the Realism Invictus mod: each civilization has its own soldiers, ships and planes, and its own houses, walls and versions of many buildings. Only the looks change. A setting of this computer; it takes effect at once.</Italian>
+		<Spanish>When checked, units, buildings and cities look as in the Realism Invictus mod: each civilization has its own soldiers, ships and planes, and its own houses, walls and versions of many buildings. Only the looks change. A setting of this computer; it takes effect at once.</Spanish>
+	</TEXT>
+</Civ4GameText>

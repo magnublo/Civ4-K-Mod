@@ -30,6 +30,10 @@ public:
 	static CyGlobalContext& getInstance();		// singleton accessor
 
 	bool isDebugBuild() const;
+	// RI art: Realism Invictus graphics
+	bool isRealismInvictusArt() const;
+	bool isRealismInvictusArtAvailable() const;
+	void setRealismInvictusArt(bool bEnabled);
 	CyGame* getCyGame() const;
 	CyMap* getCyMap() const;
 	CyPlayer* getCyPlayer(int idx);

@@ -16,6 +16,7 @@
 #include "CyTeam.h"
 #include "CvTeamAI.h"
 #include "CyArtFileMgr.h"
+#include "CvRIArt.h" // RI art
 
 CyGlobalContext::CyGlobalContext()
 {
@@ -39,6 +40,23 @@ bool CyGlobalContext::isDebugBuild() const
 	return false;
 #endif
 }
+
+// RI art
+bool CyGlobalContext::isRealismInvictusArt() const
+{
+	return CvRIArt::get().isEnabled();
+}
+
+bool CyGlobalContext::isRealismInvictusArtAvailable() const
+{
+	return CvRIArt::get().isAvailable();
+}
+
+void CyGlobalContext::setRealismInvictusArt(bool bEnabled)
+{
+	CvRIArt::get().setEnabled(bEnabled);
+}
+// RI art end
 
 CyGame* CyGlobalContext::getCyGame() const
 {

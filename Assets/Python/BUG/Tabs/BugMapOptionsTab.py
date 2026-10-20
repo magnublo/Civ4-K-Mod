@@ -31,6 +31,9 @@ class BugMapOptionsTab(BugOptionsTab.BugOptionsTab):
 		self.addSlider(screen, leftL, leftR, "StrategyOverlay__DotMapHighlightBrightness", False, False, False, "up", 0, 100)
 		
 		
+		self.addLabel(screen, center, "RealismInvictusArt", "Graphics:") # K-Mod-Magnus
+		self.addCheckbox(screen, center, "RealismInvictusArt__Enabled")
+
 		#self.addLabel(screen, center, "CityBar", "CityBar:")
 		#self.addCheckbox(screen, center, "CityBar__AirportIcons")
 		#self.addCheckbox(screen, center, "CityBar__StarvationTurns")

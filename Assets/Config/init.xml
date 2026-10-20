@@ -146,6 +146,7 @@
 	<load mod="FavoriteCivicDetector"/>
 	<load mod="EventSigns"/>
 	<load mod="Strategy Overlay"/>
+	<load mod="Realism Invictus Art"/>  <!-- K-Mod-Magnus -->
 	<load mod="StatusDump"/>
 	
 	<!-- BULL -->

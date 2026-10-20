@@ -9,7 +9,8 @@ K-Mod-Magnus is a fork of [K-Mod](https://github.com/karadoc/Civ4-K-Mod) 1.46 by
 - fewer early AI wars;
 - AI turns about twice as fast in big late games;
 - the Planet Generator map script, reworked so that its options hold, with more coast on request;
-- Blue Marble terrain textures.
+- Blue Marble terrain textures;
+- the unit, building and city graphics of the Realism Invictus mod, each civilization in its own look (an option, on by default).
 
 Everything that differs from K-Mod is listed under [Changes from K-Mod 1.46](#changes-from-k-mod-146). The mod's folder is called `K-Mod-Magnus`; it used to be `K-Mod, more resources`.
 
@@ -19,7 +20,7 @@ This README is for players installing the mod, for modders, and for coding agent
 
 No compiler is needed. You need Beyond the Sword patched to **3.19** (the Steam and GOG versions are); K-Mod doesn't run on the Mac version.
 
-1. **Get the mod files.** On this repository's GitHub page, click **Code → Download ZIP** and unpack it. Rename the unpacked folder `Civ4-K-Mod-main` (the one that contains `Assets`) to `K-Mod-Magnus` and move it into the `Mods` folder of your Beyond the Sword installation, so that you have `...\Beyond the Sword\Mods\K-Mod-Magnus\Assets`. On Steam you find the installation with Library → right-click the game → Manage → Browse local files.
+1. **Get the mod files.** On this repository's GitHub page, click **Code → Download ZIP** (about 300 MB, most of it the Realism Invictus art) and unpack it. Rename the unpacked folder `Civ4-K-Mod-main` (the one that contains `Assets`) to `K-Mod-Magnus` and move it into the `Mods` folder of your Beyond the Sword installation, so that you have `...\Beyond the Sword\Mods\K-Mod-Magnus\Assets`. On Steam you find the installation with Library → right-click the game → Manage → Browse local files.
 2. **Get the DLL.** The repository holds the DLL's source code, not the DLL itself; GitHub builds it after every change.
     1. Sign in to GitHub (build outputs can't be downloaded without an account).
     2. Open **Actions → Build Civ4 K-Mod DLL** and click the newest run on `main` with a green check mark.
@@ -93,6 +94,7 @@ Pre-chop and pre-build texts: `Assets/xml/Text/CIV4GameText_PreChopPreBuild.xml`
 - `Assets/Python/Screens/CvMainInterface.py`: the pre-chop button, the pre-build toggle and the yellow queue entries.
 - Buttons: `Assets/Art/Interface/Buttons/Actions/PreChop.dds`, `PreBuild.dds`, `PreBuildOn.dds`.
 - **Blue Marble terrain**: terrain, water and wave textures (`Assets/Art/Textures/`, `Assets/Art/Water/`, `Assets/Art/Waves/`) from the Blue Marble terrain mod by ColdFever and civilized.de ([CivFanatics thread](https://forums.civfanatics.com/threads/blue-marble-v4-0-gold.295876/)).
+- **Realism Invictus graphics** [`RI art`]: units, buildings and cities look as in the Realism Invictus mod, each civilization with its own soldiers, ships and planes, and its own houses, walls and versions of many buildings. On by default; switched in the BUG options (Ctrl+Alt+O), Map tab, "Realism Invictus graphics". See [Realism Invictus graphics](#realism-invictus-graphics).
 
 ### Map script: Planet Generator
 
@@ -120,7 +122,35 @@ Your last choices are remembered as before (`planet_generator_0_60.cfg` in the B
 - `.github/workflows/build-civ4-dll.yml`: the GitHub Actions build of the 48-civ DLL; `.github/scripts/check_civ_cap.py` checks the cap compiled into it; notes in `.github/workflows/README.md`.
 - `CvGameCoreDLL/SampleProfiler.h`, `.cpp`: a sampling profiler, compiled only with `make TARGET=Sample`.
 - `tools/save_mod_name.py`: shows or changes the mod folder a save asks for (see [Saves](#saves)).
+- `tools/ri_art/port_ri_art.py`: writes the Realism Invictus art and its XML into `Assets/` (see [Realism Invictus graphics](#realism-invictus-graphics)); `tools/ri_art/ported.md` is its table of what each unit and building gets.
 - `AdvCiv_Port_Candidates_Research.md`: notes on AdvCiv features that could be ported.
+
+## Realism Invictus graphics
+
+[Realism Invictus](https://forums.civfanatics.com/threads/realism-invictus.411799/) (RI) is a large BtS mod whose graphics give each civilization its own look: Roman legions and Greek hoplites, Prussian riflemen, Pz.III and T-28 tanks, Chinese junks, Arabian souks, Roman barracks. K-Mod-Magnus shows that art for its own units, buildings and cities, taken from RI 3.81 (2026-02-08); RI's rules, units, buildings and civilizations are not part of it. Tagged [`RI art`] in the sources.
+
+**The option**: BUG options (Ctrl+Alt+O), Map tab, "Realism Invictus graphics", on by default. It takes effect at once (the units and cities on the map are redrawn) and is a setting of each computer (`Realism Invictus Art.ini` in BUG's settings folder). Only the looks change: a unit shows as many figures as in K-Mod (RI's figure groups are fitted to K-Mod's group sizes) and battles are planned from K-Mod's art, so the game plays out the same with the option on or off, saves don't store it, and players of one multiplayer game may set it differently. On a late-game save (14 civs, AD 1320, 4,700 units) the game used as much memory with RI art as without: 1.8 GB after two turns, under Wine.
+
+**What gets RI art** (the full table: `tools/ri_art/ported.md`):
+
+- 114 of the 123 units. Each civilization gets RI's version of the unit for its RI counterpart, with RI's art for each era (e.g. Roman warriors are "Warrior (Mediterranean)", German riflemen "Rifleman (Prussian)", Japan's battleships "Battleship (Japanese)"). Unique units get RI's unit of the same name, or what that civilization builds instead in RI: the Praetorian is RI's "Legion (Imperial)", the Keshik RI's "Horse Archer (Keshik)", the Cataphract RI's Byzantine "Knight (Late Kataphraktoi)", the Panzer RI's "Medium Tank (Pz.III)", the Navy SEAL RI's American marines, the Redcoat RI's English riflemen. Units whose RI class has another name: Tank → RI's Medium Tank, Ship of the Line → Line, Stealth Destroyer → Modern Destroyer, Missile Cruiser → RI's Missile Cruiser (Aegis), Airship → Zeppelin. Unit buttons on the map and in the city screen follow the art.
+- 140 of the 159 buildings, with RI's regional versions of ordinary buildings for the civilizations that have one (souk or bazaar for the market, Roman barracks, Chinese provincial government for the courthouse, palaces, ...). Wonders only take RI's versions of the same wonder (e.g. each civilization's Heroic Epic), not RI's other landmarks.
+- Cities: RI's 15 city styles (houses by era and region, walls, RI's layouts of each building), from RI's city layout.
+- Civilizations RI doesn't have take another's look: Byzantium RI's Greece (which turns Byzantine), the Holy Roman Empire Austria, Native America the Iroquois, Sumeria Babylon (RI's Mesopotamia).
+- Keep K-Mod's look (RI has nothing that fits): executives and corporations, the Confucian missionary and buildings (no Confucianism in RI), SAM Infantry (a vehicle in RI), the Roman Forum, Madrassa, Sacrificial Altar, Ziggurat, Incan Terrace, Industrial Park, Public Transportation and Mausoleum of Maussollos.
+- Not ported: RI's sounds (sound scripts K-Mod lacks are left out), leaders, terrain, improvements and interface.
+
+**Files**: `Assets/xml/Art/RI_CIV4ArtDefines_Unit.xml` and `RI_CIV4ArtDefines_Building.xml` (RI's art defines, types prefixed `RI_`), `Assets/xml/Art/RI_CIV4ArtInfos.xml` (which RI art each unit and building gets, per civilization, and each civilization's RI city style; schema `RI_CIV4ArtSchema.xml`), `Assets/xml/buildings/CIV4CityLSystem.xml` (BtS's city layout, with BtS's houses limited to BtS's six city styles, plus RI's entries under `RI_` names) and `Assets/xml/GlobalTypes.xml` (BtS's, plus RI's city styles `RI_ARTSTYLE_*`). The art is in `Assets/Art/RI/` (RI's `Art/X` as `Art/RI/X`) and `Assets/Art/Structures/cities/RI/` (RI's houses: the game takes houses from `Art/Structures/Cities`), about 300 MB in 10,400 files. Nothing in these is used with the option off. RI files that would replace a file of the game (RI changed some of BtS's textures and animations) are only in these folders, together with the game's files the RI version is used with (e.g. the model an animation file names, which the unit picture in the interface loads).
+
+**How**: `CvGameCoreDLL/CvRIArt.h` reads `RI_CIV4ArtInfos.xml` and holds the switch. The DLL answers the exe's art questions from it while the option is on: `CvUnit::getArtInfo`, `getGroupDefinitions`, `getUnitGroupRequired`, `getAnimationMaxSpeed`, `getAnimationPadTime` (units on the map), `CvPlayer::getUnitArtInfo` and `getUnitButton` (unit pictures and buttons in the interface), `CvCity::getBuildingArtInfo` and `CvGame::getBuildingArtInfo` (buildings) and `CvInitCore::getArtStyle` (the city style; `setArtStyle` never stores an RI style). Python: `gc.setRealismInvictusArt(bool)`, `gc.isRealismInvictusArt()`, `gc.isRealismInvictusArtAvailable()`; the option is `Assets/Config/Realism Invictus Art.xml` with `Assets/Python/Contrib/RealismInvictusArt.py`.
+
+**Regenerating** (e.g. for a newer RI): download RI's unpacked installer (CivFanatics, "Realism Invictus (unpacked version)", a SourceForge file such as `Realism Invictus 3.81 (2026-02-08) Setup (Unpacked).exe`), extract it with `7z x` (no need to run it; the mod is the folder `$_4_`), then
+
+```
+python3 tools/ri_art/port_ri_art.py --ri "<extracted>/$_4_" --civ4 "<Civilization IV folder>" --ri-version "3.81 (2026-02-08)" --report tools/ri_art/ported.md
+```
+
+`--civ4` is the folder with `Assets`, `Warlords` and `Beyond the Sword` (the script reads the game's art to tell which RI files differ from it). The civilization and class mappings are at the top of the script.
 
 ## Faster turns
 
@@ -161,7 +191,7 @@ Whole-program optimization makes builds slower: with 16 jobs under Wine (i9-9900
 - `CvGameCoreDLL/`: the DLL's C++ source and makefiles
 - `PublicMaps/`: K-Mod's map script `not_too_Big_or_Small.py` and the reworked Planet Generator
 - `Settings/`: BUG's default settings (unit naming, domestic advisor)
-- `tools/`: `save_mod_name.py`
+- `tools/`: `save_mod_name.py`; `ri_art/`, the port of the Realism Invictus art
 - `K-Mod-Magnus.ini`: the mod's settings file; `K-Mod.ini`: K-Mod's, read only by a folder named `K-Mod`
 - `readme.txt`, `changelog.txt`: K-Mod's readme and changelog (1.46)
 - `.github/`: the CI workflow and its notes
@@ -246,4 +276,5 @@ If you are preparing changes for review:
 - The **Marathon Accelerated 1.1** game-speed mod.
 - **Blue Marble** terrain by ColdFever and civilized.de.
 - **Planet Generator** map script by Nercury (Mac support by AlanH).
+- **Realism Invictus** 3.81 by Walter Hawkwood, Takofloppa and the Realism Invictus team, and the many artists credited in its manual ("Credits and thanks"): the unit, building and city art and the city layouts of [Realism Invictus graphics](#realism-invictus-graphics) ([CivFanatics thread](https://forums.civfanatics.com/threads/realism-invictus.411799/), [SourceForge](https://sourceforge.net/projects/civ4mods/)). RI's `License.txt` allows "full and unrestricted use" of the RI team's assets; the other files belong to their authors, mostly CivFanatics artists, and RI's manual names other games some of its models come from.
 - This fork: magnublo, with GitHub Copilot and Claude as coding agents (the turn-time work is Claude's).

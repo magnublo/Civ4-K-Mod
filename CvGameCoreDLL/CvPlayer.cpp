@@ -13,6 +13,7 @@
 #include "CvPlayer.h"
 #include "CvGameCoreUtils.h"
 #include "CvArtFileMgr.h"
+#include "CvRIArt.h" // RI art
 #include "CvDiploParameters.h"
 #include "CvInitCore.h"
 #include "CyArgsList.h"
@@ -3350,7 +3351,8 @@ ArtStyleTypes CvPlayer::getArtStyleType() const
 
 const TCHAR* CvPlayer::getUnitButton(UnitTypes eUnit) const
 {
-	return GC.getUnitInfo(eUnit).getArtInfo(0, getCurrentEra(), (UnitArtStyleTypes) GC.getCivilizationInfo(getCivilizationType()).getUnitArtStyleType())->getButton();
+	//return GC.getUnitInfo(eUnit).getArtInfo(0, getCurrentEra(), (UnitArtStyleTypes) GC.getCivilizationInfo(getCivilizationType()).getUnitArtStyleType())->getButton();
+	return getUnitArtInfo(eUnit)->getButton(); // RI art: Realism Invictus' button if its art is shown
 }
 
 void CvPlayer::doTurn()
@@ -23342,6 +23344,13 @@ const CvArtInfoUnit* CvPlayer::getUnitArtInfo(UnitTypes eUnit, int iMeshGroup) c
 	{
 		eEra = (EraTypes) 0;
 	}
+	// RI art
+	const CvRIArt::UnitArt* pRIArt = CvRIArt::get().getUnitArt(eUnit, eCivilization);
+	if (pRIArt != NULL)
+	{
+		return CvRIArt::get().getUnitArtInfo(*pRIArt, iMeshGroup, eEra);
+	}
+	// RI art end
 	return GC.getUnitInfo(eUnit).getArtInfo(iMeshGroup, eEra, eStyle);
 }
 

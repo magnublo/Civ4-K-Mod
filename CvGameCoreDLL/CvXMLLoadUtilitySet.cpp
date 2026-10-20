@@ -13,6 +13,7 @@
 #include "FProfiler.h"
 #include "FVariableSystem.h"
 #include "CvGameCoreUtils.h"
+#include "CvRIArt.h" // RI art
 
 // Macro for Setting Global Art Defines
 #define INIT_XML_GLOBAL_LOAD(xmlInfoPath, infoArray, numInfos)  SetGlobalClassInfo(infoArray, xmlInfoPath, numInfos);
@@ -525,6 +526,15 @@ bool CvXMLLoadUtility::SetGlobalArtDefines()
 	LoadGlobalClassInfo(ARTFILEMGR.getMiscArtInfo(), "CIV4ArtDefines_Misc", "Art", "Civ4ArtDefines/MiscArtInfos/MiscArtInfo", false);
 	LoadGlobalClassInfo(ARTFILEMGR.getUnitArtInfo(), "CIV4ArtDefines_Unit", "Art", "Civ4ArtDefines/UnitArtInfos/UnitArtInfo", false);
 	LoadGlobalClassInfo(ARTFILEMGR.getBuildingArtInfo(), "CIV4ArtDefines_Building", "Art", "Civ4ArtDefines/BuildingArtInfos/BuildingArtInfo", false);
+	// RI art: Realism Invictus' art defines (types prefixed RI_), used only through CvRIArt
+	if (LoadCivXml(m_pFXml, "xml\\Art/RI_CIV4ArtDefines_Unit.xml"))
+	{
+		SetGlobalClassInfo(ARTFILEMGR.getUnitArtInfo(), "Civ4ArtDefines/UnitArtInfos/UnitArtInfo", false);
+	}
+	if (LoadCivXml(m_pFXml, "xml\\Art/RI_CIV4ArtDefines_Building.xml"))
+	{
+		SetGlobalClassInfo(ARTFILEMGR.getBuildingArtInfo(), "Civ4ArtDefines/BuildingArtInfos/BuildingArtInfo", false);
+	}
 	LoadGlobalClassInfo(ARTFILEMGR.getCivilizationArtInfo(), "CIV4ArtDefines_Civilization", "Art", "Civ4ArtDefines/CivilizationArtInfos/CivilizationArtInfo", false);
 	LoadGlobalClassInfo(ARTFILEMGR.getLeaderheadArtInfo(), "CIV4ArtDefines_Leaderhead", "Art", "Civ4ArtDefines/LeaderheadArtInfos/LeaderheadArtInfo", false);
 	LoadGlobalClassInfo(ARTFILEMGR.getBonusArtInfo(), "CIV4ArtDefines_Bonus", "Art", "Civ4ArtDefines/BonusArtInfos/BonusArtInfo", false);
@@ -763,6 +773,7 @@ bool CvXMLLoadUtility::LoadPreMenuGlobals()
 	}
 	LoadGlobalClassInfo(GC.getUnitArtStyleTypeInfo(), "CIV4UnitArtStyleTypeInfos", "Civilizations", "Civ4UnitArtStyleTypeInfos/UnitArtStyleTypeInfos/UnitArtStyleTypeInfo", false);
 	LoadGlobalClassInfo(GC.getCivilizationInfo(), "CIV4CivilizationInfos", "Civilizations", "Civ4CivilizationInfos/CivilizationInfos/CivilizationInfo", true, &CvDLLUtilityIFaceBase::createCivilizationInfoCacheObject);
+	CvRIArt::get().read(this); // RI art
 	LoadGlobalClassInfo(GC.getHints(), "CIV4Hints", "GameInfo", "Civ4Hints/HintInfos/HintInfo", false);
 	LoadGlobalClassInfo(GC.getMainMenus(), "CIV4MainMenus", "Art", "Civ4MainMenus/MainMenus/MainMenu", false);
 	LoadGlobalClassInfo(GC.getSlideShowInfo(), "CIV4SlideShowInfos", "Interface", "Civ4SlideShowInfos/SlideShowInfos/SlideShowInfo", false);

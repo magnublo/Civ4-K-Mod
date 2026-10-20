@@ -11,6 +11,7 @@
 #include "CvGameTextMgr.h"
 #include "CvMessageControl.h"
 #include "CvBugOptions.h"
+#include "CvRIArt.h" // RI art
 
 void CvGame::updateColoredPlots()
 {
@@ -2630,6 +2631,12 @@ DomainTypes CvGame::getUnitDomain(UnitTypes eUnit) const
 
 const CvArtInfoBuilding* CvGame::getBuildingArtInfo(BuildingTypes eBuilding) const
 {
+	// RI art: Realism Invictus' building, as the active player's civ has it
+	const CvArtInfoBuilding* pRIArt = CvRIArt::get().getBuildingArtInfo(eBuilding,
+		getActivePlayer() == NO_PLAYER ? NO_CIVILIZATION : GET_PLAYER(getActivePlayer()).getCivilizationType());
+	if (pRIArt != NULL)
+		return pRIArt;
+	// RI art end
 	return GC.getBuildingInfo(eBuilding).getArtInfo();
 }
 
