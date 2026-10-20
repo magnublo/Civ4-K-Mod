@@ -6,6 +6,7 @@ K-Mod-Magnus is a fork of [K-Mod](https://github.com/karadoc/Civ4-K-Mod) 1.46 by
 - the Marathon Accelerated game speed;
 - more Stone, Marble and seafood on generated maps, and other starting techs for five civilizations;
 - pre-chop and pre-build buttons;
+- a list of improvements your automated workers never build (watermills and windmills, unless you change it);
 - fewer early AI wars;
 - turns 1.6 to 2.5 times faster than K-Mod 1.46 in big late games;
 - the Planet Generator map script, reworked so that its options hold, with more coast on request;
@@ -58,9 +59,15 @@ Compared with karadoc's K-Mod 1.46 (branch `master` of github.com/karadoc/Civ4-K
 - **Fewer early AI wars** [`early war`]: the AI starts no war plans of its own before turn 50 (K-Mod: 30), and until turn 150 its war plans are less likely: a third of the usual chance at turn 50, back to normal by turn 150. Both are Normal-speed turns, scaled by the game speed's `iBarbPercent` (Marathon and Marathon Accelerated ×4: turns 200 and 600). Early rushes ("dagger" strategy) are damped the same way. Unlike K-Mod, a "crowded" world no longer ends the no-war period early (cities don't scale with game speed). Tune it in `Assets/xml/GlobalDefinesAlt.xml`: `AI_EARLY_WAR_GATE_TURNS`, `AI_EARLY_WAR_CROWDED_WORLD` (1 = K-Mod's exception), `AI_EARLY_WAR_RAMP_TURNS`, `AI_EARLY_WAR_RAND_PERCENT` (100 turns the damping off).
 - **Pre-chop** [`pre-chop`]: workers on a forest get a second chop button (axe with a pause badge). They chop until one worker-turn is left and stop, so a normal chop later finishes in one turn and delivers the hammers then. Ctrl+click on any build button does the same for that build. The flag rides in `MissionData::iData2` (`BUILD_MISSION_STOP_SHORT`).
 - **Pre-build** [`pre-build`]: a toggle at the start of the city screen's wonder row (or the project row) marks the first wonder or project in the queue. The city builds it until one turn of production is left, then pauses it with the hammers stored and moves on. Queue it again to finish it in one turn. The queue shows flagged items in yellow. The flag rides in `OrderData::iData2` (`ORDER_DATA_PREBUILD`) and is set through `TASK_PREBUILD`. Whipping or buying a flagged wonder clears the flag.
+- **Improvements your automated workers never build** [`automated workers`]: `AUTOMATED_WORKERS_NEVER_BUILD` in `Assets/xml/GlobalDefinesAlt.xml` lists improvement types, separated by commas. It comes with `IMPROVEMENT_WATERMILL,IMPROVEMENT_WINDMILL`; empty it for K-Mod's behaviour. Workers you automate (build improvements, improve the nearest city, build a trade network; also work boats) don't build these:
+    - When a city plans the improvements for its plots, it leaves the listed ones out and picks the best of the rest, weighing its emphasis (food, production, commerce) as before. In a test on a late-game save (8 turns, 51 automated workers), the workers set out to replace 9 mines with windmills and 5 workshops with watermills without the list; with it, those plots kept their mines and workshops.
+    - A worker that is already building a listed improvement when you load an older save stops and picks a new job.
+    - The worker recommendations (the circled plot and the highlighted build button) leave them out too.
+
+    Not affected: the AI's workers, AI autoplay, the orders you give a worker yourself, and improvements already built. A name that isn't an improvement type gives an "XML Error" message while the mod loads.
 - **Faster AI turns** [`perf`]: see [Faster turns](#faster-turns).
 
-Pre-chop and pre-build texts: `Assets/xml/Text/CIV4GameText_PreChopPreBuild.xml`. Buttons: `Assets/Art/Interface/Buttons/Actions/PreChop.dds`, `PreBuild.dds` and `PreBuildOn.dds`. UI: `Assets/Python/Screens/CvMainInterface.py`. Pre-chop, pre-build, the early-war rules and the faster turns leave the savegame format as it is; only the civ cap changes it (see [Saves](#saves)).
+Pre-chop and pre-build texts: `Assets/xml/Text/CIV4GameText_PreChopPreBuild.xml`. Buttons: `Assets/Art/Interface/Buttons/Actions/PreChop.dds`, `PreBuild.dds` and `PreBuildOn.dds`. UI: `Assets/Python/Screens/CvMainInterface.py`. Pre-chop, pre-build, the early-war rules, the worker list and the faster turns leave the savegame format as it is; only the civ cap changes it (see [Saves](#saves)).
 
 ### Game data (XML, under `Assets/xml/`)
 
@@ -86,7 +93,7 @@ Pre-chop and pre-build texts: `Assets/xml/Text/CIV4GameText_PreChopPreBuild.xml`
     | Netherlands | Mysticism, Fishing | Agriculture, Fishing |
     | Rome | Agriculture, Mining | Fishing, Mining |
 - **Sid's Sushi** (`buildings/CIV4BuildingInfos.xml`, `BUILDING_CORPORATION_2`): founded with Medicine as in BtS (K-Mod: Refrigeration).
-- **Switches**: `GlobalDefinesAlt.xml` adds the early-war settings above; `PythonCallbackDefines.xml` adds `USE_ON_UNIT_MOVE_CALLBACK` and `USE_GET_EXTRA_COST_CALLBACK` (see [Faster turns](#faster-turns)).
+- **Switches**: `GlobalDefinesAlt.xml` adds the early-war settings and the automated workers' list above; `PythonCallbackDefines.xml` adds `USE_ON_UNIT_MOVE_CALLBACK` and `USE_GET_EXTRA_COST_CALLBACK` (see [Faster turns](#faster-turns)).
 - **Texts** for the new buttons: `Text/CIV4GameText_PreChopPreBuild.xml`.
 
 ### Interface and art

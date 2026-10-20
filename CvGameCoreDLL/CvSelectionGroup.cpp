@@ -517,6 +517,14 @@ bool CvSelectionGroup::autoMission() // K-Mod changed this from void to bool.
 
 	if (getNumUnits() > 0)
 	{
+		// automated workers (written by Claude): an automated worker drops a build that AUTOMATED_WORKERS_NEVER_BUILD
+		// forbids (ordered before the list applied, e.g. in an older save); CvGame::updateMoves then gives it a new job.
+		if (headMissionQueueNode() != NULL && headMissionQueueNode()->m_data.eMissionType == MISSION_BUILD && isAutomated() &&
+			GET_PLAYER(getOwnerINLINE()).isAutomatedNeverBuild((BuildTypes)headMissionQueueNode()->m_data.iData1))
+		{
+			clearMissionQueue();
+		}
+
 		if (headMissionQueueNode() != NULL)
 		{
 			if (!isBusy())

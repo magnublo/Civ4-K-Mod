@@ -103,19 +103,19 @@ bool CvXMLLoadUtility::ReadGlobalDefines(const TCHAR* szXMLFileName, CvCacheObje
 											// otherwise we will assume it is a string/text value
 											else
 											{
-												char szVal[256];
+												std::string szVal; // automated workers: was char[256], too short for a long list
 												// get the string/text value for the define
 												GetXmlVal(szVal);
-												GC.getDefinesVarSystem()->SetValue(szName, szVal);
+												GC.getDefinesVarSystem()->SetValue(szName, szVal.c_str());
 											}
 										}
 										// otherwise we will default to getting the string/text value for the define
 										else
 										{
-											char szVal[256];
+											std::string szVal; // automated workers: was char[256]
 											// get the string/text value for the define
 											GetXmlVal(szVal);
-											GC.getDefinesVarSystem()->SetValue(szName, szVal);
+											GC.getDefinesVarSystem()->SetValue(szName, szVal.c_str());
 										}
 									}
 								}
@@ -401,6 +401,8 @@ bool CvXMLLoadUtility::SetPostGlobalsGlobalDefines()
 		SetGlobalDefine("BARBARIAN_LEADER", szVal);
 		idx = FindInInfoClass(szVal);
 		GC.getDefinesVarSystem()->SetValue("BARBARIAN_LEADER", idx);
+
+		GC.readAutomatedWorkersNeverBuild(true); // automated workers
 
 		GC.clearDefineCache(); // perf
 		return true;

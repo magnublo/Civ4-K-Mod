@@ -952,7 +952,9 @@ bool CvUnitAI::AI_bestCityBuild(CvCity* pCity, CvPlot** ppBestPlot, BuildTypes* 
 						FAssertMsg(eBuild < GC.getNumBuildInfos(), "Invalid Build");
 
 						//if (eBuild != NO_BUILD)
-						if (eBuild != NO_BUILD && canBuild(pLoopPlot, eBuild)) // K-Mod
+						if (eBuild != NO_BUILD && canBuild(pLoopPlot, eBuild) // K-Mod
+							// automated workers (written by Claude): the city's plan can predate the list (from an older save)
+							&& !GET_PLAYER(getOwnerINLINE()).isAutomatedNeverBuild(eBuild))
 						{
 							if (0 == iPass)
 							{
@@ -19025,6 +19027,10 @@ bool CvUnitAI::AI_improveLocalPlot(int iRange, CvCity* pIgnoreCity)
 			if (!canBuild(pLoopPlot, pCity->AI_getBestBuild(iIndex)))
 				continue;
 
+			// automated workers (written by Claude): the city's plan can predate the list (from an older save)
+			if (GET_PLAYER(getOwnerINLINE()).isAutomatedNeverBuild(pCity->AI_getBestBuild(iIndex)))
+				continue;
+
 			if (GET_PLAYER(getOwnerINLINE()).isOption(PLAYEROPTION_SAFE_AUTOMATION))
 			{
 				if (pLoopPlot->getImprovementType() != NO_IMPROVEMENT && pLoopPlot->getImprovementType() != GC.getDefineINT("RUINS_IMPROVEMENT"))
@@ -19357,7 +19363,7 @@ bool CvUnitAI::AI_irrigateTerritory()
 										{
 											if (GC.getImprovementInfo((ImprovementTypes)(GC.getBuildInfo(eBuild).getImprovement())).isCarriesIrrigation())
 											{
-												if (canBuild(pLoopPlot, eBuild))
+												if (canBuild(pLoopPlot, eBuild) && !GET_PLAYER(getOwnerINLINE()).isAutomatedNeverBuild(eBuild)) // automated workers
 												{
 													iValue = 10000;
 
@@ -19501,7 +19507,7 @@ bool CvUnitAI::AI_fortTerritory(bool bCanal, bool bAirbase)
 								{
 								    if (GC.getImprovementInfo((ImprovementTypes)(GC.getBuildInfo(eBuild).getImprovement())).getDefenseModifier() > 0)
 								    {
-                                        if (canBuild(pLoopPlot, eBuild))
+                                        if (canBuild(pLoopPlot, eBuild) && !kOwner.isAutomatedNeverBuild(eBuild)) // automated workers
                                         {
                                             iValue = 10000;
 
@@ -19660,7 +19666,8 @@ bool CvUnitAI::AI_improveBonus() // K-Mod. (all that junk wasn't being used anyw
 						{
 							// Let "best build" handle improvement replacements near cities.
 							BuildTypes eBuild = pWorkingCity->AI_getBestBuild(plotCityXY(pWorkingCity, pLoopPlot));
-							if (eBuild != NO_BUILD && kOwner.doesImprovementConnectBonus((ImprovementTypes)GC.getBuildInfo(eBuild).getImprovement(), eNonObsoleteBonus) && canBuild(pLoopPlot, eBuild))
+							if (eBuild != NO_BUILD && kOwner.doesImprovementConnectBonus((ImprovementTypes)GC.getBuildInfo(eBuild).getImprovement(), eNonObsoleteBonus) && canBuild(pLoopPlot, eBuild)
+								&& !kOwner.isAutomatedNeverBuild(eBuild)) // automated workers (a plan from an older save)
 							{
 								bDoImprove = true;
 								eBestTempBuild = eBuild;
@@ -19683,7 +19690,7 @@ bool CvUnitAI::AI_improveBonus() // K-Mod. (all that junk wasn't being used anyw
 									//if (GC.getImprovementInfo((ImprovementTypes) GC.getBuildInfo(eBuild).getImprovement()).isImprovementBonusTrade(eNonObsoleteBonus) || (!pLoopPlot->isCityRadius() && GC.getImprovementInfo((ImprovementTypes) GC.getBuildInfo(eBuild).getImprovement()).isActsAsCity()))
 									if (kOwner.doesImprovementConnectBonus((ImprovementTypes)GC.getBuildInfo(eBuild).getImprovement(), eNonObsoleteBonus)) // K-Mod
 									{
-										if (canBuild(pLoopPlot, eBuild))
+										if (canBuild(pLoopPlot, eBuild) && !kOwner.isAutomatedNeverBuild(eBuild)) // automated workers
 										{
 											if ((pLoopPlot->getFeatureType() == NO_FEATURE) || !GC.getBuildInfo(eBuild).isFeatureRemove(pLoopPlot->getFeatureType()) || !kOwner.isOption(PLAYEROPTION_LEAVE_FORESTS))
 											{
@@ -19982,7 +19989,7 @@ BuildTypes CvUnitAI::AI_betterPlotBuild(CvPlot* pPlot, BuildTypes eBuild)
 		RouteTypes eRoute = (RouteTypes)kBuildInfo.getRoute();
 		if ((bBuildRoute && (eRoute != NO_ROUTE)) || (bClearFeature && kBuildInfo.isFeatureRemove(eFeature)))
 		{
-			if (canBuild(pPlot, eBuild))
+			if (canBuild(pPlot, eBuild) && !GET_PLAYER(getOwnerINLINE()).isAutomatedNeverBuild(eBuild)) // automated workers
 			{
 				int iValue = 10000;
 				

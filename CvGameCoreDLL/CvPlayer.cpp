@@ -4327,6 +4327,21 @@ bool CvPlayer::doesImprovementConnectBonus(ImprovementTypes eImprovement, BonusT
 }
 // K-Mod end
 
+// automated workers (written by Claude): the automated workers of a human player never build the improvements listed
+// in AUTOMATED_WORKERS_NEVER_BUILD (GlobalDefinesAlt.xml). The city's plan for its plots leaves them out
+// (CvCityAI::AI_bestPlotBuild), so the workers build the best of the other improvements instead; the worker AI checks
+// again before it starts a build (CvUnitAI). AI players are not affected, nor is AI autoplay (isHuman() is false then),
+// nor are the orders the player gives a worker.
+bool CvPlayer::isAutomatedNeverBuild(ImprovementTypes eImprovement) const
+{
+	return eImprovement != NO_IMPROVEMENT && isHuman() && GC.isAutomatedWorkersNeverBuild(eImprovement);
+}
+
+bool CvPlayer::isAutomatedNeverBuild(BuildTypes eBuild) const
+{
+	return eBuild != NO_BUILD && isAutomatedNeverBuild((ImprovementTypes)GC.getBuildInfo(eBuild).getImprovement());
+}
+
 
 bool CvPlayer::canContact(PlayerTypes ePlayer) const
 {

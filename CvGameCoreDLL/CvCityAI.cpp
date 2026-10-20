@@ -10241,6 +10241,10 @@ void CvCityAI::AI_bestPlotBuild(CvPlot* pPlot, int* piBestValue, BuildTypes* peB
 	for (int iI = 0; iI < GC.getNumImprovementInfos(); iI++)
 	{
 		ImprovementTypes eImprovement = ((ImprovementTypes)iI);
+		// automated workers (written by Claude): improvements that a human's automated workers never build are left out,
+		// so the best of the others is chosen. (The plot's own improvement, which this loop also values, stays a choice.)
+		if (eImprovement != pPlot->getImprovementType() && kOwner.isAutomatedNeverBuild(eImprovement))
+			continue;
 		BuildTypes eBestTempBuild;
 		int iValue = AI_getImprovementValue(pPlot, eImprovement, iFoodPriority, iProductionPriority, iCommercePriority, iDesiredFoodChange, iClearFeatureValue, bEmphasizeIrrigation, &eBestTempBuild);
 		if (iValue > iBestValue)
