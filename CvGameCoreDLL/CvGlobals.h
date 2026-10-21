@@ -696,6 +696,10 @@ public:
 	DllExport void setDefineFLOAT( const char * szName, float fValue );
 	DllExport void setDefineSTRING( const char * szName, const char * szValue );
 
+	// automated production (written by Claude): AUTOMATED_PRODUCTION_ORDER in GlobalDefinesAlt.xml
+	void readAutomatedProductionOrder(bool bReportErrors);
+	const std::vector<BuildingClassTypes>& getAutomatedProductionOrder() const { return m_aeAutomatedProductionOrder; }
+
 	inline int getEXTRA_YIELD() { return m_iEXTRA_YIELD; } // K-Mod (why aren't all these functions inline?)
 	int getMOVE_DENOMINATOR();
 	int getNUM_UNIT_PREREQ_OR_BONUSES();
@@ -1339,6 +1343,7 @@ protected:
 	// perf
 	int m_iUSE_ON_UNIT_MOVE_CALLBACK;
 	int m_iUSE_GET_EXTRA_COST_CALLBACK;
+	std::vector<BuildingClassTypes> m_aeAutomatedProductionOrder; // automated production
 };
 
 extern CvGlobals gGlobals;	// for debugging

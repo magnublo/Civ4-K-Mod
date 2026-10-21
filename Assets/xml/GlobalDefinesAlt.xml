@@ -196,4 +196,34 @@
 		<DefineName>AI_EARLY_WAR_RAND_PERCENT</DefineName>
 		<iDefineIntVal>300</iDefineIntVal> <!-- right after the gate the chance of a war plan is 100/this of the usual chance (300 = a third), fading to normal at the ramp's end; 100 = no ramp -->
 	</Define>
+	<!-- Automated production (written by Claude): what a city of yours builds when you let the governor choose its
+		production (the city screen's "automate production" button). It builds the first building of this list that it
+		can build, and nothing else: no units, no wonders, no buildings that aren't on the list. When nothing on the list
+		can be built, it makes Wealth or Research, whichever the AI rates higher, and goes back to the list as soon as it
+		can. Building classes from Buildings/CIV4BuildingClassInfos.xml (a civilization's unique building takes the place
+		of its class), separated by commas or spaces; empty = K-Mod's governor chooses.
+		A power plant is skipped where the city already has clean power, and a dirty one (Coal Plant, Shale Plant) also
+		where it has any power, so HYDRO_PLANT, COAL_PLANT means a hydro plant if possible, else a coal plant.
+		Left out so that they are never built: the cathedrals (Stupa, Cathedral, Academy, Mandir, Mosque, Synagogue,
+		Pagoda) and the Nuclear Plant. -->
+	<Define>
+		<DefineName>AUTOMATED_PRODUCTION_ORDER</DefineName>
+		<DefineTextVal>
+			BUILDINGCLASS_COURTHOUSE, BUILDINGCLASS_GRANARY, BUILDINGCLASS_FORGE, BUILDINGCLASS_FACTORY,
+			BUILDINGCLASS_HYDRO_PLANT, BUILDINGCLASS_COAL_PLANT,
+			BUILDINGCLASS_LEVEE, BUILDINGCLASS_INDUSTRIAL_PARK, BUILDINGCLASS_LIGHTHOUSE, BUILDINGCLASS_AIRPORT,
+			BUILDINGCLASS_HARBOR, BUILDINGCLASS_GROCER, BUILDINGCLASS_SUPERMARKET, BUILDINGCLASS_AQUEDUCT,
+			BUILDINGCLASS_HOSPITAL, BUILDINGCLASS_PUBLIC_TRANSPORTATION, BUILDINGCLASS_RECYCLING_CENTER, BUILDINGCLASS_JAIL,
+			BUILDINGCLASS_BUDDHIST_TEMPLE, BUILDINGCLASS_CHRISTIAN_TEMPLE, BUILDINGCLASS_CONFUCIAN_TEMPLE,
+			BUILDINGCLASS_HINDU_TEMPLE, BUILDINGCLASS_ISLAMIC_TEMPLE, BUILDINGCLASS_JEWISH_TEMPLE, BUILDINGCLASS_TAOIST_TEMPLE,
+			BUILDINGCLASS_COLOSSEUM, BUILDINGCLASS_BROADCAST_TOWER, BUILDINGCLASS_MARKET, BUILDINGCLASS_THEATRE,
+			BUILDINGCLASS_BANK, BUILDINGCLASS_LIBRARY,
+			BUILDINGCLASS_BUDDHIST_MONASTERY, BUILDINGCLASS_CHRISTIAN_MONASTERY, BUILDINGCLASS_CONFUCIAN_MONASTERY,
+			BUILDINGCLASS_HINDU_MONASTERY, BUILDINGCLASS_ISLAMIC_MONASTERY, BUILDINGCLASS_JEWISH_MONASTERY,
+			BUILDINGCLASS_TAOIST_MONASTERY,
+			BUILDINGCLASS_UNIVERSITY, BUILDINGCLASS_OBSERVATORY, BUILDINGCLASS_LABORATORY, BUILDINGCLASS_INTELLIGENCE_AGENCY,
+			BUILDINGCLASS_NATIONAL_SECURITY, BUILDINGCLASS_CUSTOM_HOUSE, BUILDINGCLASS_DRYDOCK, BUILDINGCLASS_BARRACKS,
+			BUILDINGCLASS_BUNKER, BUILDINGCLASS_BOMB_SHELTER
+		</DefineTextVal>
+	</Define>
 </Civ4Defines>

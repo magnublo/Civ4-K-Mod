@@ -13424,7 +13424,11 @@ void CvCity::doProduction(bool bAllowNoProduction)
 
 	if (!isHuman() || isProductionAutomated())
 	{
-		if (!isProduction() || isProductionProcess() || AI_isChooseProductionDirty())
+		// automated production (written by Claude): with AUTOMATED_PRODUCTION_ORDER, a human's automated city chooses
+		// again every turn, so it moves on to a building higher on the list as soon as it can (a building's hammers stay
+		// with it, and AI_chooseProduction keeps an item that has three turns or less to go)
+		if (!isProduction() || isProductionProcess() || AI_isChooseProductionDirty() ||
+			(isHuman() && !GC.getAutomatedProductionOrder().empty()))
 		{
 			AI_chooseProduction();
 		}

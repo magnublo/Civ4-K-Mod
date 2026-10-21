@@ -402,6 +402,8 @@ bool CvXMLLoadUtility::SetPostGlobalsGlobalDefines()
 		idx = FindInInfoClass(szVal);
 		GC.getDefinesVarSystem()->SetValue("BARBARIAN_LEADER", idx);
 
+		GC.readAutomatedProductionOrder(true); // automated production
+
 		GC.clearDefineCache(); // perf
 		return true;
 	}

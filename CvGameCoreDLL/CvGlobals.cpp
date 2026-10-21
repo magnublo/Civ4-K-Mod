@@ -2794,6 +2794,9 @@ void CvGlobals::cacheGlobals()
 /************************************************************************************************/
 /* BETTER_BTS_AI_MOD                       END                                                  */
 /************************************************************************************************/
+	// automated production: when loading the XML, the defines come before the buildings (see SetPostGlobalsGlobalDefines)
+	if (getNumBuildingClassInfos() > 0)
+		readAutomatedProductionOrder(false);
 }
 
 /************************************************************************************************/
@@ -2979,6 +2982,39 @@ void CvGlobals::setDefineSTRING( const char * szName, const char * szValue )
 {
 	GC.getDefinesVarSystem()->SetValue( szName, szValue );
 	cacheGlobals();
+}
+
+// automated production (written by Claude): AUTOMATED_PRODUCTION_ORDER in GlobalDefinesAlt.xml lists building classes,
+// separated by commas or spaces, in the order in which a human's cities with automated production build them
+// (CvCityAI::AI_chooseAutomatedProductionOrder). Read once the buildings are loaded (SetPostGlobalsGlobalDefines, which
+// reports names that aren't building classes), and again whenever a define is set, e.g. from Python (cacheGlobals).
+void CvGlobals::readAutomatedProductionOrder(bool bReportErrors)
+{
+	m_aeAutomatedProductionOrder.clear();
+
+	const char* szList = getDefineSTRING("AUTOMATED_PRODUCTION_ORDER");
+	if (szList == NULL)
+		return;
+
+	const std::string szNames(szList);
+	const char* szSeparators = ", \t\r\n";
+	std::string::size_type iStart = szNames.find_first_not_of(szSeparators);
+	while (iStart != std::string::npos)
+	{
+		std::string::size_type iEnd = szNames.find_first_of(szSeparators, iStart);
+		std::string szName = szNames.substr(iStart, iEnd == std::string::npos ? std::string::npos : iEnd - iStart);
+		int iBuildingClass = getInfoTypeForString(szName.c_str(), true);
+		// getInfoTypeForString knows the types of all infos; only take a building class's
+		if (iBuildingClass >= 0 && iBuildingClass < getNumBuildingClassInfos() && szName == getBuildingClassInfo((BuildingClassTypes)iBuildingClass).getType())
+		{
+			m_aeAutomatedProductionOrder.push_back((BuildingClassTypes)iBuildingClass);
+		}
+		else if (bReportErrors)
+		{
+			gDLL->MessageBox(CvString::format("AUTOMATED_PRODUCTION_ORDER in GlobalDefinesAlt.xml: %s is not a building class.", szName.c_str()).c_str(), "XML Error");
+		}
+		iStart = szNames.find_first_not_of(szSeparators, iEnd);
+	}
 }
 
 int CvGlobals::getMOVE_DENOMINATOR()

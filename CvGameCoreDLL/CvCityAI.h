@@ -228,6 +228,7 @@ protected:
 	void AI_bestPlotBuild(CvPlot* pPlot, int* piBestValue, BuildTypes* peBestBuild, int iFoodPriority, int iProductionPriority, int iCommercePriority, bool bChop, int iHappyAdjust, int iHealthAdjust, int iDesiredFoodChange);
 
 	void AI_buildGovernorChooseProduction();
+	void AI_chooseAutomatedProductionOrder(); // automated production
 	void AI_barbChooseProduction(); // K-Mod
 
 	int AI_getYieldMagicValue(const int* piYieldsTimes100, bool bHealthy) const;

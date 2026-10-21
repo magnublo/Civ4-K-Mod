@@ -8365,6 +8365,50 @@ bool CvCityAI::AI_chooseProject()
 }
 
 
+// automated production (written by Claude): a human's city with automated production (the city screen's button) builds
+// the first building of AUTOMATED_PRODUCTION_ORDER (GlobalDefinesAlt.xml) that it can build, and nothing else: no units,
+// no wonders, no buildings off the list (the user's choice). A power plant is skipped where the city already has clean
+// power, and a dirty one also where it has any power, so "Hydro Plant, Coal Plant" means a hydro plant if possible, else
+// a coal plant (and a hydro plant later, which ends the coal plant's unhealthiness). When nothing on the list can be
+// built, the city makes Wealth or Research, whichever AI_processValue rates higher. A city on a process chooses again
+// every turn (CvCity::doProduction), so it starts the next listed building as soon as it can.
+void CvCityAI::AI_chooseAutomatedProductionOrder()
+{
+	const std::vector<BuildingClassTypes>& aeOrder = GC.getAutomatedProductionOrder();
+	for (size_t i = 0; i < aeOrder.size(); i++)
+	{
+		BuildingTypes eBuilding = (BuildingTypes)GC.getCivilizationInfo(getCivilizationType()).getCivilizationBuildings(aeOrder[i]);
+		if (eBuilding == NO_BUILDING || !canConstruct(eBuilding))
+			continue;
+		const CvBuildingInfo& kBuilding = GC.getBuildingInfo(eBuilding);
+		if (kBuilding.isDirtyPower() ? isPower() : (kBuilding.isPower() && isPower() && !isDirtyPower()))
+			continue;
+		pushOrder(ORDER_CONSTRUCT, eBuilding);
+		return;
+	}
+
+	ProcessTypes eBestProcess = NO_PROCESS;
+	int iBestValue = -1;
+	for (int iI = 0; iI < GC.getNumProcessInfos(); iI++)
+	{
+		ProcessTypes eProcess = (ProcessTypes)iI;
+		const CvProcessInfo& kProcess = GC.getProcessInfo(eProcess);
+		if ((kProcess.getProductionToCommerceModifier(COMMERCE_GOLD) > 0 || kProcess.getProductionToCommerceModifier(COMMERCE_RESEARCH) > 0) && canMaintain(eProcess))
+		{
+			int iValue = AI_processValue(eProcess);
+			if (iValue > iBestValue)
+			{
+				iBestValue = iValue;
+				eBestProcess = eProcess;
+			}
+		}
+	}
+	if (eBestProcess != NO_PROCESS)
+	{
+		pushOrder(ORDER_MAINTAIN, eBestProcess);
+	}
+}
+
 bool CvCityAI::AI_chooseProcess(CommerceTypes eCommerceType)
 {
 	ProcessTypes eBestProcess;
@@ -10693,6 +10737,13 @@ void CvCityAI::AI_buildGovernorChooseProduction()
 
 	AI_setChooseProductionDirty(false);
 	clearOrderQueue();
+
+	// automated production (written by Claude): with AUTOMATED_PRODUCTION_ORDER set, the order decides, not the governor
+	if (!GC.getAutomatedProductionOrder().empty())
+	{
+		AI_chooseAutomatedProductionOrder();
+		return;
+	}
 
 	CvPlayerAI& kOwner = GET_PLAYER(getOwnerINLINE());
 	CvArea* pWaterArea = waterArea();

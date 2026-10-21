@@ -7,6 +7,7 @@ K-Mod-Magnus is a fork of [K-Mod](https://github.com/karadoc/Civ4-K-Mod) 1.46 by
 - more Stone, Marble and seafood on generated maps, and other starting techs for five civilizations;
 - pre-chop and pre-build buttons, and a "prechopped" sign on each forest you pre-chop;
 - a "Workers" tab in the BUG options: which improvements your automated workers build (at first all but watermills, windmills and forest preserves) and which they replace;
+- automated production that builds your list of buildings in your order, then Wealth or Research;
 - fewer early AI wars;
 - turns 1.6 to 2.5 times faster than K-Mod 1.46 in big late games;
 - the Planet Generator map script, reworked so that its options hold, with more coast on request;
@@ -66,9 +67,14 @@ Compared with karadoc's K-Mod 1.46 (branch `master` of github.com/karadoc/Civ4-K
     - A worker that is already building an improvement it may no longer build stops and picks a new job. The worker recommendations (the circled tile and the highlighted build button) follow the same plans.
 
     The choices are kept on your computer, like all BUG options (`Automated Workers.ini` in BUG's settings folder), not in the save. The game hands them to the DLL at the start of each of your turns and whenever you change one, as a network message, so multiplayer games stay in sync. Not affected: the AI's workers, AI autoplay and the orders you give a worker yourself.
+- **Automated production builds your list, in your order** [`automated production`]: a city whose production you hand to the governor (the city screen's automate-production button) builds the first building of `AUTOMATED_PRODUCTION_ORDER` (`Assets/xml/GlobalDefinesAlt.xml`) that it can build, and nothing else: no units, no wonders, no buildings that aren't on the list. A civilization's unique building takes the place of its class (a Holy Roman city builds a Rathaus for the Courthouse). When nothing on the list can be built, the city makes Wealth or Research, whichever the AI rates higher, and starts the next listed building as soon as one becomes possible. It chooses again every turn, so it moves up the list at once (the hammers of a building it leaves stay with that building, and an item with three turns or less to go is finished first). Power plants: a city that has clean power builds none, and a dirty one (Coal Plant) only where the city has no power at all, so the list's "Hydro Plant, Coal Plant" means a hydro plant if possible, else a coal plant, and a hydro plant later where a river city got a coal plant first. The list as it comes:
+
+    Courthouse, Granary, Forge, Factory, Hydro Plant or Coal Plant, Levee, Industrial Park, Lighthouse, Airport, Harbor, Grocer, Supermarket, Aqueduct, Hospital, Public Transportation, Recycling Center, Jail, the seven temples, Colosseum, Broadcast Tower, Market, Theatre, Bank, Library, the seven monasteries, University, Observatory, Laboratory, Intelligence Agency, Security Bureau, Customs House, Drydock, Barracks, Bunker, Bomb Shelter.
+
+    The cathedrals (Stupa, Cathedral, Academy, Mandir, Mosque, Synagogue, Pagoda) and the Nuclear Plant are left out, so automated cities never build them. Edit the list in the XML (building classes from `Buildings/CIV4BuildingClassInfos.xml`); a name that isn't a building class gives an "XML Error" message while the mod loads, and an empty list gives K-Mod's governor back. Tested on a late-game save with all 99 cities automated: every city not in disorder built the first listed building it could; a city 4 turns into a Customs House that lost its Rathaus built a new Rathaus the next turn; and with Plastics, the 9 river cities that had only a coal plant built hydro plants at once. Not affected: cities whose production you choose yourself, and the AI's cities.
 - **Faster AI turns** [`perf`]: see [Faster turns](#faster-turns).
 
-Pre-chop and pre-build texts: `Assets/xml/Text/CIV4GameText_PreChopPreBuild.xml`. Buttons: `Assets/Art/Interface/Buttons/Actions/PreChop.dds`, `PreBuild.dds` and `PreBuildOn.dds`. UI: `Assets/Python/Screens/CvMainInterface.py`; the "prechopped" signs: `Assets/Python/Contrib/PreChopSigns.py` and `Assets/Config/Pre-chop Signs.xml`. Pre-chop, pre-build, the signs, the early-war rules, the Workers tab and the faster turns leave the savegame format as it is; only the civ cap changes it (see [Saves](#saves)).
+Pre-chop and pre-build texts: `Assets/xml/Text/CIV4GameText_PreChopPreBuild.xml`. Buttons: `Assets/Art/Interface/Buttons/Actions/PreChop.dds`, `PreBuild.dds` and `PreBuildOn.dds`. UI: `Assets/Python/Screens/CvMainInterface.py`; the "prechopped" signs: `Assets/Python/Contrib/PreChopSigns.py` and `Assets/Config/Pre-chop Signs.xml`. Pre-chop, pre-build, the signs, the early-war rules, the Workers tab, the production order and the faster turns leave the savegame format as it is; only the civ cap changes it (see [Saves](#saves)).
 
 ### Game data (XML, under `Assets/xml/`)
 
@@ -94,7 +100,7 @@ Pre-chop and pre-build texts: `Assets/xml/Text/CIV4GameText_PreChopPreBuild.xml`
     | Netherlands | Mysticism, Fishing | Agriculture, Fishing |
     | Rome | Agriculture, Mining | Fishing, Mining |
 - **Sid's Sushi** (`buildings/CIV4BuildingInfos.xml`, `BUILDING_CORPORATION_2`): founded with Medicine as in BtS (K-Mod: Refrigeration).
-- **Switches**: `GlobalDefinesAlt.xml` adds the early-war settings; `PythonCallbackDefines.xml` adds `USE_ON_UNIT_MOVE_CALLBACK` and `USE_GET_EXTRA_COST_CALLBACK` (see [Faster turns](#faster-turns)).
+- **Switches**: `GlobalDefinesAlt.xml` adds the early-war settings and the automated production order; `PythonCallbackDefines.xml` adds `USE_ON_UNIT_MOVE_CALLBACK` and `USE_GET_EXTRA_COST_CALLBACK` (see [Faster turns](#faster-turns)).
 - **Texts** for the new buttons: `Text/CIV4GameText_PreChopPreBuild.xml`; for the Workers tab: `Text/CIV4GameText_AutomatedWorkers.xml`.
 
 ### Interface and art
