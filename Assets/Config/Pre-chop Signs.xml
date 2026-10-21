@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!--
+	Pre-chop signs (K-Mod-Magnus, written by Claude)
+
+	A "prechopped" sign on each plot where a worker's pre-chop has stopped, until the chop is no longer waiting there.
+	Python/Contrib/PreChopSigns.py; the DLL reports the stops (CvSelectionGroup::groupBuild).
+-->
+<mod id="PreChopSigns"
+	 module="PreChopSigns"
+	 name="Pre-chop signs"
+	 author="K-Mod-Magnus"
+	 version="1.0"
+	 date="10/21/2026">
+
+	<event type="preChopped" function="onPreChopped"/>
+	<event type="plotFeatureRemoved" function="onPlotFeatureRemoved"/>
+	<event type="BeginGameTurn" function="onBeginGameTurn"/>
+</mod>

@@ -3555,7 +3555,8 @@ bool CvSelectionGroup::groupBuild(BuildTypes eBuild, bool bStopShort)
 				CvWString szBuffer;
 				CvCity* pCity = NULL;
 				int iProduction = 0;
-				if (pPlot->getFeatureType() != NO_FEATURE && GC.getBuildInfo(eBuild).isFeatureRemove(pPlot->getFeatureType()))
+				bool bChop = pPlot->getFeatureType() != NO_FEATURE && GC.getBuildInfo(eBuild).isFeatureRemove(pPlot->getFeatureType());
+				if (bChop)
 				{
 					iProduction = pPlot->getFeatureProduction(eBuild, getTeam(), &pCity);
 				}
@@ -3568,6 +3569,18 @@ bool CvSelectionGroup::groupBuild(BuildTypes eBuild, bool bStopShort)
 					szBuffer = gDLL->getText("TXT_KEY_BUILD_STOPPED_SHORT", GC.getBuildInfo(eBuild).getTextKeyWide());
 				}
 				gDLL->getInterfaceIFace()->addHumanMessage(getOwnerINLINE(), false, GC.getEVENT_MESSAGE_TIME(), szBuffer, NULL, MESSAGE_TYPE_INFO, GC.getBuildInfo(eBuild).getButton(), (ColorTypes)GC.getInfoTypeForString("COLOR_WHITE"), pPlot->getX_INLINE(), pPlot->getY_INLINE(), true, true);
+				// pre-chop sign (written by Claude): a build that would remove the forest or jungle has stopped short.
+				// Python (Contrib/PreChopSigns.py) puts the owner's "prechopped" sign on the plot; the DLL can't, its
+				// engine interface has no signs of a player. Signs are only shown, so the game's course stays the same.
+				if (bChop)
+				{
+					CyArgsList pyArgs;
+					pyArgs.add(pPlot->getX_INLINE());
+					pyArgs.add(pPlot->getY_INLINE());
+					pyArgs.add(getOwnerINLINE());
+					pyArgs.add(eBuild);
+					CvEventReporter::getInstance().genericEvent("preChopped", pyArgs.makeFunctionArgs());
+				}
 				bContinue = false;
 				break;
 			}

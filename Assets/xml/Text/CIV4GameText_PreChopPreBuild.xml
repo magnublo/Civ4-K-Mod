@@ -51,6 +51,15 @@
 		<Italian>%s1_Build: stopped one worker-turn before it is finished (%d2[ICON_PRODUCTION] for %s3_City when it is)</Italian>
 		<Spanish>%s1_Build: stopped one worker-turn before it is finished (%d2[ICON_PRODUCTION] for %s3_City when it is)</Spanish>
 	</TEXT>
+	<!-- the sign on a plot where a pre-chop has stopped (Python/Contrib/PreChopSigns.py) -->
+	<TEXT>
+		<Tag>TXT_KEY_SIGN_PRECHOPPED</Tag>
+		<English>prechopped</English>
+		<French>prechopped</French>
+		<German>prechopped</German>
+		<Italian>prechopped</Italian>
+		<Spanish>prechopped</Spanish>
+	</TEXT>
 
 	<!-- Pre-build (city screen toggle for the first wonder or project in the queue) -->
 	<TEXT>

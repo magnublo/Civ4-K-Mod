@@ -202,6 +202,6 @@
 		The AI's workers, the orders you give a worker yourself and improvements already built are not affected. -->
 	<Define>
 		<DefineName>AUTOMATED_WORKERS_NEVER_BUILD</DefineName>
-		<DefineTextVal>IMPROVEMENT_WATERMILL,IMPROVEMENT_WINDMILL</DefineTextVal>
+		<DefineTextVal>IMPROVEMENT_WATERMILL,IMPROVEMENT_WINDMILL,IMPROVEMENT_FOREST_PRESERVE</DefineTextVal>
 	</Define>
 </Civ4Defines>
