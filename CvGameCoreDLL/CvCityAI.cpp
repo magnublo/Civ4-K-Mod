@@ -6350,7 +6350,8 @@ int CvCityAI::AI_totalBestBuildValue(CvArea* pArea)
 			{
 				if (pLoopPlot->area() == pArea)
 				{
-					if ((pLoopPlot->getImprovementType() == NO_IMPROVEMENT) || !(GET_PLAYER(getOwnerINLINE()).isOption(PLAYEROPTION_SAFE_AUTOMATION) && !(pLoopPlot->getImprovementType() == (GC.getDefineINT("RUINS_IMPROVEMENT")))))
+					if ((pLoopPlot->getImprovementType() == NO_IMPROVEMENT) || !(GET_PLAYER(getOwnerINLINE()).isOption(PLAYEROPTION_SAFE_AUTOMATION) && !(pLoopPlot->getImprovementType() == (GC.getDefineINT("RUINS_IMPROVEMENT"))))
+						|| GET_PLAYER(getOwnerINLINE()).isAutomatedReplace(pLoopPlot)) // automated workers
 					{
 						iTotalValue += AI_getBestBuildValue(iI);
 					}
@@ -6841,6 +6842,9 @@ int CvCityAI::AI_getImprovementValue(CvPlot* pPlot, ImprovementTypes eImprovemen
 	bool bValid = false;
 	BonusTypes eBonus = pPlot->getBonusType(getTeam());
 	BonusTypes eNonObsoleteBonus = pPlot->getNonObsoleteBonusType(getTeam());
+	// automated workers (written by Claude): an improvement that the owner's automated workers are to replace counts as
+	// none, so the others are valued as on an unimproved plot (and Leave Old Improvements doesn't hold them back).
+	ImprovementTypes eOldImprovement = kOwner.isAutomatedReplace(pPlot) ? NO_IMPROVEMENT : pPlot->getImprovementType();
 
 	if (eImprovement == pPlot->getImprovementType())
 	{
@@ -6941,7 +6945,7 @@ int CvCityAI::AI_getImprovementValue(CvPlot* pPlot, ImprovementTypes eImprovemen
 			{
 				// K-Mod, bug fix. (original code deleted now.)
 				// Presumablly the original author wanted to subtract 1000 if eBestBuild would take away the bonus; not ... the nonsense they actually wrote.
-				if (kOwner.doesImprovementConnectBonus(pPlot->getImprovementType(), eNonObsoleteBonus))
+				if (kOwner.doesImprovementConnectBonus(eOldImprovement, eNonObsoleteBonus)) // automated workers: was pPlot->getImprovementType()
 				{
 					// By the way, AI_bonusVal is typically 10 for the first bonus, and 2 for subsequent.
 					iValue -= (kOwner.AI_bonusVal(eNonObsoleteBonus, -1) * 50);
@@ -6984,7 +6988,7 @@ int CvCityAI::AI_getImprovementValue(CvPlot* pPlot, ImprovementTypes eImprovemen
 
 		// Getting the time-weighted yields for the new and old improvements; then use them to calculate the final yield and yield difference.
 		AI_timeWeightedImprovementYields(pPlot, eImprovement, iTimeScale, weighted_final_yields);
-		AI_timeWeightedImprovementYields(pPlot, pPlot->getImprovementType(), iTimeScale, weighted_yield_diffs);
+		AI_timeWeightedImprovementYields(pPlot, eOldImprovement, iTimeScale, weighted_yield_diffs); // automated workers: was pPlot->getImprovementType()
 		for (int iJ = 0; iJ < NUM_YIELD_TYPES; iJ++)
 		{
 			weighted_final_yields[iJ] += pPlot->calculateNatureYield((YieldTypes)iJ, getTeam(), bIgnoreFeature);
@@ -7133,7 +7137,7 @@ int CvCityAI::AI_getImprovementValue(CvPlot* pPlot, ImprovementTypes eImprovemen
 			iValue /= 200;
 		}
 
-		if (pPlot->getImprovementType() == NO_IMPROVEMENT)
+		if (eOldImprovement == NO_IMPROVEMENT) // automated workers: was pPlot->getImprovementType()
 		{
 			//if (pPlot->isBeingWorked())
 			if (pPlot->isBeingWorked()  // K-Mod. (don't boost the value if it means removing a good feature.)
@@ -7521,7 +7525,9 @@ void CvCityAI::AI_updateBestBuild()
 			{
 				CvPlot* pLoopPlot = plotCity(getX_INLINE(), getY_INLINE(), iI);
 
-				if (NULL != pLoopPlot && pLoopPlot->getWorkingCity() == this)
+				// automated workers (written by Claude): a plot whose improvement the owner's workers are to replace keeps
+				// its plan, even where the improvement yields more than the replacement (the owner asked for it to go).
+				if (NULL != pLoopPlot && pLoopPlot->getWorkingCity() == this && !kOwner.isAutomatedReplace(pLoopPlot))
 				{
 					// K-Mod. If the new improvement will upgrade over time, then don't mark it as being low-priority. We want to build it sooner rather than later.
 					if (m_aeBestBuild[iI] != NO_BUILD && GC.getBuildInfo(m_aeBestBuild[iI]).getImprovement() != NO_IMPROVEMENT &&
@@ -10238,12 +10244,14 @@ void CvCityAI::AI_bestPlotBuild(CvPlot* pPlot, int* piBestValue, BuildTypes* peB
 		}
 	}
 
+	// automated workers (written by Claude): improvements that a human's automated workers never build are left out,
+	// so the best of the others is chosen. The plot's own improvement, which this loop also values (as keeping it),
+	// stays a choice unless the workers are to replace it.
+	bool bReplace = kOwner.isAutomatedReplace(pPlot);
 	for (int iI = 0; iI < GC.getNumImprovementInfos(); iI++)
 	{
 		ImprovementTypes eImprovement = ((ImprovementTypes)iI);
-		// automated workers (written by Claude): improvements that a human's automated workers never build are left out,
-		// so the best of the others is chosen. (The plot's own improvement, which this loop also values, stays a choice.)
-		if (eImprovement != pPlot->getImprovementType() && kOwner.isAutomatedNeverBuild(eImprovement))
+		if (kOwner.isAutomatedNeverBuild(eImprovement) && (eImprovement != pPlot->getImprovementType() || bReplace))
 			continue;
 		BuildTypes eBestTempBuild;
 		int iValue = AI_getImprovementValue(pPlot, eImprovement, iFoodPriority, iProductionPriority, iCommercePriority, iDesiredFoodChange, iClearFeatureValue, bEmphasizeIrrigation, &eBestTempBuild);

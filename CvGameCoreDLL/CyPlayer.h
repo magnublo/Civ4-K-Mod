@@ -393,6 +393,8 @@ public:
 	void setFeatAccomplished(int /*FeatTypes*/ eIndex, bool bNewValue);
 	bool isOption(int /*PlayerOptionTypes*/ eIndex);	
 	void setOption(int /*PlayerOptionTypes*/ eIndex, bool bNewValue);
+	int getAutomatedWorkers(int /*ImprovementTypes*/ eImprovement); // automated workers
+	void setAutomatedWorkers(int iFirstImprovement, int iNeverBuildMask, int iReplaceMask); // automated workers
 	bool isLoyalMember(int /*VoteSourceTypes*/ eIndex);	
 	void setLoyalMember(int /*VoteSourceTypes*/ eIndex, bool bNewValue);
 	int getVotes(int /*VoteTypes*/ eVote, int /*VoteSourceTypes*/ eVoteSource);

@@ -148,6 +148,7 @@
 	<load mod="Strategy Overlay"/>
 	<load mod="Realism Invictus Art"/>  <!-- K-Mod-Magnus -->
 	<load mod="Pre-chop Signs"/>  <!-- K-Mod-Magnus -->
+	<load mod="Automated Workers"/>  <!-- K-Mod-Magnus -->
 	<load mod="StatusDump"/>
 	
 	<!-- BULL -->
@@ -182,6 +183,7 @@
 		<tab module="BugPleOptionsTab"/>
 		<tab module="BugACOOptionsTab"/>
 		<tab module="BugUnitNameOptionsTab"/>
+		<tab module="BugWorkersOptionsTab"/>  <!-- K-Mod-Magnus -->
 		
 		<tab module="BugAutologOptionsTab"/>
 		

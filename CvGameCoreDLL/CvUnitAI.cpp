@@ -942,7 +942,8 @@ bool CvUnitAI::AI_bestCityBuild(CvCity* pCity, CvPlot** ppBestPlot, BuildTypes* 
 			{
 				if (pLoopPlot->getImprovementType() == NO_IMPROVEMENT ||
 					!GET_PLAYER(getOwnerINLINE()).isOption(PLAYEROPTION_SAFE_AUTOMATION) ||
-					pLoopPlot->getImprovementType() == GC.getDefineINT("RUINS_IMPROVEMENT"))
+					pLoopPlot->getImprovementType() == GC.getDefineINT("RUINS_IMPROVEMENT") ||
+					GET_PLAYER(getOwnerINLINE()).isAutomatedReplace(pLoopPlot)) // automated workers
 				{
 					int iValue = pCity->AI_getBestBuildValue(iI);
 
@@ -953,7 +954,7 @@ bool CvUnitAI::AI_bestCityBuild(CvCity* pCity, CvPlot** ppBestPlot, BuildTypes* 
 
 						//if (eBuild != NO_BUILD)
 						if (eBuild != NO_BUILD && canBuild(pLoopPlot, eBuild) // K-Mod
-							// automated workers (written by Claude): the city's plan can predate the list (from an older save)
+							// automated workers (written by Claude): the city's plan can be older than the owner's choices
 							&& !GET_PLAYER(getOwnerINLINE()).isAutomatedNeverBuild(eBuild))
 						{
 							if (0 == iPass)
@@ -19027,13 +19028,14 @@ bool CvUnitAI::AI_improveLocalPlot(int iRange, CvCity* pIgnoreCity)
 			if (!canBuild(pLoopPlot, pCity->AI_getBestBuild(iIndex)))
 				continue;
 
-			// automated workers (written by Claude): the city's plan can predate the list (from an older save)
+			// automated workers (written by Claude): the city's plan can be older than the owner's choices
 			if (GET_PLAYER(getOwnerINLINE()).isAutomatedNeverBuild(pCity->AI_getBestBuild(iIndex)))
 				continue;
 
 			if (GET_PLAYER(getOwnerINLINE()).isOption(PLAYEROPTION_SAFE_AUTOMATION))
 			{
-				if (pLoopPlot->getImprovementType() != NO_IMPROVEMENT && pLoopPlot->getImprovementType() != GC.getDefineINT("RUINS_IMPROVEMENT"))
+				if (pLoopPlot->getImprovementType() != NO_IMPROVEMENT && pLoopPlot->getImprovementType() != GC.getDefineINT("RUINS_IMPROVEMENT")
+					&& !GET_PLAYER(getOwnerINLINE()).isAutomatedReplace(pLoopPlot)) // automated workers
 					continue;
 			}
 
@@ -19340,7 +19342,8 @@ bool CvUnitAI::AI_irrigateTerritory()
 				{
 					eImprovement = pLoopPlot->getImprovementType();
 
-					if ((eImprovement == NO_IMPROVEMENT) || !(GET_PLAYER(getOwnerINLINE()).isOption(PLAYEROPTION_SAFE_AUTOMATION) && !(eImprovement == (GC.getDefineINT("RUINS_IMPROVEMENT")))))
+					if ((eImprovement == NO_IMPROVEMENT) || !(GET_PLAYER(getOwnerINLINE()).isOption(PLAYEROPTION_SAFE_AUTOMATION) && !(eImprovement == (GC.getDefineINT("RUINS_IMPROVEMENT"))))
+						|| GET_PLAYER(getOwnerINLINE()).isAutomatedReplace(pLoopPlot)) // automated workers
 					{
 						if ((eImprovement == NO_IMPROVEMENT) || !(GC.getImprovementInfo(eImprovement).isCarriesIrrigation()))
 						{
@@ -19657,7 +19660,7 @@ bool CvUnitAI::AI_improveBonus() // K-Mod. (all that junk wasn't being used anyw
 						BuildTypes eBestTempBuild = NO_BUILD;
 
 						if (eImprovement != NO_IMPROVEMENT &&
-							((kOwner.isOption(PLAYEROPTION_SAFE_AUTOMATION) && eImprovement != GC.getDefineINT("RUINS_IMPROVEMENT")) ||
+							((kOwner.isOption(PLAYEROPTION_SAFE_AUTOMATION) && eImprovement != GC.getDefineINT("RUINS_IMPROVEMENT") && !kOwner.isAutomatedReplace(pLoopPlot)) || // automated workers
 							kOwner.doesImprovementConnectBonus(eImprovement, eNonObsoleteBonus)))
 						{
 							bDoImprove = false;
@@ -19667,7 +19670,7 @@ bool CvUnitAI::AI_improveBonus() // K-Mod. (all that junk wasn't being used anyw
 							// Let "best build" handle improvement replacements near cities.
 							BuildTypes eBuild = pWorkingCity->AI_getBestBuild(plotCityXY(pWorkingCity, pLoopPlot));
 							if (eBuild != NO_BUILD && kOwner.doesImprovementConnectBonus((ImprovementTypes)GC.getBuildInfo(eBuild).getImprovement(), eNonObsoleteBonus) && canBuild(pLoopPlot, eBuild)
-								&& !kOwner.isAutomatedNeverBuild(eBuild)) // automated workers (a plan from an older save)
+								&& !kOwner.isAutomatedNeverBuild(eBuild)) // automated workers (a plan older than the owner's choices)
 							{
 								bDoImprove = true;
 								eBestTempBuild = eBuild;

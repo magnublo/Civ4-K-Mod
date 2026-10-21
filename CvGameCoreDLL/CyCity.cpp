@@ -2201,6 +2201,17 @@ int CyCity::AI_countBestBuilds(CyArea* pArea)
 	return m_pCity ? m_pCity->AI_countBestBuilds(pArea->getArea()) : -1;
 }
 
+// automated workers (written by Claude): read the city's plan for one of its plots (by city plot index)
+int CyCity::AI_getBestBuild(int iIndex)
+{
+	return m_pCity && iIndex >= 0 && iIndex < NUM_CITY_PLOTS ? m_pCity->AI_getBestBuild(iIndex) : -1;
+}
+
+int CyCity::AI_getBestBuildValue(int iIndex)
+{
+	return m_pCity && iIndex >= 0 && iIndex < NUM_CITY_PLOTS ? m_pCity->AI_getBestBuildValue(iIndex) : -1;
+}
+
 int CyCity::AI_cityValue()
 {
 	return m_pCity ? m_pCity->AI_cityValue() : -1;

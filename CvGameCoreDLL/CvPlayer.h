@@ -190,8 +190,12 @@ public:
 	/* int countPotentialForeignTradeCities(CvArea* pIgnoreArea = NULL) const;
 	int countPotentialForeignTradeCitiesConnected() const; */ // K-Mod: These functions were used exclusively for AI.  I've moved them to CvPlayerAI.
 	bool doesImprovementConnectBonus(ImprovementTypes eImprovement, BonusTypes eBonus) const; // K-Mod
-	bool isAutomatedNeverBuild(ImprovementTypes eImprovement) const; // automated workers
-	bool isAutomatedNeverBuild(BuildTypes eBuild) const; // automated workers
+	// automated workers (written by Claude): the player's choices in the "Workers" tab of the BUG options
+	bool isAutomatedNeverBuild(ImprovementTypes eImprovement) const;
+	bool isAutomatedNeverBuild(BuildTypes eBuild) const;
+	bool isAutomatedReplace(const CvPlot* pPlot) const;
+	int getAutomatedWorkers(ImprovementTypes eImprovement) const;																	// Exposed to Python
+	void setAutomatedWorkers(int iFirstImprovement, int iNeverBuildMask, int iReplaceMask);											// Exposed to Python
 
 	DllExport bool canContact(PlayerTypes ePlayer) const;																									// Exposed to Python
 	bool canContactAndTalk(PlayerTypes ePlayer) const; // K-Mod. this checks willingness to talk on both sides
@@ -1236,6 +1240,7 @@ protected:
 	bool m_bEverAlive;
 	bool m_bTurnActive;
 	bool m_bAutoMoves;
+	std::vector<int> m_aiAutomatedWorkers; // automated workers: AUTOMATED_WORKERS_* by improvement type; not saved
 	bool m_bEndTurn;
 	bool m_bPbemNewTurn;
 	bool m_bExtendedGame;

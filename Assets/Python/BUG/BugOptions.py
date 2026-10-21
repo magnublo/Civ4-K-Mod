@@ -314,6 +314,9 @@ class IniFile(object):
 					file = open(self.path, "w")
 					self.config.write(file)
 					file.close()
+					# K-Mod-Magnus (written by Claude): ConfigObj.write() writes nothing without a filename, so options
+					# changed in the session that created the file were lost.
+					self.config.filename = self.path
 					self.dirty = False
 				except IOError:
 					BugUtil.trace("BugOptions - failed creating INI file '%s'", self.path)

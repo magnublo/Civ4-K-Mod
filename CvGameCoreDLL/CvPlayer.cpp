@@ -751,6 +751,7 @@ void CvPlayer::reset(PlayerTypes eID, bool bConstructorCall)
 	m_bEverAlive = false;
 	m_bTurnActive = false;
 	m_bAutoMoves = false;
+	m_aiAutomatedWorkers.clear(); // automated workers
 	m_bEndTurn = false;
 	m_bPbemNewTurn = false;
 	m_bExtendedGame = false;
@@ -4327,19 +4328,69 @@ bool CvPlayer::doesImprovementConnectBonus(ImprovementTypes eImprovement, BonusT
 }
 // K-Mod end
 
-// automated workers (written by Claude): the automated workers of a human player never build the improvements listed
-// in AUTOMATED_WORKERS_NEVER_BUILD (GlobalDefinesAlt.xml). The city's plan for its plots leaves them out
-// (CvCityAI::AI_bestPlotBuild), so the workers build the best of the other improvements instead; the worker AI checks
-// again before it starts a build (CvUnitAI). AI players are not affected, nor is AI autoplay (isHuman() is false then),
-// nor are the orders the player gives a worker.
+// automated workers (written by Claude): for each improvement, the human player chooses in the "Workers" tab of the
+// BUG options whether their automated workers build it, never build it, or never build it and replace it where it is
+// (AUTOMATED_WORKERS_*). Python (Contrib/AutomatedWorkers.py) sends the choices as a ModNetMessage, so every computer
+// in a network game has them; they are not saved, but sent again when a game starts or is loaded.
+// A city's plan for its plots leaves out the improvements its owner's workers never build (CvCityAI::AI_bestPlotBuild),
+// so the workers build the best of the others; the worker AI checks again before it starts a build (CvUnitAI).
+// AI players are not affected, nor is AI autoplay (isHuman() is false then), nor are the orders the player gives a worker.
 bool CvPlayer::isAutomatedNeverBuild(ImprovementTypes eImprovement) const
 {
-	return eImprovement != NO_IMPROVEMENT && isHuman() && GC.isAutomatedWorkersNeverBuild(eImprovement);
+	return eImprovement != NO_IMPROVEMENT && isHuman() && getAutomatedWorkers(eImprovement) != AUTOMATED_WORKERS_BUILD;
 }
 
 bool CvPlayer::isAutomatedNeverBuild(BuildTypes eBuild) const
 {
 	return eBuild != NO_BUILD && isAutomatedNeverBuild((ImprovementTypes)GC.getBuildInfo(eBuild).getImprovement());
+}
+
+// True if the player's automated workers are to replace the plot's improvement. The city plans the plot as if it had
+// no improvement (CvCityAI::AI_getImprovementValue), and "Automated Workers Leave Old Improvements" doesn't keep it.
+// Where it connects a resource of the plot, it stays (the user's choice).
+bool CvPlayer::isAutomatedReplace(const CvPlot* pPlot) const
+{
+	ImprovementTypes eImprovement = pPlot->getImprovementType();
+	if (eImprovement == NO_IMPROVEMENT || !isHuman() || getAutomatedWorkers(eImprovement) != AUTOMATED_WORKERS_REPLACE)
+		return false;
+	BonusTypes eBonus = pPlot->getNonObsoleteBonusType(getTeam());
+	return eBonus == NO_BONUS || !doesImprovementConnectBonus(eImprovement, eBonus);
+}
+
+int CvPlayer::getAutomatedWorkers(ImprovementTypes eImprovement) const
+{
+	if (eImprovement < 0 || eImprovement >= (int)m_aiAutomatedWorkers.size())
+		return AUTOMATED_WORKERS_BUILD;
+	return m_aiAutomatedWorkers[eImprovement];
+}
+
+// Sets the choices for the improvements iFirstImprovement to iFirstImprovement + 29 from two bit masks (bit i stands
+// for improvement iFirstImprovement + i); a set replace bit means AUTOMATED_WORKERS_REPLACE. If anything changed, the
+// player's cities plan their plots again at once (otherwise that happens at the start of the player's turn).
+void CvPlayer::setAutomatedWorkers(int iFirstImprovement, int iNeverBuildMask, int iReplaceMask)
+{
+	FAssert(iFirstImprovement >= 0);
+	if ((int)m_aiAutomatedWorkers.size() < GC.getNumImprovementInfos())
+		m_aiAutomatedWorkers.resize(GC.getNumImprovementInfos(), AUTOMATED_WORKERS_BUILD);
+
+	bool bChanged = false;
+	for (int i = 0; i < 30 && iFirstImprovement + i < GC.getNumImprovementInfos(); i++)
+	{
+		int iSetting = (iReplaceMask & (1 << i)) ? AUTOMATED_WORKERS_REPLACE : (iNeverBuildMask & (1 << i)) ? AUTOMATED_WORKERS_NEVER_BUILD : AUTOMATED_WORKERS_BUILD;
+		if (m_aiAutomatedWorkers[iFirstImprovement + i] != iSetting)
+		{
+			m_aiAutomatedWorkers[iFirstImprovement + i] = iSetting;
+			bChanged = true;
+		}
+	}
+	if (bChanged && isAlive())
+	{
+		int iLoop;
+		for (CvCity* pLoopCity = firstCity(&iLoop); pLoopCity != NULL; pLoopCity = nextCity(&iLoop))
+		{
+			pLoopCity->AI_updateBestBuild();
+		}
+	}
 }
 
 

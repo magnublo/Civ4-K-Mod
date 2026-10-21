@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Texts for the "Workers" tab of the BUG options (K-Mod-Magnus; English text in every language). -->
+<Civ4GameText xmlns="http://www.firaxis.com">
+	<TEXT>
+		<Tag>TXT_KEY_BUG_OPTTAB_WORKERS</Tag>
+		<English>Workers</English>
+		<French>Workers</French>
+		<German>Workers</German>
+		<Italian>Workers</Italian>
+		<Spanish>Workers</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_BUG_OPTLABEL_AUTOMATEDWORKERSNOTE</Tag>
+		<English>For the workers you automate. The AI's workers and the orders you give a worker yourself are not affected.</English>
+		<French>For the workers you automate. The AI's workers and the orders you give a worker yourself are not affected.</French>
+		<German>For the workers you automate. The AI's workers and the orders you give a worker yourself are not affected.</German>
+		<Italian>For the workers you automate. The AI's workers and the orders you give a worker yourself are not affected.</Italian>
+		<Spanish>For the workers you automate. The AI's workers and the orders you give a worker yourself are not affected.</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_BUG_OPTLABEL_AUTOMATEDWORKERSBUILD</Tag>
+		<English>They build:</English>
+		<French>They build:</French>
+		<German>They build:</German>
+		<Italian>They build:</Italian>
+		<Spanish>They build:</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_BUG_OPTLABEL_AUTOMATEDWORKERSREPLACE</Tag>
+		<English>They replace, with the best other improvement:</English>
+		<French>They replace, with the best other improvement:</French>
+		<German>They replace, with the best other improvement:</German>
+		<Italian>They replace, with the best other improvement:</Italian>
+		<Spanish>They replace, with the best other improvement:</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_AUTOMATED_WORKERS_BUILD_HOVER</Tag>
+		<English>Checked: your automated workers may build %s1_Improvement where it is the best improvement for the tile.[NEWLINE]Unchecked: they never build it, and choose the best of the others instead.</English>
+		<French>Checked: your automated workers may build %s1_Improvement where it is the best improvement for the tile.[NEWLINE]Unchecked: they never build it, and choose the best of the others instead.</French>
+		<German>Checked: your automated workers may build %s1_Improvement where it is the best improvement for the tile.[NEWLINE]Unchecked: they never build it, and choose the best of the others instead.</German>
+		<Italian>Checked: your automated workers may build %s1_Improvement where it is the best improvement for the tile.[NEWLINE]Unchecked: they never build it, and choose the best of the others instead.</Italian>
+		<Spanish>Checked: your automated workers may build %s1_Improvement where it is the best improvement for the tile.[NEWLINE]Unchecked: they never build it, and choose the best of the others instead.</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_AUTOMATED_WORKERS_REPLACE_HOVER</Tag>
+		<English>Checked: where your automated workers find %s1_Improvement, they replace it with the best other improvement for the tile, also with "Automated Workers Leave Old Improvements" on. They never build it either.[NEWLINE]Where it connects a resource of its tile, it stays.</English>
+		<French>Checked: where your automated workers find %s1_Improvement, they replace it with the best other improvement for the tile, also with "Automated Workers Leave Old Improvements" on. They never build it either.[NEWLINE]Where it connects a resource of its tile, it stays.</French>
+		<German>Checked: where your automated workers find %s1_Improvement, they replace it with the best other improvement for the tile, also with "Automated Workers Leave Old Improvements" on. They never build it either.[NEWLINE]Where it connects a resource of its tile, it stays.</German>
+		<Italian>Checked: where your automated workers find %s1_Improvement, they replace it with the best other improvement for the tile, also with "Automated Workers Leave Old Improvements" on. They never build it either.[NEWLINE]Where it connects a resource of its tile, it stays.</Italian>
+		<Spanish>Checked: where your automated workers find %s1_Improvement, they replace it with the best other improvement for the tile, also with "Automated Workers Leave Old Improvements" on. They never build it either.[NEWLINE]Where it connects a resource of its tile, it stays.</Spanish>
+	</TEXT>
+</Civ4GameText>

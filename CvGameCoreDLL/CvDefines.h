@@ -158,5 +158,9 @@
 #define BUILD_MISSION_STOP_SHORT			(1)
 // pre-build: OrderData::iData2 of an ORDER_CONSTRUCT or ORDER_CREATE. The city stops one turn before it would finish.
 #define ORDER_DATA_PREBUILD					(1)
+// automated workers: what a human's automated workers do with an improvement (CvPlayer::getAutomatedWorkers)
+#define AUTOMATED_WORKERS_BUILD				(0)
+#define AUTOMATED_WORKERS_NEVER_BUILD		(1)
+#define AUTOMATED_WORKERS_REPLACE			(2) // never build it, and replace it where it is
 
 #endif	// CVDEFINES_H

@@ -696,10 +696,6 @@ public:
 	DllExport void setDefineFLOAT( const char * szName, float fValue );
 	DllExport void setDefineSTRING( const char * szName, const char * szValue );
 
-	// automated workers (written by Claude): AUTOMATED_WORKERS_NEVER_BUILD in GlobalDefinesAlt.xml
-	void readAutomatedWorkersNeverBuild(bool bReportErrors);
-	bool isAutomatedWorkersNeverBuild(ImprovementTypes eImprovement) const;
-
 	inline int getEXTRA_YIELD() { return m_iEXTRA_YIELD; } // K-Mod (why aren't all these functions inline?)
 	int getMOVE_DENOMINATOR();
 	int getNUM_UNIT_PREREQ_OR_BONUSES();
@@ -1343,7 +1339,6 @@ protected:
 	// perf
 	int m_iUSE_ON_UNIT_MOVE_CALLBACK;
 	int m_iUSE_GET_EXTRA_COST_CALLBACK;
-	std::vector<bool> m_abAutomatedWorkersNeverBuild; // automated workers: by improvement type
 };
 
 extern CvGlobals gGlobals;	// for debugging

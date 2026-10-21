@@ -196,12 +196,4 @@
 		<DefineName>AI_EARLY_WAR_RAND_PERCENT</DefineName>
 		<iDefineIntVal>300</iDefineIntVal> <!-- right after the gate the chance of a war plan is 100/this of the usual chance (300 = a third), fading to normal at the ramp's end; 100 = no ramp -->
 	</Define>
-	<!-- Automated workers (written by Claude): improvements that your automated workers never build. Improvement types
-		from Terrain/CIV4ImprovementInfos.xml, separated by commas; empty = they may build everything, as in K-Mod.
-		They still pick the best of the other improvements for each plot, weighing the city's emphasis as before.
-		The AI's workers, the orders you give a worker yourself and improvements already built are not affected. -->
-	<Define>
-		<DefineName>AUTOMATED_WORKERS_NEVER_BUILD</DefineName>
-		<DefineTextVal>IMPROVEMENT_WATERMILL,IMPROVEMENT_WINDMILL,IMPROVEMENT_FOREST_PRESERVE</DefineTextVal>
-	</Define>
 </Civ4Defines>

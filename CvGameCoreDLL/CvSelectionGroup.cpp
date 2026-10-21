@@ -517,8 +517,8 @@ bool CvSelectionGroup::autoMission() // K-Mod changed this from void to bool.
 
 	if (getNumUnits() > 0)
 	{
-		// automated workers (written by Claude): an automated worker drops a build that AUTOMATED_WORKERS_NEVER_BUILD
-		// forbids (ordered before the list applied, e.g. in an older save); CvGame::updateMoves then gives it a new job.
+		// automated workers (written by Claude): an automated worker drops a build that its owner's choices forbid
+		// (ordered before they were set, e.g. in an older save); CvGame::updateMoves then gives it a new job.
 		if (headMissionQueueNode() != NULL && headMissionQueueNode()->m_data.eMissionType == MISSION_BUILD && isAutomated() &&
 			GET_PLAYER(getOwnerINLINE()).isAutomatedNeverBuild((BuildTypes)headMissionQueueNode()->m_data.iData1))
 		{
@@ -3531,7 +3531,8 @@ bool CvSelectionGroup::groupBuild(BuildTypes eBuild, bool bStopShort)
 	// Note. The only time this bit of code might matter is if the automated unit has orders queued. Ideally, the AI should never issue orders which violate the leave old improvements rule.
 	if (isAutomated() && GET_PLAYER(getOwnerINLINE()).isOption(PLAYEROPTION_SAFE_AUTOMATION) &&
 		GC.getBuildInfo(eBuild).getImprovement() != NO_IMPROVEMENT && pPlot->getImprovementType() != NO_IMPROVEMENT &&
-		pPlot->getImprovementType() != GC.getDefineINT("RUINS_IMPROVEMENT"))
+		pPlot->getImprovementType() != GC.getDefineINT("RUINS_IMPROVEMENT") &&
+		!GET_PLAYER(getOwnerINLINE()).isAutomatedReplace(pPlot)) // automated workers: they replace it in spite of the option
 	{
 		FAssertMsg(false, "AI has issued an order which violates PLAYEROPTION_SAFE_AUTOMATION"); 
 		return false;

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!--
+	Automated workers (K-Mod-Magnus, written by Claude)
+
+	The "Workers" tab of the BUG options: which improvements your automated workers build, and which they replace where
+	they find them. Python/Contrib/AutomatedWorkers.py makes one option per improvement and sends the choices to the
+	DLL (CvPlayer::getAutomatedWorkers), which does the work.
+-->
+<mod id="AutomatedWorkers"
+	 module="AutomatedWorkers"
+	 name="Automated workers"
+	 author="K-Mod-Magnus"
+	 version="1.0"
+	 date="10/21/2026">
+
+	<options id="AutomatedWorkers" file="Automated Workers.ini"/>
+
+	<!-- Defaults: the improvement types unchecked under "They build" (and, as an arg named replace, any checked under "They replace") -->
+	<init>
+		<arg name="noBuild" type="tuple">"IMPROVEMENT_WATERMILL", "IMPROVEMENT_WINDMILL", "IMPROVEMENT_FOREST_PRESERVE"</arg>
+	</init>
+
+	<event type="BeginActivePlayerTurn" function="sendChoices"/>
+	<event type="ModNetMessage" function="onModNetMessage"/>
+</mod>

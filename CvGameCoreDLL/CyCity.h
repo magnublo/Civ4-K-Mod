@@ -479,6 +479,8 @@ public:
 	//bool AI_avoidGrowth();
 	bool AI_isEmphasize(int iEmphasizeType);
 	int AI_countBestBuilds(CyArea* pArea);
+	int AI_getBestBuild(int iIndex); // automated workers: the city's plan for a plot (tests)
+	int AI_getBestBuildValue(int iIndex); // automated workers
 	int AI_cityValue();
 
 	std::string getScriptData() const;

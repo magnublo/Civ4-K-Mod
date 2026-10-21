@@ -1649,6 +1649,18 @@ void CyPlayer::setOption(int /*PlayerOptionTypes*/ eIndex, bool bNewValue)
 		m_pPlayer->setOption((PlayerOptionTypes)eIndex, bNewValue);
 }
 
+// automated workers (written by Claude)
+int CyPlayer::getAutomatedWorkers(int /*ImprovementTypes*/ eImprovement)
+{
+	return m_pPlayer ? m_pPlayer->getAutomatedWorkers((ImprovementTypes)eImprovement) : -1;
+}
+
+void CyPlayer::setAutomatedWorkers(int iFirstImprovement, int iNeverBuildMask, int iReplaceMask)
+{
+	if (m_pPlayer)
+		m_pPlayer->setAutomatedWorkers(iFirstImprovement, iNeverBuildMask, iReplaceMask);
+}
+
 bool CyPlayer::isLoyalMember(int /*VoteSourceTypes*/ eIndex)	
 {
 	return m_pPlayer ? m_pPlayer->isLoyalMember((VoteSourceTypes)eIndex) : false;

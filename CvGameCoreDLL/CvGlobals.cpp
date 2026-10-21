@@ -2794,9 +2794,6 @@ void CvGlobals::cacheGlobals()
 /************************************************************************************************/
 /* BETTER_BTS_AI_MOD                       END                                                  */
 /************************************************************************************************/
-	// automated workers: when loading the XML, the defines come before the improvements (see SetPostGlobalsGlobalDefines)
-	if (getNumImprovementInfos() > 0)
-		readAutomatedWorkersNeverBuild(false);
 }
 
 /************************************************************************************************/
@@ -2982,44 +2979,6 @@ void CvGlobals::setDefineSTRING( const char * szName, const char * szValue )
 {
 	GC.getDefinesVarSystem()->SetValue( szName, szValue );
 	cacheGlobals();
-}
-
-// automated workers (written by Claude): AUTOMATED_WORKERS_NEVER_BUILD in GlobalDefinesAlt.xml lists improvement types,
-// separated by commas or spaces, that the automated workers of human players never build (CvPlayer::isAutomatedNeverBuild).
-// Read once the improvements are loaded (SetPostGlobalsGlobalDefines, which reports names that aren't improvement
-// types), and again whenever a define is set, e.g. from Python (cacheGlobals).
-void CvGlobals::readAutomatedWorkersNeverBuild(bool bReportErrors)
-{
-	m_abAutomatedWorkersNeverBuild.assign(getNumImprovementInfos(), false);
-
-	const char* szList = getDefineSTRING("AUTOMATED_WORKERS_NEVER_BUILD");
-	if (szList == NULL)
-		return;
-
-	const std::string szNames(szList);
-	const char* szSeparators = ", \t\r\n";
-	std::string::size_type iStart = szNames.find_first_not_of(szSeparators);
-	while (iStart != std::string::npos)
-	{
-		std::string::size_type iEnd = szNames.find_first_of(szSeparators, iStart);
-		std::string szName = szNames.substr(iStart, iEnd == std::string::npos ? std::string::npos : iEnd - iStart);
-		int iImprovement = getInfoTypeForString(szName.c_str(), true);
-		// getInfoTypeForString knows the types of all infos; only take an improvement's
-		if (iImprovement >= 0 && iImprovement < getNumImprovementInfos() && szName == getImprovementInfo((ImprovementTypes)iImprovement).getType())
-		{
-			m_abAutomatedWorkersNeverBuild[iImprovement] = true;
-		}
-		else if (bReportErrors)
-		{
-			gDLL->MessageBox(CvString::format("AUTOMATED_WORKERS_NEVER_BUILD in GlobalDefinesAlt.xml: %s is not an improvement type.", szName.c_str()).c_str(), "XML Error");
-		}
-		iStart = szNames.find_first_not_of(szSeparators, iEnd);
-	}
-}
-
-bool CvGlobals::isAutomatedWorkersNeverBuild(ImprovementTypes eImprovement) const
-{
-	return eImprovement >= 0 && eImprovement < (int)m_abAutomatedWorkersNeverBuild.size() && m_abAutomatedWorkersNeverBuild[eImprovement];
 }
 
 int CvGlobals::getMOVE_DENOMINATOR()

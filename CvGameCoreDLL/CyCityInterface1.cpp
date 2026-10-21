@@ -454,6 +454,8 @@ void CyCityPythonInterface1(python::class_<CyCity>& x)
 		//.def("AI_avoidGrowth", &CyCity::AI_avoidGrowth, "bool ()")
 		.def("AI_isEmphasize", &CyCity::AI_isEmphasize, "bool (int iEmphasizeType)")
 		.def("AI_countBestBuilds", &CyCity::AI_countBestBuilds, "int (CyArea* pArea)")
+		.def("AI_getBestBuild", &CyCity::AI_getBestBuild, "int (int iCityPlotIndex) - the build the city plans for that plot")
+		.def("AI_getBestBuildValue", &CyCity::AI_getBestBuildValue, "int (int iCityPlotIndex)")
 		.def("AI_cityValue", &CyCity::AI_cityValue, "int ()")
 
 		.def("getScriptData", &CyCity::getScriptData, "str () - Get stored custom data (via pickle)")
