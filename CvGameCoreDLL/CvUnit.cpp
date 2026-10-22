@@ -3164,6 +3164,13 @@ bool CvUnit::canAutomate(AutomateTypes eAutomate) const
 		}
 		break;
 
+	case AUTOMATE_PRECHOP: // pre-chop automation
+		if (AI_getUnitAIType() != UNITAI_WORKER || !canPrechopSomewhere())
+		{
+			return false;
+		}
+		break;
+
 	default:
 		FAssert(false);
 		break;
@@ -7789,6 +7796,35 @@ int CvUnit::nukeRange() const
 	return m_pUnitInfo->getNukeRange();
 }
 
+
+// pre-chop automation (written by Claude): true if the unit is a worker whose team knows how to remove a feature whose
+// removal gives hammers (Bronze Working for forests), so that "Automate Pre-chop" has work to look for.
+bool CvUnit::canPrechopSomewhere() const
+{
+	if (workRate(true) <= 0)
+	{
+		return false;
+	}
+	const CvTeam& kTeam = GET_TEAM(getTeam());
+	for (int iBuild = 0; iBuild < GC.getNumBuildInfos(); iBuild++)
+	{
+		const CvBuildInfo& kBuild = GC.getBuildInfo((BuildTypes)iBuild);
+		if (kBuild.getImprovement() != NO_IMPROVEMENT || kBuild.getRoute() != NO_ROUTE ||
+			(kBuild.getTechPrereq() != NO_TECH && !kTeam.isHasTech((TechTypes)kBuild.getTechPrereq())))
+		{
+			continue;
+		}
+		for (int iFeature = 0; iFeature < GC.getNumFeatureInfos(); iFeature++)
+		{
+			if (kBuild.isFeatureRemove(iFeature) && kBuild.getFeatureProduction(iFeature) > 0 &&
+				(kBuild.getFeatureTech(iFeature) == NO_TECH || kTeam.isHasTech((TechTypes)kBuild.getFeatureTech(iFeature))))
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
 
 // XXX should this test for coal?
 bool CvUnit::canBuildRoute() const

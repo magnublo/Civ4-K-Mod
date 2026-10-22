@@ -310,7 +310,7 @@ class UnitDisplay:
 		elif (eAutomationType == AutomateTypes.AUTOMATE_EXPLORE):
 			return "OVERLAY_ACTION_EXPLORE"
 		# is unit automated generally (only worker units)
-		elif (eAutomationType == AutomateTypes.AUTOMATE_BUILD):
+		elif (eAutomationType == AutomateTypes.AUTOMATE_BUILD or eAutomationType == AutomateTypes.AUTOMATE_PRECHOP): # K-Mod-Magnus: pre-chop automation
 			return "OVERLAY_ACTION_AUTO_BUILD"
 		# is unit automated for nearest city (only worker units)
 		elif (eAutomationType == AutomateTypes.AUTOMATE_CITY):

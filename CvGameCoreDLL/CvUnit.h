@@ -298,6 +298,7 @@ public:
 	int airRange() const;																				// Exposed to Python			
 	int nukeRange() const;																			// Exposed to Python			 
 
+	bool canPrechopSomewhere() const; // pre-chop automation
 	bool canBuildRoute() const;																						// Exposed to Python
 	DllExport BuildTypes getBuildType() const;														// Exposed to Python
 	int workRate(bool bMax) const;															// Exposed to Python

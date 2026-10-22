@@ -229,6 +229,10 @@ bool CvUnitAI::AI_update()
 			}
 			break;
 
+		case AUTOMATE_PRECHOP: // pre-chop automation
+			AI_prechopMove();
+			break;
+
 		default:
 			FAssert(false);
 			break;
@@ -9914,6 +9918,111 @@ void CvUnitAI::AI_cityAutomated()
 
 	getGroup()->pushMission(MISSION_SKIP);
 	return;
+}
+
+// pre-chop automation (written by Claude): AUTOMATE_PRECHOP, the workers' "Automate Pre-chop" action. The group
+// pre-chops (works on a chop and stops one worker-turn before it would finish, as the pre-chop button does, which also
+// puts up the "prechopped" sign) the forests in its owner's territory whose chop gives a city hammers: first those
+// without an improvement, then those with one (the user's choice), each time the one it reaches soonest. A forest is
+// done when the next worker-turn of the group's slowest worker would finish the chop; one that another group of the
+// owner is heading for, to build there, is left to that group. When none is left, the automation ends and the worker
+// waits for orders, with a message.
+void CvUnitAI::AI_prechopMove()
+{
+	PROFILE_FUNC();
+
+	const CvPlayerAI& kOwner = GET_PLAYER(getOwnerINLINE());
+
+	if (!getGroup()->canDefend() && kOwner.AI_isPlotThreatened(plot(), 2))
+	{
+		if (AI_retreatToCity())
+		{
+			return;
+		}
+	}
+
+	int iMinWorkRate = MAX_INT;
+	for (CLLNode<IDInfo>* pUnitNode = getGroup()->headUnitNode(); pUnitNode != NULL; pUnitNode = getGroup()->nextUnitNode(pUnitNode))
+	{
+		int iWorkRate = ::getUnit(pUnitNode->m_data)->workRate(true);
+		if (iWorkRate > 0)
+		{
+			iMinWorkRate = std::min(iMinWorkRate, iWorkRate);
+		}
+	}
+
+	CvPlot* pBestPlot = NULL;
+	BuildTypes eBestBuild = NO_BUILD;
+	for (int iPass = 0; iPass < 2 && pBestPlot == NULL && iMinWorkRate < MAX_INT; iPass++)
+	{
+		// (step distance, (plot index, chop build)) of the forests left: without an improvement in pass 0, with one in pass 1
+		std::vector<std::pair<int, std::pair<int, BuildTypes> > > candidates;
+		for (int iI = 0; iI < GC.getMapINLINE().numPlotsINLINE(); iI++)
+		{
+			CvPlot* pLoopPlot = GC.getMapINLINE().plotByIndexINLINE(iI);
+			if (pLoopPlot->getOwnerINLINE() != getOwnerINLINE() || pLoopPlot->getFeatureType() == NO_FEATURE || pLoopPlot->area() != area() ||
+				(pLoopPlot->getImprovementType() == NO_IMPROVEMENT) != (iPass == 0))
+			{
+				continue;
+			}
+			BuildTypes eChop = NO_BUILD;
+			for (int iJ = 0; iJ < GC.getNumBuildInfos() && eChop == NO_BUILD; iJ++)
+			{
+				const CvBuildInfo& kBuild = GC.getBuildInfo((BuildTypes)iJ);
+				if (kBuild.getImprovement() == NO_IMPROVEMENT && kBuild.getRoute() == NO_ROUTE &&
+					kBuild.isFeatureRemove(pLoopPlot->getFeatureType()) && canBuild(pLoopPlot, (BuildTypes)iJ))
+				{
+					eChop = (BuildTypes)iJ;
+				}
+			}
+			CvCity* pCity;
+			if (eChop == NO_BUILD || pLoopPlot->getFeatureProduction(eChop, getTeam(), &pCity) <= 0 ||
+				pLoopPlot->getBuildProgress(eChop) + iMinWorkRate >= pLoopPlot->getBuildTime(eChop))
+			{
+				continue;
+			}
+			if (kOwner.AI_getAnyPlotDanger(pLoopPlot) || kOwner.AI_plotTargetMissionAIs(pLoopPlot, MISSIONAI_BUILD, getGroup()) > 0)
+			{
+				continue;
+			}
+			candidates.push_back(std::make_pair(stepDistance(getX_INLINE(), getY_INLINE(), pLoopPlot->getX_INLINE(), pLoopPlot->getY_INLINE()), std::make_pair(iI, eChop)));
+		}
+		std::sort(candidates.begin(), candidates.end());
+
+		// of the nearest few that can be reached safely, the one reached soonest
+		int iBestTurns = MAX_INT;
+		int iReachable = 0;
+		for (size_t i = 0; i < candidates.size() && iReachable < 8; i++)
+		{
+			CvPlot* pLoopPlot = GC.getMapINLINE().plotByIndexINLINE(candidates[i].second.first);
+			int iPathTurns = 0;
+			if (!atPlot(pLoopPlot) && !generatePath(pLoopPlot, MOVE_SAFE_TERRITORY, true, &iPathTurns))
+			{
+				continue;
+			}
+			iReachable++;
+			if (iPathTurns < iBestTurns)
+			{
+				iBestTurns = iPathTurns;
+				pBestPlot = pLoopPlot;
+				eBestBuild = candidates[i].second.second;
+			}
+		}
+	}
+
+	if (pBestPlot != NULL)
+	{
+		if (!atPlot(pBestPlot))
+		{
+			getGroup()->pushMission(MISSION_MOVE_TO, pBestPlot->getX_INLINE(), pBestPlot->getY_INLINE(), MOVE_SAFE_TERRITORY, false, false, MISSIONAI_BUILD, pBestPlot);
+		}
+		getGroup()->pushMission(MISSION_BUILD, eBestBuild, BUILD_MISSION_STOP_SHORT, 0, true, false, MISSIONAI_BUILD, pBestPlot);
+		return;
+	}
+
+	// nothing left to pre-chop: the worker is the player's again
+	getGroup()->setAutomateType(NO_AUTOMATE);
+	gDLL->getInterfaceIFace()->addHumanMessage(getOwnerINLINE(), false, GC.getEVENT_MESSAGE_TIME(), gDLL->getText("TXT_KEY_AUTOMATE_PRECHOP_DONE", getNameKey()), NULL, MESSAGE_TYPE_INFO, getButton(), (ColorTypes)GC.getInfoTypeForString("COLOR_WHITE"), getX_INLINE(), getY_INLINE(), true, true);
 }
 
 

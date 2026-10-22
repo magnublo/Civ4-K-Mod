@@ -61,6 +61,32 @@
 		<Spanish>prechopped</Spanish>
 	</TEXT>
 
+	<!-- Automate Pre-chop (worker action; CvUnitAI::AI_prechopMove) -->
+	<TEXT>
+		<Tag>TXT_KEY_ACTION_AUTOMATE_PRECHOP</Tag>
+		<English>Automate Pre-chop</English>
+		<French>Automate Pre-chop</French>
+		<German>Automate Pre-chop</German>
+		<Italian>Automate Pre-chop</Italian>
+		<Spanish>Automate Pre-chop</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_ACTION_AUTOMATE_PRECHOP_HELP</Tag>
+		<English>Pre-chops the forests in your territory whose chop gives a city hammers: first the forests without an improvement, then those with one, the nearest first. When none is left, the worker waits for your orders.</English>
+		<French>Pre-chops the forests in your territory whose chop gives a city hammers: first the forests without an improvement, then those with one, the nearest first. When none is left, the worker waits for your orders.</French>
+		<German>Pre-chops the forests in your territory whose chop gives a city hammers: first the forests without an improvement, then those with one, the nearest first. When none is left, the worker waits for your orders.</German>
+		<Italian>Pre-chops the forests in your territory whose chop gives a city hammers: first the forests without an improvement, then those with one, the nearest first. When none is left, the worker waits for your orders.</Italian>
+		<Spanish>Pre-chops the forests in your territory whose chop gives a city hammers: first the forests without an improvement, then those with one, the nearest first. When none is left, the worker waits for your orders.</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_AUTOMATE_PRECHOP_DONE</Tag>
+		<English>%s1_Unit: no forest left to pre-chop</English>
+		<French>%s1_Unit: no forest left to pre-chop</French>
+		<German>%s1_Unit: no forest left to pre-chop</German>
+		<Italian>%s1_Unit: no forest left to pre-chop</Italian>
+		<Spanish>%s1_Unit: no forest left to pre-chop</Spanish>
+	</TEXT>
+
 	<!-- Pre-build (city screen toggle for the first wonder or project in the queue) -->
 	<TEXT>
 		<Tag>TXT_KEY_PREBUILD</Tag>

@@ -2272,7 +2272,7 @@ class PLE:
 			elif (eAutomationType == AutomateTypes.AUTOMATE_EXPLORE):
 				szFileNameAction = ArtFileMgr.getInterfaceArtInfo("OVERLAY_ACTION_EXPLORE").getPath()
 			# is unit automated generally (only worker units)
-			elif (eAutomationType == AutomateTypes.AUTOMATE_BUILD):
+			elif (eAutomationType == AutomateTypes.AUTOMATE_BUILD or eAutomationType == AutomateTypes.AUTOMATE_PRECHOP): # K-Mod-Magnus: pre-chop automation
 				szFileNameAction = ArtFileMgr.getInterfaceArtInfo("OVERLAY_ACTION_AUTO_BUILD").getPath()
 			# is unit automated for nearest city (only worker units)
 			elif (eAutomationType == AutomateTypes.AUTOMATE_CITY):

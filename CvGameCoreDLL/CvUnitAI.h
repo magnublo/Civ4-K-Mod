@@ -112,6 +112,7 @@ protected:
 
 	void AI_networkAutomated();
 	void AI_cityAutomated();
+	void AI_prechopMove(); // pre-chop automation
 
 	int AI_promotionValue(PromotionTypes ePromotion);
 

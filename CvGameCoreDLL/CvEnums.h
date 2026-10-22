@@ -1383,6 +1383,7 @@ enum AutomateTypes			// Exposed to Python
 	AUTOMATE_CITY,
 	AUTOMATE_EXPLORE,
 	AUTOMATE_RELIGION,
+	AUTOMATE_PRECHOP, // pre-chop automation (written by Claude)
 
 #ifdef _USRDLL
 	NUM_AUTOMATE_TYPES
