@@ -101,6 +101,7 @@ Pre-chop and pre-build texts: `Assets/xml/Text/CIV4GameText_PreChopPreBuild.xml`
     | Khmer | Mysticism, Mining | Hunting, Mining |
     | Netherlands | Mysticism, Fishing | Agriculture, Fishing |
     | Rome | Agriculture, Mining | Fishing, Mining |
+- **Charlemagne** (`Civilizations/CIV4LeaderHeadInfos.xml`): Financial and Industrious (BtS and K-Mod: Imperialistic and Protective). The game applies part of a leader's traits once, when the game starts, and stores the result in the save, so the change takes full effect in games started with it. In a game started before, Charlemagne shows the new traits and their effects that are checked as you play apply (double production of forges and banks, no Protective promotions for new units, no faster settlers), but those applied at the start stay as they were: no +1 commerce on tiles with 2 or more from Financial, no +50% wonder production from Industrious, and Imperialistic's faster Great Generals remain.
 - **Sid's Sushi** (`buildings/CIV4BuildingInfos.xml`, `BUILDING_CORPORATION_2`): founded with Medicine as in BtS (K-Mod: Refrigeration).
 - **Switches**: `GlobalDefinesAlt.xml` adds the early-war settings and the automated production order; `PythonCallbackDefines.xml` adds `USE_ON_UNIT_MOVE_CALLBACK` and `USE_GET_EXTRA_COST_CALLBACK` (see [Faster turns](#faster-turns)).
 - **Texts** for the new buttons: `Text/CIV4GameText_PreChopPreBuild.xml`; for the Workers tab: `Text/CIV4GameText_AutomatedWorkers.xml`; for the civics preview: `Text/CIV4GameText_CivicsPreview.xml`.
