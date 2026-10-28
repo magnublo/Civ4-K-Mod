@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Texts for the economy preview in the civics screen (K-Mod-Magnus, written by Claude; English text in every language). -->
+<Civ4GameText xmlns="http://www.firaxis.com">
+	<TEXT>
+		<Tag>TXT_KEY_CIVICS_PREVIEW_NOW</Tag>
+		<English>Now</English>
+		<French>Now</French>
+		<German>Now</German>
+		<Italian>Now</Italian>
+		<Spanish>Now</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_CIVICS_PREVIEW_AFTER</Tag>
+		<English>After the change</English>
+		<French>After the change</French>
+		<German>After the change</German>
+		<Italian>After the change</Italian>
+		<Spanish>After the change</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_CIVICS_PREVIEW_CHANGE</Tag>
+		<English>Change</English>
+		<French>Change</French>
+		<German>Change</German>
+		<Italian>Change</Italian>
+		<Spanish>Change</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_CIVICS_PREVIEW_HINT</Tag>
+		<English>Point at a civic or click it to see what it changes</English>
+		<French>Point at a civic or click it to see what it changes</French>
+		<German>Point at a civic or click it to see what it changes</German>
+		<Italian>Point at a civic or click it to see what it changes</Italian>
+		<Spanish>Point at a civic or click it to see what it changes</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_CIVICS_PREVIEW_HELP</Tag>
+		<English>[COLOR_HIGHLIGHT_TEXT]Economy preview[COLOR_REVERT][NEWLINE]Your empire's totals per turn: now, and with the civics shown here once every city has assigned its citizens again, as the game does right after a change of civics. With anarchy, these are the numbers of the turns after it. Computing the preview does not change the game.</English>
+		<French>[COLOR_HIGHLIGHT_TEXT]Economy preview[COLOR_REVERT][NEWLINE]Your empire's totals per turn: now, and with the civics shown here once every city has assigned its citizens again, as the game does right after a change of civics. With anarchy, these are the numbers of the turns after it. Computing the preview does not change the game.</French>
+		<German>[COLOR_HIGHLIGHT_TEXT]Economy preview[COLOR_REVERT][NEWLINE]Your empire's totals per turn: now, and with the civics shown here once every city has assigned its citizens again, as the game does right after a change of civics. With anarchy, these are the numbers of the turns after it. Computing the preview does not change the game.</German>
+		<Italian>[COLOR_HIGHLIGHT_TEXT]Economy preview[COLOR_REVERT][NEWLINE]Your empire's totals per turn: now, and with the civics shown here once every city has assigned its citizens again, as the game does right after a change of civics. With anarchy, these are the numbers of the turns after it. Computing the preview does not change the game.</Italian>
+		<Spanish>[COLOR_HIGHLIGHT_TEXT]Economy preview[COLOR_REVERT][NEWLINE]Your empire's totals per turn: now, and with the civics shown here once every city has assigned its citizens again, as the game does right after a change of civics. With anarchy, these are the numbers of the turns after it. Computing the preview does not change the game.</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_CIVICS_PREVIEW_HELP_RESEARCH</Tag>
+		<English>[ICON_RESEARCH] Research per turn, as the top bar shows it.</English>
+		<French>[ICON_RESEARCH] Research per turn, as the top bar shows it.</French>
+		<German>[ICON_RESEARCH] Research per turn, as the top bar shows it.</German>
+		<Italian>[ICON_RESEARCH] Research per turn, as the top bar shows it.</Italian>
+		<Spanish>[ICON_RESEARCH] Research per turn, as the top bar shows it.</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_CIVICS_PREVIEW_HELP_GOLD</Tag>
+		<English>[ICON_GOLD] Gold per turn after all expenses (civic upkeep, city maintenance, units), at the current tax rates.</English>
+		<French>[ICON_GOLD] Gold per turn after all expenses (civic upkeep, city maintenance, units), at the current tax rates.</French>
+		<German>[ICON_GOLD] Gold per turn after all expenses (civic upkeep, city maintenance, units), at the current tax rates.</German>
+		<Italian>[ICON_GOLD] Gold per turn after all expenses (civic upkeep, city maintenance, units), at the current tax rates.</Italian>
+		<Spanish>[ICON_GOLD] Gold per turn after all expenses (civic upkeep, city maintenance, units), at the current tax rates.</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_CIVICS_PREVIEW_HELP_CULTURE</Tag>
+		<English>[ICON_CULTURE] Culture per turn of all cities.</English>
+		<French>[ICON_CULTURE] Culture per turn of all cities.</French>
+		<German>[ICON_CULTURE] Culture per turn of all cities.</German>
+		<Italian>[ICON_CULTURE] Culture per turn of all cities.</Italian>
+		<Spanish>[ICON_CULTURE] Culture per turn of all cities.</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_CIVICS_PREVIEW_HELP_ESPIONAGE</Tag>
+		<English>[ICON_ESPIONAGE] Espionage points per turn.</English>
+		<French>[ICON_ESPIONAGE] Espionage points per turn.</French>
+		<German>[ICON_ESPIONAGE] Espionage points per turn.</German>
+		<Italian>[ICON_ESPIONAGE] Espionage points per turn.</Italian>
+		<Spanish>[ICON_ESPIONAGE] Espionage points per turn.</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_CIVICS_PREVIEW_HELP_PRODUCTION</Tag>
+		<English>[ICON_PRODUCTION] Hammers per turn going into what the cities build now, with the bonuses for those builds (such as Police State's for military units). Food that a city turns into settlers or workers is not counted.</English>
+		<French>[ICON_PRODUCTION] Hammers per turn going into what the cities build now, with the bonuses for those builds (such as Police State's for military units). Food that a city turns into settlers or workers is not counted.</French>
+		<German>[ICON_PRODUCTION] Hammers per turn going into what the cities build now, with the bonuses for those builds (such as Police State's for military units). Food that a city turns into settlers or workers is not counted.</German>
+		<Italian>[ICON_PRODUCTION] Hammers per turn going into what the cities build now, with the bonuses for those builds (such as Police State's for military units). Food that a city turns into settlers or workers is not counted.</Italian>
+		<Spanish>[ICON_PRODUCTION] Hammers per turn going into what the cities build now, with the bonuses for those builds (such as Police State's for military units). Food that a city turns into settlers or workers is not counted.</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_CIVICS_PREVIEW_HELP_FOOD</Tag>
+		<English>[ICON_FOOD] The cities' food surpluses minus their deficits, per turn.</English>
+		<French>[ICON_FOOD] The cities' food surpluses minus their deficits, per turn.</French>
+		<German>[ICON_FOOD] The cities' food surpluses minus their deficits, per turn.</German>
+		<Italian>[ICON_FOOD] The cities' food surpluses minus their deficits, per turn.</Italian>
+		<Spanish>[ICON_FOOD] The cities' food surpluses minus their deficits, per turn.</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_CIVICS_PREVIEW_HELP_GREAT_PEOPLE</Tag>
+		<English>[ICON_GREATPEOPLE] Great people points per turn.</English>
+		<French>[ICON_GREATPEOPLE] Great people points per turn.</French>
+		<German>[ICON_GREATPEOPLE] Great people points per turn.</German>
+		<Italian>[ICON_GREATPEOPLE] Great people points per turn.</Italian>
+		<Spanish>[ICON_GREATPEOPLE] Great people points per turn.</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_CIVICS_PREVIEW_HELP_ANGRY</Tag>
+		<English>[ICON_ANGRYPOP] Angry citizens: they refuse to work.</English>
+		<French>[ICON_ANGRYPOP] Angry citizens: they refuse to work.</French>
+		<German>[ICON_ANGRYPOP] Angry citizens: they refuse to work.</German>
+		<Italian>[ICON_ANGRYPOP] Angry citizens: they refuse to work.</Italian>
+		<Spanish>[ICON_ANGRYPOP] Angry citizens: they refuse to work.</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_CIVICS_PREVIEW_HELP_UNHEALTHY</Tag>
+		<English>[ICON_UNHEALTHY] Unhealthiness above the cities' health: each point costs its city one food per turn.</English>
+		<French>[ICON_UNHEALTHY] Unhealthiness above the cities' health: each point costs its city one food per turn.</French>
+		<German>[ICON_UNHEALTHY] Unhealthiness above the cities' health: each point costs its city one food per turn.</German>
+		<Italian>[ICON_UNHEALTHY] Unhealthiness above the cities' health: each point costs its city one food per turn.</Italian>
+		<Spanish>[ICON_UNHEALTHY] Unhealthiness above the cities' health: each point costs its city one food per turn.</Spanish>
+	</TEXT>
+</Civ4GameText>

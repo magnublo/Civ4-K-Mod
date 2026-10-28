@@ -12,6 +12,43 @@ gc = CyGlobalContext()
 ArtFileMgr = CyArtFileMgr()
 localText = CyTranslator()
 
+# civics preview (written by Claude): the columns of the economy preview, in the order of the values that
+# CyPlayer.calculateCivicsPreview returns (CvPlayer::CivicsPreviewValues): research, gold, culture, espionage,
+# production, food, great people points, angry citizens, unhealthiness. Signed: shown with + or -. Up: more is better.
+PREVIEW_HELP = ["RESEARCH", "GOLD", "CULTURE", "ESPIONAGE", "PRODUCTION", "FOOD", "GREAT_PEOPLE", "ANGRY", "UNHEALTHY"]
+PREVIEW_SIGNED = [False, True, False, False, False, True, False, False, False]
+PREVIEW_UP = [True, True, True, True, True, True, True, False, False]
+
+def getPreviewIcon(i):
+	if i < 4:
+		eCommerce = [CommerceTypes.COMMERCE_RESEARCH, CommerceTypes.COMMERCE_GOLD, CommerceTypes.COMMERCE_CULTURE, CommerceTypes.COMMERCE_ESPIONAGE][i]
+		return u"%c" % gc.getCommerceInfo(eCommerce).getChar()
+	if i < 6:
+		eYield = [YieldTypes.YIELD_PRODUCTION, YieldTypes.YIELD_FOOD][i - 4]
+		return u"%c" % gc.getYieldInfo(eYield).getChar()
+	eSymbol = [FontSymbols.GREAT_PEOPLE_CHAR, FontSymbols.ANGRY_POP_CHAR, FontSymbols.UNHEALTHY_CHAR][i - 6]
+	return u"%c" % CyGame().getSymbolID(eSymbol)
+
+def formatPreviewValue(i, iValue):
+	if PREVIEW_SIGNED[i]:
+		return u"%+d" % iValue
+	return u"%d" % iValue
+
+def formatPreviewChange(i, iChange):
+	if iChange == 0:
+		return u""
+	if (iChange > 0) == PREVIEW_UP[i]:
+		szColor = "COLOR_POSITIVE_TEXT"
+	else:
+		szColor = "COLOR_NEGATIVE_TEXT"
+	return localText.changeTextColor(u"%+d" % iChange, gc.getInfoTypeForString(szColor))
+
+# the hover text of the preview (WIDGET_CIVICS_PREVIEW, Config/Civics Preview.xml): iData1 is the column, -1 the rows
+def getPreviewHelp(eWidget, iData1, iData2, bOption):
+	if iData1 >= 0 and iData1 < len(PREVIEW_HELP):
+		return localText.getText("TXT_KEY_CIVICS_PREVIEW_HELP_" + PREVIEW_HELP[iData1], ())
+	return localText.getText("TXT_KEY_CIVICS_PREVIEW_HELP", ())
+
 class CvCivicsScreen:
 	"Civics Screen"
 
@@ -34,13 +71,21 @@ class CvCivicsScreen:
 		self.HEADINGS_SPACING = 5
 		self.HEADINGS_BOTTOM = 280
 		self.HELP_TOP = 350
-		self.HELP_BOTTOM = 610
+		self.HELP_BOTTOM = 575 # civics preview: was 610
 		self.TEXT_MARGIN = 15
 		self.BUTTON_SIZE = 24
 		self.BIG_BUTTON_SIZE = 64
-		self.BOTTOM_LINE_TOP = 630
+		self.BOTTOM_LINE_TOP = 583 # civics preview: was 630
 		self.BOTTOM_LINE_WIDTH = 1014
-		self.BOTTOM_LINE_HEIGHT = 60
+		self.BOTTOM_LINE_HEIGHT = 125 # civics preview: was 60
+
+		# civics preview (written by Claude): a table in the bottom panel with the empire's totals now and with the civics
+		# shown (selected, or pointed at), from CyPlayer.calculateCivicsPreview
+		self.PREVIEW_LABEL_X = 20
+		self.PREVIEW_COLUMNS_X = 180
+		self.PREVIEW_COLUMN_WIDTH = 92
+		self.PREVIEW_ROW_HEIGHT = 22
+		self.previewCache = {}
 
 		self.X_EXIT = 994
 		self.Y_EXIT = 726
@@ -76,6 +121,7 @@ class CvCivicsScreen:
 
 		self.iActivePlayer = iPlayer
 		activePlayer = gc.getPlayer(iPlayer)
+		self.previewCache = {} # civics preview
 
 		self.m_paeCurrentCivics = []
 		self.m_paeDisplayCivics = []
@@ -312,13 +358,74 @@ class CvCivicsScreen:
 		else:
 			szText = CyGameTextMgr().setRevolutionHelp(self.iActivePlayer)
 
-		screen.setLabel("CivicsRevText", "Background", u"<font=3>" + szText + u"</font>", CvUtil.FONT_CENTER_JUSTIFY, self.X_SCREEN, self.BOTTOM_LINE_TOP + self.TEXT_MARGIN//2, 0, FontTypes.GAME_FONT, WidgetTypes.WIDGET_GENERAL, -1, -1)
+		# civics preview: on one line with the upkeep (was centred)
+		screen.setLabel("CivicsRevText", "Background", u"<font=3>" + szText + u"</font>", CvUtil.FONT_RIGHT_JUSTIFY, self.X_SCREEN - 2 * self.TEXT_MARGIN, self.BOTTOM_LINE_TOP + self.TEXT_MARGIN//2, 0, FontTypes.GAME_FONT, WidgetTypes.WIDGET_GENERAL, -1, -1)
 
 		# Maintenance		
 		#szText = localText.getText("TXT_KEY_CIVIC_SCREEN_UPKEEP", (activePlayer.getCivicUpkeep(self.m_paeDisplayCivics, True), ))
 		szText = localText.getText("TXT_KEY_CIVIC_SCREEN_UPKEEP", (activePlayer.getCivicUpkeep(self.m_paeDisplayCivics, True)*(100+activePlayer.getInflationRate())/100, )) # K-Mod
-		screen.setLabel("CivicsUpkeepText", "Background", u"<font=3>" + szText + u"</font>", CvUtil.FONT_CENTER_JUSTIFY, self.X_SCREEN, self.BOTTOM_LINE_TOP + self.BOTTOM_LINE_HEIGHT - 2 * self.TEXT_MARGIN, 0, FontTypes.GAME_FONT, WidgetTypes.WIDGET_GENERAL, -1, -1)
-		
+		screen.setLabel("CivicsUpkeepText", "Background", u"<font=3>" + szText + u"</font>", CvUtil.FONT_LEFT_JUSTIFY, self.X_SCREEN + 2 * self.TEXT_MARGIN, self.BOTTOM_LINE_TOP + self.TEXT_MARGIN//2, 0, FontTypes.GAME_FONT, WidgetTypes.WIDGET_GENERAL, -1, -1)
+
+		self.drawPreview() # civics preview
+
+	# civics preview (written by Claude): the empire's totals per turn now and with the civics shown, once every city
+	# has assigned its citizens again (CvPlayer::calculateCivicsPreview in the DLL, which leaves the game as it was).
+	# Computed again whenever the civics shown change (also when pointing at a civic), each combination once.
+	def drawPreview(self):
+		screen = self.getScreen()
+		activePlayer = gc.getPlayer(self.iActivePlayer)
+		eWidget = getattr(WidgetTypes, "WIDGET_CIVICS_PREVIEW", WidgetTypes.WIDGET_GENERAL)
+		iTop = self.BOTTOM_LINE_TOP + self.TEXT_MARGIN//2 + self.PREVIEW_ROW_HEIGHT + 4
+		aszRows = ["CivicsPreviewIcons", "CivicsPreviewNow", "CivicsPreviewAfter", "CivicsPreviewChange"]
+
+		if activePlayer.isAnarchy() or activePlayer.getNumCities() == 0:
+			for szRow in aszRows:
+				screen.hide(szRow + "Label")
+				for i in range(len(PREVIEW_HELP)):
+					screen.hide(szRow + str(i))
+			screen.hide("CivicsPreviewHint")
+			return
+
+		key = tuple(self.m_paeDisplayCivics)
+		if not self.previewCache.has_key(key):
+			self.previewCache[key] = activePlayer.calculateCivicsPreview(self.m_paeDisplayCivics)
+		aiValues = self.previewCache[key]
+		iNum = len(PREVIEW_HELP)
+		aiNow = aiValues[:iNum]
+		aiAfter = aiValues[iNum:]
+		bChange = self.m_paeDisplayCivics != self.m_paeOriginalCivics
+
+		aszLabels = [u"", localText.getText("TXT_KEY_CIVICS_PREVIEW_NOW", ()), localText.getText("TXT_KEY_CIVICS_PREVIEW_AFTER", ()), localText.getText("TXT_KEY_CIVICS_PREVIEW_CHANGE", ())]
+		for iRow in range(len(aszRows)):
+			iY = iTop + iRow * self.PREVIEW_ROW_HEIGHT
+			szRow = aszRows[iRow]
+			if iRow >= 2 and not bChange:
+				screen.hide(szRow + "Label")
+				for i in range(iNum):
+					screen.hide(szRow + str(i))
+				continue
+			screen.setLabel(szRow + "Label", "Background", u"<font=3>" + aszLabels[iRow] + u"</font>", CvUtil.FONT_LEFT_JUSTIFY, self.PREVIEW_LABEL_X, iY, 0, FontTypes.GAME_FONT, eWidget, -1, -1)
+			screen.show(szRow + "Label")
+			for i in range(iNum):
+				if iRow == 0:
+					szText = getPreviewIcon(i)
+				elif iRow == 1:
+					szText = formatPreviewValue(i, aiNow[i])
+				elif iRow == 2:
+					szText = formatPreviewValue(i, aiAfter[i])
+				else:
+					szText = formatPreviewChange(i, aiAfter[i] - aiNow[i])
+				iX = self.PREVIEW_COLUMNS_X + i * self.PREVIEW_COLUMN_WIDTH + self.PREVIEW_COLUMN_WIDTH / 2
+				screen.setLabel(szRow + str(i), "Background", u"<font=3>" + szText + u"</font>", CvUtil.FONT_CENTER_JUSTIFY, iX, iY, 0, FontTypes.GAME_FONT, eWidget, i, -1)
+				screen.show(szRow + str(i))
+
+		if bChange:
+			screen.hide("CivicsPreviewHint")
+		else:
+			iX = self.PREVIEW_COLUMNS_X + iNum * self.PREVIEW_COLUMN_WIDTH / 2
+			screen.setLabel("CivicsPreviewHint", "Background", u"<font=3>" + localText.getText("TXT_KEY_CIVICS_PREVIEW_HINT", ()) + u"</font>", CvUtil.FONT_CENTER_JUSTIFY, iX, iTop + 2 * self.PREVIEW_ROW_HEIGHT, 0, FontTypes.GAME_FONT, eWidget, -1, -1)
+			screen.show("CivicsPreviewHint")
+
 	# Revolution!!!
 	def Revolution(self, inputClass):
 

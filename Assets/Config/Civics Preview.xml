@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!--
+	Civics preview (K-Mod-Magnus, written by Claude)
+
+	The hover texts of the economy preview in the civics screen (Python/Screens/CvCivicsScreen.py; the numbers come
+	from CvPlayer::calculateCivicsPreview in the DLL).
+-->
+<mod id="CivicsPreview"
+	 module="CvCivicsScreen"
+	 name="Civics preview"
+	 author="K-Mod-Magnus"
+	 version="1.0"
+	 date="10/28/2026">
+
+	<widget name="WIDGET_CIVICS_PREVIEW" function="getPreviewHelp"/>
+</mod>

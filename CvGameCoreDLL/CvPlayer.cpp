@@ -8287,6 +8287,320 @@ void CvPlayer::revolution(CivicTypes* paeNewCivics, bool bForce)
 	}
 }
 
+// civics preview (written by Claude): a stream that only hashes (FNV-1a) what the save functions write to it, so that
+// a test can compare the saved state of the whole game before and after a preview.
+class CvCivicsPreviewHashStream : public FDataStreamBase
+{
+public:
+	CvCivicsPreviewHashStream() : m_uiHash(2166136261U), m_uiSize(0) {}
+	unsigned int getHash() const { return m_uiHash; }
+
+	virtual void Rewind() {}
+	virtual bool AtEnd() { return true; }
+	virtual void FastFwd() {}
+	virtual unsigned int GetPosition() const { return m_uiSize; }
+	virtual void SetPosition(unsigned int position) { unreadable(); }
+	virtual void Truncate() {}
+	virtual void Flush() {}
+	virtual unsigned int GetEOF() const { return m_uiSize; }
+	virtual unsigned int GetSizeLeft() const { return 0; }
+	virtual void CopyToMem(void* mem) { unreadable(); }
+
+	virtual unsigned int WriteString(const wchar* szName) { return addString(szName, (szName != NULL) ? wcslen(szName) : 0); }
+	virtual unsigned int WriteString(const char* szName) { return addString(szName, (szName != NULL) ? strlen(szName) : 0); }
+	virtual unsigned int WriteString(const std::string& szName) { return addString(szName.c_str(), szName.size()); }
+	virtual unsigned int WriteString(const std::wstring& szName) { return addString(szName.c_str(), szName.size()); }
+	virtual unsigned int WriteString(int count, std::string values[]) { for (int i = 0; i < count; i++) WriteString(values[i]); return count; }
+	virtual unsigned int WriteString(int count, std::wstring values[]) { for (int i = 0; i < count; i++) WriteString(values[i]); return count; }
+
+	virtual unsigned int ReadString(char* szName) { unreadable(); return 0; }
+	virtual unsigned int ReadString(wchar* szName) { unreadable(); return 0; }
+	virtual unsigned int ReadString(std::string& szName) { unreadable(); return 0; }
+	virtual unsigned int ReadString(std::wstring& szName) { unreadable(); return 0; }
+	virtual unsigned int ReadString(int count, std::string values[]) { unreadable(); return 0; }
+	virtual unsigned int ReadString(int count, std::wstring values[]) { unreadable(); return 0; }
+	virtual char* ReadString() { unreadable(); return NULL; }
+	virtual wchar* ReadWideString() { unreadable(); return NULL; }
+
+	virtual void Read(char*) { unreadable(); }
+	virtual void Read(byte*) { unreadable(); }
+	virtual void Read(int count, char values[]) { unreadable(); }
+	virtual void Read(int count, byte values[]) { unreadable(); }
+	virtual void Read(bool*) { unreadable(); }
+	virtual void Read(int count, bool values[]) { unreadable(); }
+	virtual void Read(short* s) { unreadable(); }
+	virtual void Read(unsigned short* s) { unreadable(); }
+	virtual void Read(int count, short values[]) { unreadable(); }
+	virtual void Read(int count, unsigned short values[]) { unreadable(); }
+	virtual void Read(int* i) { unreadable(); }
+	virtual void Read(unsigned int* i) { unreadable(); }
+	virtual void Read(int count, int values[]) { unreadable(); }
+	virtual void Read(int count, unsigned int values[]) { unreadable(); }
+	virtual void Read(long* l) { unreadable(); }
+	virtual void Read(unsigned long* l) { unreadable(); }
+	virtual void Read(int count, long values[]) { unreadable(); }
+	virtual void Read(int count, unsigned long values[]) { unreadable(); }
+	virtual void Read(float* value) { unreadable(); }
+	virtual void Read(int count, float values[]) { unreadable(); }
+	virtual void Read(double* value) { unreadable(); }
+	virtual void Read(int count, double values[]) { unreadable(); }
+
+	virtual void Write(char value) { add(&value, sizeof(value)); }
+	virtual void Write(byte value) { add(&value, sizeof(value)); }
+	virtual void Write(int count, const char values[]) { add(values, count * sizeof(char)); }
+	virtual void Write(int count, const byte values[]) { add(values, count * sizeof(byte)); }
+	virtual void Write(bool value) { add(&value, sizeof(value)); }
+	virtual void Write(int count, const bool values[]) { add(values, count * sizeof(bool)); }
+	virtual void Write(short value) { add(&value, sizeof(value)); }
+	virtual void Write(unsigned short value) { add(&value, sizeof(value)); }
+	virtual void Write(int count, const short values[]) { add(values, count * sizeof(short)); }
+	virtual void Write(int count, const unsigned short values[]) { add(values, count * sizeof(unsigned short)); }
+	virtual void Write(int value) { add(&value, sizeof(value)); }
+	virtual void Write(unsigned int value) { add(&value, sizeof(value)); }
+	virtual void Write(int count, const int values[]) { add(values, count * sizeof(int)); }
+	virtual void Write(int count, const unsigned int values[]) { add(values, count * sizeof(unsigned int)); }
+	virtual void Write(long value) { add(&value, sizeof(value)); }
+	virtual void Write(unsigned long value) { add(&value, sizeof(value)); }
+	virtual void Write(int count, const long values[]) { add(values, count * sizeof(long)); }
+	virtual void Write(int count, const unsigned long values[]) { add(values, count * sizeof(unsigned long)); }
+	virtual void Write(float value) { add(&value, sizeof(value)); }
+	virtual void Write(int count, const float values[]) { add(values, count * sizeof(float)); }
+	virtual void Write(double value) { add(&value, sizeof(value)); }
+	virtual void Write(int count, const double values[]) { add(values, count * sizeof(double)); }
+
+private:
+	void unreadable() { FAssertMsg(false, "CvCivicsPreviewHashStream can only be written to"); }
+	void add(const void* pData, size_t iBytes)
+	{
+		const unsigned char* pBytes = (const unsigned char*)pData;
+		for (size_t i = 0; i < iBytes; i++)
+		{
+			m_uiHash = (m_uiHash ^ pBytes[i]) * 16777619U;
+		}
+		m_uiSize += iBytes;
+	}
+	unsigned int addString(const void* pChars, size_t iLength)
+	{
+		add(&iLength, sizeof(iLength));
+		add(pChars, iLength);
+		return iLength;
+	}
+
+	unsigned int m_uiHash;
+	unsigned int m_uiSize;
+};
+
+// civics preview (written by Claude): a hash of every saved object of the game (the game, the map and each plot, each
+// team, each player and each of its cities), labelled for a report of what differs.
+static void hashGameForCivicsPreview(std::vector<std::pair<CvWString, unsigned int> >& aHashes)
+{
+	aHashes.clear();
+	{
+		CvCivicsPreviewHashStream kStream;
+		GC.getGameINLINE().write(&kStream);
+		aHashes.push_back(std::make_pair(CvWString(L"game"), kStream.getHash()));
+	}
+	{
+		CvCivicsPreviewHashStream kStream;
+		GC.getMapINLINE().write(&kStream);
+		aHashes.push_back(std::make_pair(CvWString(L"map"), kStream.getHash()));
+	}
+	for (int iI = 0; iI < GC.getMapINLINE().numPlotsINLINE(); iI++)
+	{
+		CvPlot* pPlot = GC.getMapINLINE().plotByIndexINLINE(iI);
+		CvCivicsPreviewHashStream kStream;
+		pPlot->write(&kStream);
+		aHashes.push_back(std::make_pair(CvWString::format(L"plot %d,%d", pPlot->getX_INLINE(), pPlot->getY_INLINE()), kStream.getHash()));
+	}
+	for (int iI = 0; iI < MAX_TEAMS; iI++)
+	{
+		CvCivicsPreviewHashStream kStream;
+		GET_TEAM((TeamTypes)iI).write(&kStream);
+		aHashes.push_back(std::make_pair(CvWString::format(L"team %d", iI), kStream.getHash()));
+	}
+	for (int iI = 0; iI < MAX_PLAYERS; iI++)
+	{
+		CvPlayerAI& kLoopPlayer = GET_PLAYER((PlayerTypes)iI);
+		{
+			CvCivicsPreviewHashStream kStream;
+			kLoopPlayer.write(&kStream);
+			aHashes.push_back(std::make_pair(CvWString::format(L"player %d", iI), kStream.getHash()));
+		}
+		int iLoop;
+		for (CvCity* pLoopCity = kLoopPlayer.firstCity(&iLoop); pLoopCity != NULL; pLoopCity = kLoopPlayer.nextCity(&iLoop))
+		{
+			CvCivicsPreviewHashStream kStream;
+			static_cast<CvCityAI*>(pLoopCity)->write(&kStream);
+			aHashes.push_back(std::make_pair(CvWString::format(L"city %s (player %d)", pLoopCity->getName().GetCString(), iI), kStream.getHash()));
+		}
+	}
+}
+
+// civics preview (written by Claude): the civics screen shows what the player's economy would be with the civics
+// selected there, once every city has assigned its citizens again, as the game does right after a change of civics.
+// To get the numbers, this changes the civics the way setCivics does (processCivics and the global warming anger, not
+// the messages, the vote and the attitude caches; a civic's war weariness modifier applies at once, in
+// CvCity::getWarWearinessPercentAnger), lets every city assign its citizens again (AI_updateAssignWork, as CvGameAI
+// does for human players right after the change), reads the totals, and undoes all of it, backwards: the citizens
+// while the tried civics are still in place, then the civics (processCivics again), then what CivicsPreviewState
+// keeps: values that undoing the civics recomputes from scratch although the game only recomputes them now and then
+// (trade routes, the global warming anger, the governor's yield multipliers), caches, flags, and the totals that
+// include them. So the game is left exactly as it was (it has to be: the preview runs on one computer only, also in
+// multiplayer). Anarchy is not part of it: with anarchy, the numbers are those of the turns after it. pszCheck, for
+// tests, gets a description of every saved object of the game that differs after the preview (none: empty).
+void CvPlayer::calculateCivicsPreview(const CivicTypes* paeNewCivics, int* aiNow, int* aiWith, CvWString* pszCheck)
+{
+	PROFILE_FUNC();
+
+	calculateCivicsPreviewTotals(aiNow);
+	for (int i = 0; i < NUM_CIVICS_PREVIEW_VALUES; i++)
+	{
+		aiWith[i] = aiNow[i];
+	}
+	if (pszCheck != NULL)
+	{
+		pszCheck->clear();
+	}
+
+	std::vector<CivicOptionTypes> aeOptions;
+	std::vector<CivicTypes> aeOldCivics;
+	for (int iI = 0; iI < GC.getNumCivicOptionInfos(); iI++)
+	{
+		CivicTypes eNewCivic = paeNewCivics[iI];
+		if (eNewCivic >= 0 && eNewCivic < GC.getNumCivicInfos() && GC.getCivicInfo(eNewCivic).getCivicOptionType() == iI &&
+			eNewCivic != getCivics((CivicOptionTypes)iI))
+		{
+			aeOptions.push_back((CivicOptionTypes)iI);
+			aeOldCivics.push_back(getCivics((CivicOptionTypes)iI));
+		}
+	}
+	if (aeOptions.empty() || isAnarchy() || getNumCities() == 0)
+	{
+		return;
+	}
+
+	std::vector<std::pair<CvWString, unsigned int> > aHashesBefore;
+	if (pszCheck != NULL)
+	{
+		hashGameForCivicsPreview(aHashesBefore);
+	}
+
+	// keep what the undo can't simply reverse: in every city (the trade routes of all players can change)...
+	std::vector<CvCityAI*> apCities;
+	std::vector<CvCityAI::CivicsPreviewState> aCityStates;
+	for (int iI = 0; iI < MAX_PLAYERS; iI++)
+	{
+		CvPlayerAI& kLoopPlayer = GET_PLAYER((PlayerTypes)iI);
+		int iLoop;
+		for (CvCity* pLoopCity = kLoopPlayer.firstCity(&iLoop); pLoopCity != NULL; pLoopCity = kLoopPlayer.nextCity(&iLoop))
+		{
+			apCities.push_back(static_cast<CvCityAI*>(pLoopCity));
+			aCityStates.push_back(CvCityAI::CivicsPreviewState());
+			apCities.back()->AI_saveCivicsPreviewState(aCityStates.back(), iI == getID());
+		}
+	}
+	// ... and of every player
+	std::vector<int> aiPlayerValues;
+	for (int iI = 0; iI < MAX_PLAYERS; iI++)
+	{
+		const CvPlayer& kLoopPlayer = GET_PLAYER((PlayerTypes)iI);
+		for (int iJ = 0; iJ < NUM_COMMERCE_TYPES; iJ++)
+		{
+			aiPlayerValues.push_back(kLoopPlayer.m_aiCommerceRate[iJ]);
+		}
+		aiPlayerValues.push_back(kLoopPlayer.m_iTotalMaintenance);
+		aiPlayerValues.push_back(kLoopPlayer.m_iGwPercentAnger);
+	}
+
+	// try the new civics
+	for (size_t i = 0; i < aeOptions.size(); i++)
+	{
+		m_paeCivics[aeOptions[i]] = paeNewCivics[aeOptions[i]];
+		if (aeOldCivics[i] != NO_CIVIC)
+		{
+			processCivics(aeOldCivics[i], -1);
+		}
+		processCivics(paeNewCivics[aeOptions[i]], 1);
+	}
+	GC.getGameINLINE().updateGwPercentAnger();
+	AI_makeAssignWorkDirty();
+	AI_updateAssignWork();
+
+	calculateCivicsPreviewTotals(aiWith);
+
+	// undo
+	for (size_t i = 0; i < apCities.size(); i++)
+	{
+		if (aCityStates[i].bCitizens)
+		{
+			apCities[i]->AI_restoreCivicsPreviewCitizens(aCityStates[i]);
+		}
+	}
+	for (int i = (int)aeOptions.size() - 1; i >= 0; i--)
+	{
+		m_paeCivics[aeOptions[i]] = aeOldCivics[i];
+		processCivics(paeNewCivics[aeOptions[i]], -1);
+		if (aeOldCivics[i] != NO_CIVIC)
+		{
+			processCivics(aeOldCivics[i], 1);
+		}
+	}
+	for (size_t i = 0; i < apCities.size(); i++)
+	{
+		apCities[i]->AI_restoreCivicsPreviewState(aCityStates[i]);
+	}
+	int iValue = 0;
+	for (int iI = 0; iI < MAX_PLAYERS; iI++)
+	{
+		CvPlayer& kLoopPlayer = GET_PLAYER((PlayerTypes)iI);
+		for (int iJ = 0; iJ < NUM_COMMERCE_TYPES; iJ++)
+		{
+			kLoopPlayer.m_aiCommerceRate[iJ] = aiPlayerValues[iValue++];
+		}
+		kLoopPlayer.m_iTotalMaintenance = aiPlayerValues[iValue++];
+		kLoopPlayer.m_iGwPercentAnger = aiPlayerValues[iValue++];
+	}
+
+	if (pszCheck != NULL)
+	{
+		std::vector<std::pair<CvWString, unsigned int> > aHashesAfter;
+		hashGameForCivicsPreview(aHashesAfter);
+		for (size_t i = 0; i < aHashesBefore.size() || i < aHashesAfter.size(); i++)
+		{
+			if (i >= aHashesBefore.size() || i >= aHashesAfter.size() || aHashesBefore[i] != aHashesAfter[i])
+			{
+				if (!pszCheck->empty())
+				{
+					pszCheck->append(L"; ");
+				}
+				pszCheck->append(i < aHashesBefore.size() ? aHashesBefore[i].first : aHashesAfter[i].first);
+			}
+		}
+	}
+}
+
+// civics preview (written by Claude): the totals shown in the civics screen (CvPlayer::CivicsPreviewValues)
+void CvPlayer::calculateCivicsPreviewTotals(int* aiTotals) const
+{
+	for (int i = 0; i < NUM_CIVICS_PREVIEW_VALUES; i++)
+	{
+		aiTotals[i] = 0;
+	}
+	aiTotals[CIVICS_PREVIEW_RESEARCH] = calculateResearchRate();
+	aiTotals[CIVICS_PREVIEW_GOLD] = calculateGoldRate();
+	aiTotals[CIVICS_PREVIEW_CULTURE] = getCommerceRate(COMMERCE_CULTURE);
+	aiTotals[CIVICS_PREVIEW_ESPIONAGE] = getCommerceRate(COMMERCE_ESPIONAGE);
+	int iLoop;
+	for (CvCity* pLoopCity = firstCity(&iLoop); pLoopCity != NULL; pLoopCity = nextCity(&iLoop))
+	{
+		aiTotals[CIVICS_PREVIEW_PRODUCTION] += pLoopCity->getCurrentProductionDifference(true, false);
+		aiTotals[CIVICS_PREVIEW_FOOD] += pLoopCity->foodDifference();
+		aiTotals[CIVICS_PREVIEW_GREAT_PEOPLE] += pLoopCity->getGreatPeopleRate();
+		aiTotals[CIVICS_PREVIEW_ANGRY] += pLoopCity->angryPopulation();
+		aiTotals[CIVICS_PREVIEW_UNHEALTHY] -= pLoopCity->healthRate();
+	}
+}
+
 
 int CvPlayer::getCivicPercentAnger(CivicTypes eCivic, bool bIgnore) const
 {

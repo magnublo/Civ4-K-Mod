@@ -714,6 +714,50 @@ int CyPlayer::getCivicAnarchyLength(boost::python::list& /*CivicTypes**/ paeNewC
 	return iRet;
 }
 
+// civics preview (written by Claude): the totals of CvPlayer::calculateCivicsPreview, the CivicsPreviewValues now and
+// then the same values with paeNewCivics (one civic per civic option, as for getCivicAnarchyLength)
+python::list CyPlayer::calculateCivicsPreview(boost::python::list& /*CivicTypes**/ paeNewCivics)
+{
+	python::list result;
+	if (m_pPlayer == NULL)
+	{
+		return result;
+	}
+	int* pCivics = NULL;
+	gDLL->getPythonIFace()->putSeqInArray(paeNewCivics.ptr() /*src*/, &pCivics /*dst*/);
+	int aiNow[CvPlayer::NUM_CIVICS_PREVIEW_VALUES];
+	int aiWith[CvPlayer::NUM_CIVICS_PREVIEW_VALUES];
+	m_pPlayer->calculateCivicsPreview((CivicTypes*)pCivics, aiNow, aiWith);
+	delete [] pCivics;
+	for (int i = 0; i < CvPlayer::NUM_CIVICS_PREVIEW_VALUES; i++)
+	{
+		result.append(aiNow[i]);
+	}
+	for (int i = 0; i < CvPlayer::NUM_CIVICS_PREVIEW_VALUES; i++)
+	{
+		result.append(aiWith[i]);
+	}
+	return result;
+}
+
+// civics preview (written by Claude), for tests: the same preview, then what differs in the saved state of the game
+// afterwards ("" if nothing)
+std::wstring CyPlayer::checkCivicsPreview(boost::python::list& /*CivicTypes**/ paeNewCivics)
+{
+	if (m_pPlayer == NULL)
+	{
+		return std::wstring();
+	}
+	int* pCivics = NULL;
+	gDLL->getPythonIFace()->putSeqInArray(paeNewCivics.ptr() /*src*/, &pCivics /*dst*/);
+	int aiNow[CvPlayer::NUM_CIVICS_PREVIEW_VALUES];
+	int aiWith[CvPlayer::NUM_CIVICS_PREVIEW_VALUES];
+	CvWString szCheck;
+	m_pPlayer->calculateCivicsPreview((CivicTypes*)pCivics, aiNow, aiWith, &szCheck);
+	delete [] pCivics;
+	return szCheck;
+}
+
 int CyPlayer::getReligionAnarchyLength()
 {
 	return m_pPlayer ? m_pPlayer->getReligionAnarchyLength() : -1;

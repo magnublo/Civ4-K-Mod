@@ -176,6 +176,8 @@ void CyPlayerPythonInterface1(python::class_<CyPlayer>& x)
 		.def("foundCorporation", &CyPlayer::foundCorporation, "void (int /*CorporationTypes*/ eCorporation)")
 
 		.def("getCivicAnarchyLength", &CyPlayer::getCivicAnarchyLength, "int (int (CivicTypes*) paeNewCivics)")
+		.def("calculateCivicsPreview", &CyPlayer::calculateCivicsPreview, "list (list paeNewCivics) - civics preview: the economy's totals now, then with paeNewCivics once every city has assigned its citizens again (research, gold, culture, espionage, production, food, great people, angry citizens, unhealthiness)")
+		.def("checkCivicsPreview", &CyPlayer::checkCivicsPreview, "wstring (list paeNewCivics) - civics preview, for tests: what differs in the saved game state after a preview with paeNewCivics (empty if nothing)")
 		.def("getReligionAnarchyLength", &CyPlayer::getReligionAnarchyLength, "int ()")
 
 		.def("unitsRequiredForGoldenAge", &CyPlayer::unitsRequiredForGoldenAge, "int ()")

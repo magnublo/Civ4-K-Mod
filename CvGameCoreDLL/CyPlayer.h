@@ -182,6 +182,8 @@ public:
 
 	void foundReligion(int /*ReligionTypes*/ eReligion, int /*ReligionTypes*/ iSlotReligion, bool bAward);
 	int getCivicAnarchyLength(boost::python::list& /*CivicTypes**/ paeNewCivics);
+	python::list calculateCivicsPreview(boost::python::list& /*CivicTypes**/ paeNewCivics); // civics preview
+	std::wstring checkCivicsPreview(boost::python::list& /*CivicTypes**/ paeNewCivics); // civics preview (tests)
 	int getReligionAnarchyLength();
 
 	bool hasHeadquarters(int /*CorporationTypes*/ eCorporation);

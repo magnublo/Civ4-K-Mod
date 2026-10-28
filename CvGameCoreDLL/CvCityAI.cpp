@@ -12506,6 +12506,144 @@ void CvCityAI::AI_ClearConstructionValueCache()
 	m_aiConstructionValue.assign(GC.getNumBuildingClassInfos(), -1);
 }
 
+// civics preview (written by Claude): see CvPlayer::calculateCivicsPreview
+void CvCityAI::AI_saveCivicsPreviewState(CivicsPreviewState& kState, bool bCitizens) const
+{
+	kState.aTradeCities.assign(m_paTradeCities, m_paTradeCities + GC.getDefineINT("MAX_TRADE_ROUTES"));
+	for (int i = 0; i < MAX_PLAYERS; i++)
+	{
+		kState.abTradeRoute[i] = m_abTradeRoute[i];
+	}
+	for (int i = 0; i < NUM_YIELD_TYPES; i++)
+	{
+		kState.aiTradeYield[i] = m_aiTradeYield[i];
+		kState.aiBaseYieldRate[i] = m_aiBaseYieldRate[i];
+		kState.aiSpecialYieldMultiplier[i] = m_aiSpecialYieldMultiplier[i];
+		kState.aiBaseYieldRank[i] = m_aiBaseYieldRank[i];
+		kState.abBaseYieldRankValid[i] = m_abBaseYieldRankValid[i];
+		kState.aiYieldRank[i] = m_aiYieldRank[i];
+		kState.abYieldRankValid[i] = m_abYieldRankValid[i];
+	}
+	for (int i = 0; i < NUM_COMMERCE_TYPES; i++)
+	{
+		kState.aiCommerceRate[i] = m_aiCommerceRate[i];
+		kState.aiCommerceRank[i] = m_aiCommerceRank[i];
+		kState.abCommerceRankValid[i] = m_abCommerceRankValid[i];
+	}
+	kState.iMaintenance = m_iMaintenance;
+	kState.iPopulationRank = m_iPopulationRank;
+	kState.bPopulationRankValid = m_bPopulationRankValid;
+	kState.bAssignWorkDirty = m_bAssignWorkDirty;
+	kState.bChooseProductionDirty = m_bChooseProductionDirty;
+	kState.bInfoDirty = m_bInfoDirty;
+	kState.bLayoutDirty = m_bLayoutDirty;
+
+	kState.bCitizens = bCitizens;
+	if (bCitizens)
+	{
+		for (int i = 0; i < NUM_CITY_PLOTS; i++)
+		{
+			kState.abWorkingPlot[i] = m_pabWorkingPlot[i];
+			CvPlot* pPlot = getCityIndexPlot(i);
+			for (int j = 0; j < NUM_YIELD_TYPES; j++)
+			{
+				kState.aaiPlotYield[i][j] = (pPlot != NULL) ? (short)pPlot->getYield((YieldTypes)j) : 0;
+			}
+		}
+		kState.aiSpecialistCount.assign(m_paiSpecialistCount, m_paiSpecialistCount + GC.getNumSpecialistInfos());
+		kState.aiForceSpecialistCount.assign(m_paiForceSpecialistCount, m_paiForceSpecialistCount + GC.getNumSpecialistInfos());
+	}
+}
+
+// The citizens as they were, put back while the tried civics are still in place (the undo goes backwards). What the
+// preview added goes first, so that the city never has more workers than citizens.
+void CvCityAI::AI_restoreCivicsPreviewCitizens(const CivicsPreviewState& kState)
+{
+	FAssert(kState.bCitizens);
+	for (int i = 0; i < NUM_CITY_PLOTS; i++)
+	{
+		if (isWorkingPlot(i) && !kState.abWorkingPlot[i])
+		{
+			setWorkingPlot(i, false);
+		}
+	}
+	for (SpecialistTypes i = (SpecialistTypes)0; i < GC.getNumSpecialistInfos(); i = (SpecialistTypes)(i+1))
+	{
+		if (getSpecialistCount(i) > kState.aiSpecialistCount[i])
+		{
+			setSpecialistCount(i, kState.aiSpecialistCount[i]);
+		}
+	}
+	for (int i = 0; i < NUM_CITY_PLOTS; i++)
+	{
+		if (!isWorkingPlot(i) && kState.abWorkingPlot[i])
+		{
+			setWorkingPlot(i, true);
+		}
+	}
+	for (SpecialistTypes i = (SpecialistTypes)0; i < GC.getNumSpecialistInfos(); i = (SpecialistTypes)(i+1))
+	{
+		if (getSpecialistCount(i) < kState.aiSpecialistCount[i])
+		{
+			setSpecialistCount(i, kState.aiSpecialistCount[i]);
+		}
+		setForceSpecialistCount(i, kState.aiForceSpecialistCount[i]);
+	}
+}
+
+// The rest, once the civics are back: the values that undoing the civics recomputes from scratch, which need not be
+// what they were (e.g. trade routes are found at the start of each turn, so a city that has grown since makes another
+// route better), and the caches and flags. Every total that includes one of them is put back with it.
+void CvCityAI::AI_restoreCivicsPreviewState(const CivicsPreviewState& kState)
+{
+	for (int i = 0; i < (int)kState.aTradeCities.size(); i++)
+	{
+		m_paTradeCities[i] = kState.aTradeCities[i];
+	}
+	for (int i = 0; i < MAX_PLAYERS; i++)
+	{
+		m_abTradeRoute[i] = kState.abTradeRoute[i];
+	}
+	for (int i = 0; i < NUM_YIELD_TYPES; i++)
+	{
+		m_aiTradeYield[i] = kState.aiTradeYield[i];
+		m_aiBaseYieldRate[i] = kState.aiBaseYieldRate[i];
+		m_aiSpecialYieldMultiplier[i] = kState.aiSpecialYieldMultiplier[i];
+		m_aiBaseYieldRank[i] = kState.aiBaseYieldRank[i];
+		m_abBaseYieldRankValid[i] = kState.abBaseYieldRankValid[i];
+		m_aiYieldRank[i] = kState.aiYieldRank[i];
+		m_abYieldRankValid[i] = kState.abYieldRankValid[i];
+	}
+	for (int i = 0; i < NUM_COMMERCE_TYPES; i++)
+	{
+		m_aiCommerceRate[i] = kState.aiCommerceRate[i];
+		m_aiCommerceRank[i] = kState.aiCommerceRank[i];
+		m_abCommerceRankValid[i] = kState.abCommerceRankValid[i];
+	}
+	m_iMaintenance = kState.iMaintenance;
+	m_iPopulationRank = kState.iPopulationRank;
+	m_bPopulationRankValid = kState.bPopulationRankValid;
+	m_bAssignWorkDirty = kState.bAssignWorkDirty;
+	m_bChooseProductionDirty = kState.bChooseProductionDirty;
+	m_bInfoDirty = kState.bInfoDirty;
+	m_bLayoutDirty = kState.bLayoutDirty;
+
+	if (kState.bCitizens)
+	{
+		for (int i = 0; i < NUM_CITY_PLOTS; i++)
+		{
+			CvPlot* pPlot = getCityIndexPlot(i);
+			if (pPlot != NULL)
+			{
+				for (int j = 0; j < NUM_YIELD_TYPES; j++)
+				{
+					pPlot->getYield()[j] = kState.aaiPlotYield[i][j];
+				}
+			}
+		}
+	}
+}
+
 /***
 **** K-Mod, 13/sep/10, Karadoc
 **** Some AI code which I might use later.

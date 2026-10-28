@@ -301,6 +301,23 @@ public:
 	DllExport bool canRevolution(CivicTypes* paeNewCivics) const;																					// Exposed to Python
 	DllExport void revolution(CivicTypes* paeNewCivics, bool bForce = false);												// Exposed to Python
 	int getCivicPercentAnger(CivicTypes eCivic, bool bIgnore = false) const;																										// Exposed to Python
+	// civics preview (written by Claude): the totals of the player's economy now and with other civics, once every
+	// city has assigned its citizens again (CvPlayer.cpp)
+	enum CivicsPreviewValues
+	{
+		CIVICS_PREVIEW_RESEARCH,		// research per turn (calculateResearchRate, as the top bar shows it)
+		CIVICS_PREVIEW_GOLD,			// net gold per turn (calculateGoldRate)
+		CIVICS_PREVIEW_CULTURE,
+		CIVICS_PREVIEW_ESPIONAGE,
+		CIVICS_PREVIEW_PRODUCTION,		// hammers per turn into what the cities build now, food not counted
+		CIVICS_PREVIEW_FOOD,			// the cities' food surpluses minus their deficits
+		CIVICS_PREVIEW_GREAT_PEOPLE,	// great people points per turn
+		CIVICS_PREVIEW_ANGRY,			// angry citizens (they don't work)
+		CIVICS_PREVIEW_UNHEALTHY,		// unhealthiness above health (a food each)
+		NUM_CIVICS_PREVIEW_VALUES
+	};
+	void calculateCivicsPreview(const CivicTypes* paeNewCivics, int* aiNow, int* aiWith, CvWString* pszCheck = NULL);	// Exposed to Python
+	void calculateCivicsPreviewTotals(int* aiTotals) const;
 
 	bool canDoReligion(ReligionTypes eReligion) const;																										// Exposed to Python
 	bool canChangeReligion() const;																																				// Exposed to Python

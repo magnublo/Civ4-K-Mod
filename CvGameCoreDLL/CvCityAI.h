@@ -147,6 +147,41 @@ public:
 
 	void AI_ClearConstructionValueCache(); // K-Mod
 
+	// civics preview (written by Claude): CvPlayer::calculateCivicsPreview keeps here what it puts back in a city
+	// after trying other civics: values that the game only recomputes now and then (trade routes, the governor's
+	// yield multipliers), caches and flags, the totals that include them, and for the previewing player's cities the
+	// citizens and the yields of the city's plots.
+	struct CivicsPreviewState
+	{
+		std::vector<IDInfo> aTradeCities;
+		bool abTradeRoute[MAX_PLAYERS];
+		int aiTradeYield[NUM_YIELD_TYPES];
+		int aiBaseYieldRate[NUM_YIELD_TYPES];
+		int aiSpecialYieldMultiplier[NUM_YIELD_TYPES];
+		int aiBaseYieldRank[NUM_YIELD_TYPES];
+		bool abBaseYieldRankValid[NUM_YIELD_TYPES];
+		int aiYieldRank[NUM_YIELD_TYPES];
+		bool abYieldRankValid[NUM_YIELD_TYPES];
+		int aiCommerceRate[NUM_COMMERCE_TYPES];
+		int aiCommerceRank[NUM_COMMERCE_TYPES];
+		bool abCommerceRankValid[NUM_COMMERCE_TYPES];
+		int iMaintenance;
+		int iPopulationRank;
+		bool bPopulationRankValid;
+		bool bAssignWorkDirty;
+		bool bChooseProductionDirty;
+		bool bInfoDirty;
+		bool bLayoutDirty;
+		bool bCitizens;
+		bool abWorkingPlot[NUM_CITY_PLOTS];
+		short aaiPlotYield[NUM_CITY_PLOTS][NUM_YIELD_TYPES];
+		std::vector<int> aiSpecialistCount;
+		std::vector<int> aiForceSpecialistCount;
+	};
+	void AI_saveCivicsPreviewState(CivicsPreviewState& kState, bool bCitizens) const;
+	void AI_restoreCivicsPreviewCitizens(const CivicsPreviewState& kState);
+	void AI_restoreCivicsPreviewState(const CivicsPreviewState& kState);
+
 protected:
 
 	int m_iEmphasizeAvoidGrowthCount;
