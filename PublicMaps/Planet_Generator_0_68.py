@@ -30,7 +30,8 @@ v. 0.68 K-Mod-Magnus (2026, written with Claude for the K-Mod-Magnus mod; the pl
 - New option Minimum island size (replaces One tile islands allowed).
 - New option Rival civs on your continent: how many other civs start on your continent, an exact number or a random
   one from a range (1 - 2, 2 - 3, 4 - 5, 6 - 10, 11 - 15, 16 - 20).
-- New option Every resource at least twice: whatever the climate, every resource is on the map at least twice.
+- New option Every resource at least twice: whatever the climate, every resource is on the map at least twice. On by
+  default.
 - Fixed: a crash in continent growth (part bookkeeping), peaks filling one-plot lakes, and plots near the map's
   x seam and edges in two helpers.
 
@@ -191,7 +192,7 @@ selection_defaults = [
 					6, #Temperature
 					1, #Flood plains
 					0, #Resources
-					0, #Every resource at least twice
+					1, #Every resource at least twice (K-Mod-Magnus: Yes)
 					]
 # (selection_description), (value or random value list), (is included in "random" selection)
 selection_names_and_values = [
@@ -470,8 +471,8 @@ selection_names_and_values = [
 					#["Planet generator - Many",3.0,False],
 					],
 					[ #Every resource at least twice: (K-Mod-Magnus) a drop-down: the map options have no check boxes
-					["No (default)",False,False],
-					["Yes, whatever the climate",True,False],
+					["No",False,False],
+					["Yes, whatever the climate (default)",True,False],
 					],
 					]
 
@@ -5103,6 +5104,9 @@ def loadMapOptionDefaults():
 					valueName = "1 plot (one-plot islands allowed)"
 				else:
 					valueName = "2 plots (default)"
+			# Every resource at least twice was "No (default)" / "Yes, whatever the climate" until Yes became the
+			# default (written by Claude). Those labels match nothing now, so a choice remembered from before falls
+			# back to the new default (Yes) once.
 			for selOptionIndex in range(len(selection_titles)):
 				selectionTitleCaption, selectionTitleName, autoRandom = selection_titles[selOptionIndex]
 				if option == selectionTitleName:

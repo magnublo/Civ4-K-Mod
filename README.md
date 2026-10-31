@@ -134,7 +134,7 @@ Pre-chop and pre-build texts: `Assets/xml/Text/CIV4GameText_PreChopPreBuild.xml`
 - **Coastline** (new): Rugged, Very rugged or Maximum coast reshape the continents for more coast plots (fjords and peninsulas open to the sea, no new lakes), keeping each continent in one piece, its size and the separation. On a Standard map with 70% ocean, "Maximum coast" about doubles the coast plots.
 - **Minimum island size** (new, replaces "One tile islands allowed"): smaller islands grow to it, or go if there is no room.
 - **Rival civs on your continent** (new): none; 1 to 10, 12, 15 or 20; a random number from a range (1-2, 2-3, 4-5, 6-10, 11-15 or 16-20, picked when the map is made); or all. With "By player count" sizes your continent is made for you and that many rivals.
-- **Every resource at least twice** (new; the map options are drop-downs, so it is No/Yes): every resource is placed at least twice whatever the climate; where no plot can take it, a plot is changed to fit (e.g. grassland and jungle for bananas on a cold map).
+- **Every resource at least twice** (new, Yes by default; the map options are drop-downs, so it is No/Yes): every resource is placed at least twice whatever the climate; where no plot can take it, a plot is changed to fit (e.g. grassland and jungle for bananas on a cold map).
 
 Your last choices are remembered as before (`planet_generator_0_60.cfg` in the Beyond the Sword folder); choices saved by the original script carry over.
 
