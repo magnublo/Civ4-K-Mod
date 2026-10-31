@@ -4,7 +4,7 @@ K-Mod-Magnus is a fork of [K-Mod](https://github.com/karadoc/Civ4-K-Mod) 1.46 by
 
 - room for 48 civilizations (K-Mod: 18);
 - the Marathon Accelerated game speed;
-- more Stone, Marble and seafood on generated maps, and other starting techs for five civilizations;
+- about 1.3× as many resources on generated maps, on top of more Stone, Marble and seafood, and other starting techs for five civilizations;
 - pre-chop and pre-build buttons, an "Automate Pre-chop" action for workers, and a "prechopped" sign on each forest you pre-chop;
 - a "Workers" tab in the BUG options: which improvements your automated workers build (at first all but watermills, windmills and forest preserves) and which they replace;
 - automated production that builds your list of buildings in your order, then Wealth or Research;
@@ -91,7 +91,13 @@ Pre-chop and pre-build texts: `Assets/xml/Text/CIV4GameText_PreChopPreBuild.xml`
     - Build Research (`PROCESS_RESEARCH`) comes with Mysticism instead of Alphabet.
 
     Standard Marathon and the other speeds are as in BtS. If you edit the speed list, keep `CIV4CultureLevelInfo.xml` in step: each culture level needs one `SpeedThreshold` per speed (a missing one counts as 0), and listing more speeds than exist gives "XML Error" popups while loading.
-- **More resources** (`Terrain/CIV4BonusInfos.xml`, otherwise the same as the game's own file): Stone `iConstAppearance` 200 and `iPlayer` 100 (BtS: 100 and 50), Marble `iPlayer` 100 (50), Clam, Crab and Fish `iConstAppearance` 260 (50). How many a map gets grows with both values (`CvMapGenerator::calculateNumBonusesToAdd`): about 3.8× the Stone, 2× the Marble and 3.8× the seafood, as far as there are plots that can take them. Maps placed by hand (scenarios) are unaffected.
+- **More resources** (`Terrain/CIV4BonusInfos.xml` and `Terrain/CIV4BonusClassInfos.xml`, otherwise the same as the game's own files):
+    - Every resource's `iConstAppearance` and `iRandApp1`-`4` are 1.3× BtS's (most foods and luxuries 65 and 33 instead of 50 and 25, the strategic resources 130 and 13 instead of 100 and 10). How many a map gets grows with these (`CvMapGenerator::calculateNumBonusesToAdd`).
+    - On top of that, as before: Stone `iConstAppearance` 260 and `iPlayer` 100 (BtS: 100 and 50), Marble `iPlayer` 100 (50), Clam, Crab and Fish `iConstAppearance` 338 (50). That is about 3.8× the Stone, 2× the Marble and 3.8× the seafood of BtS before the 1.3×, as far as there are plots that can take them.
+    - Two resources of the same class but different types keep a distance: Grain (Corn, Rice, Wheat) and Livestock (Cow, Pig, Sheep) 4 plots (BtS: 5), Wonder (Marble, Stone) 7 (8). That is 1/√1.3 of BtS's, so the denser map has the same room. With BtS's distances, the type placed last in its class got fewer than before (Sheep 0.4×, Stone 0.7×).
+    - Ivory and Spices are placed after the other luxuries (`iPlacementOrder` 6, BtS 5), because they can also go on plains and forest, while Banana, Dye, Gems and Sugar need jungle.
+    - Measured (Huge, 11 civs, 10 placements on the same map, against the previous files): 1.29× the resources on Pangaea, 1.27× on Fractal, most types 1.2–1.4×. Types placed last among those that compete for the same land still get less: Sheep 0.9×/0.6×, Wheat 1.2×/0.9×, Silver 1.0×/0.7×, Stone 1.0×, Sugar 0.7× on Pangaea, which has little jungle (1.3× on Fractal). Every resource must have a free plot with no other resource next to it, so the land fills up.
+    - Maps placed by hand (scenarios) are unaffected, and so are existing saves.
 - **Starting techs** (`Civilizations/CIV4CivilizationInfos.xml`, otherwise BtS's file):
 
     | Civilization | K-Mod-Magnus | BtS and K-Mod |

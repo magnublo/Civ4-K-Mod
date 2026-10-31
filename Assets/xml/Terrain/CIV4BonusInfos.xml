@@ -27,13 +27,13 @@
 			<iHealth>0</iHealth>
 			<iHappiness>0</iHappiness>
 			<iPlacementOrder>2</iPlacementOrder>
-			<iConstAppearance>100</iConstAppearance>
+			<iConstAppearance>130</iConstAppearance>
 			<iMinAreaSize>3</iMinAreaSize>
 			<iMinLatitude>0</iMinLatitude>
 			<iMaxLatitude>90</iMaxLatitude>
 			<Rands>
-				<iRandApp1>10</iRandApp1>
-				<iRandApp2>10</iRandApp2>
+				<iRandApp1>13</iRandApp1>
+				<iRandApp2>13</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -84,13 +84,13 @@
 			<iHealth>0</iHealth>
 			<iHappiness>0</iHappiness>
 			<iPlacementOrder>2</iPlacementOrder>
-			<iConstAppearance>100</iConstAppearance>
+			<iConstAppearance>130</iConstAppearance>
 			<iMinAreaSize>3</iMinAreaSize>
 			<iMinLatitude>0</iMinLatitude>
 			<iMaxLatitude>90</iMaxLatitude>
 			<Rands>
-				<iRandApp1>10</iRandApp1>
-				<iRandApp2>10</iRandApp2>
+				<iRandApp1>13</iRandApp1>
+				<iRandApp2>13</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -137,13 +137,13 @@
 			<iHealth>0</iHealth>
 			<iHappiness>0</iHappiness>
 			<iPlacementOrder>1</iPlacementOrder>
-			<iConstAppearance>100</iConstAppearance>
+			<iConstAppearance>130</iConstAppearance>
 			<iMinAreaSize>3</iMinAreaSize>
 			<iMinLatitude>0</iMinLatitude>
 			<iMaxLatitude>90</iMaxLatitude>
 			<Rands>
-				<iRandApp1>10</iRandApp1>
-				<iRandApp2>10</iRandApp2>
+				<iRandApp1>13</iRandApp1>
+				<iRandApp2>13</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -202,13 +202,13 @@
 			<iHealth>0</iHealth>
 			<iHappiness>0</iHappiness>
 			<iPlacementOrder>1</iPlacementOrder>
-			<iConstAppearance>100</iConstAppearance>
+			<iConstAppearance>130</iConstAppearance>
 			<iMinAreaSize>3</iMinAreaSize>
 			<iMinLatitude>0</iMinLatitude>
 			<iMaxLatitude>90</iMaxLatitude>
 			<Rands>
-				<iRandApp1>10</iRandApp1>
-				<iRandApp2>10</iRandApp2>
+				<iRandApp1>13</iRandApp1>
+				<iRandApp2>13</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -259,13 +259,13 @@
 			<iHealth>0</iHealth>
 			<iHappiness>0</iHappiness>
 			<iPlacementOrder>0</iPlacementOrder>
-			<iConstAppearance>100</iConstAppearance>
+			<iConstAppearance>130</iConstAppearance>
 			<iMinAreaSize>3</iMinAreaSize>
 			<iMinLatitude>0</iMinLatitude>
 			<iMaxLatitude>90</iMaxLatitude>
 			<Rands>
-				<iRandApp1>10</iRandApp1>
-				<iRandApp2>10</iRandApp2>
+				<iRandApp1>13</iRandApp1>
+				<iRandApp2>13</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -324,13 +324,13 @@
 			<iHealth>0</iHealth>
 			<iHappiness>0</iHappiness>
 			<iPlacementOrder>3</iPlacementOrder>
-			<iConstAppearance>100</iConstAppearance>
+			<iConstAppearance>130</iConstAppearance>
 			<iMinAreaSize>3</iMinAreaSize>
 			<iMinLatitude>0</iMinLatitude>
 			<iMaxLatitude>90</iMaxLatitude>
 			<Rands>
-				<iRandApp1>10</iRandApp1>
-				<iRandApp2>10</iRandApp2>
+				<iRandApp1>13</iRandApp1>
+				<iRandApp2>13</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -381,13 +381,13 @@
 			<iHealth>0</iHealth>
 			<iHappiness>0</iHappiness>
 			<iPlacementOrder>0</iPlacementOrder>
-			<iConstAppearance>100</iConstAppearance>
+			<iConstAppearance>130</iConstAppearance>
 			<iMinAreaSize>3</iMinAreaSize>
 			<iMinLatitude>0</iMinLatitude>
 			<iMaxLatitude>90</iMaxLatitude>
 			<Rands>
-				<iRandApp1>10</iRandApp1>
-				<iRandApp2>10</iRandApp2>
+				<iRandApp1>13</iRandApp1>
+				<iRandApp2>13</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -452,13 +452,13 @@
 			<iHealth>0</iHealth>
 			<iHappiness>0</iHappiness>
 			<iPlacementOrder>3</iPlacementOrder>
-			<iConstAppearance>200</iConstAppearance>
+			<iConstAppearance>260</iConstAppearance>
 			<iMinAreaSize>3</iMinAreaSize>
 			<iMinLatitude>0</iMinLatitude>
 			<iMaxLatitude>90</iMaxLatitude>
 			<Rands>
-				<iRandApp1>10</iRandApp1>
-				<iRandApp2>10</iRandApp2>
+				<iRandApp1>13</iRandApp1>
+				<iRandApp2>13</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -505,13 +505,13 @@
 			<iHealth>0</iHealth>
 			<iHappiness>0</iHappiness>
 			<iPlacementOrder>2</iPlacementOrder>
-			<iConstAppearance>100</iConstAppearance>
+			<iConstAppearance>130</iConstAppearance>
 			<iMinAreaSize>3</iMinAreaSize>
 			<iMinLatitude>0</iMinLatitude>
 			<iMaxLatitude>90</iMaxLatitude>
 			<Rands>
-				<iRandApp1>10</iRandApp1>
-				<iRandApp2>10</iRandApp2>
+				<iRandApp1>13</iRandApp1>
+				<iRandApp2>13</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -600,13 +600,13 @@
 			<iHealth>1</iHealth>
 			<iHappiness>0</iHappiness>
 			<iPlacementOrder>4</iPlacementOrder>
-			<iConstAppearance>50</iConstAppearance>
+			<iConstAppearance>65</iConstAppearance>
 			<iMinAreaSize>3</iMinAreaSize>
 			<iMinLatitude>0</iMinLatitude>
 			<iMaxLatitude>90</iMaxLatitude>
 			<Rands>
-				<iRandApp1>25</iRandApp1>
-				<iRandApp2>25</iRandApp2>
+				<iRandApp1>33</iRandApp1>
+				<iRandApp2>33</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -654,13 +654,13 @@
 			<iHealth>1</iHealth>
 			<iHappiness>0</iHappiness>
 			<iPlacementOrder>6</iPlacementOrder>
-			<iConstAppearance>260</iConstAppearance>
+			<iConstAppearance>338</iConstAppearance>
 			<iMinAreaSize>10</iMinAreaSize>
 			<iMinLatitude>0</iMinLatitude>
 			<iMaxLatitude>50</iMaxLatitude>
 			<Rands>
-				<iRandApp1>25</iRandApp1>
-				<iRandApp2>25</iRandApp2>
+				<iRandApp1>33</iRandApp1>
+				<iRandApp2>33</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -703,13 +703,13 @@
 			<iHealth>1</iHealth>
 			<iHappiness>0</iHappiness>
 			<iPlacementOrder>4</iPlacementOrder>
-			<iConstAppearance>50</iConstAppearance>
+			<iConstAppearance>65</iConstAppearance>
 			<iMinAreaSize>3</iMinAreaSize>
 			<iMinLatitude>0</iMinLatitude>
 			<iMaxLatitude>90</iMaxLatitude>
 			<Rands>
-				<iRandApp1>25</iRandApp1>
-				<iRandApp2>25</iRandApp2>
+				<iRandApp1>33</iRandApp1>
+				<iRandApp2>33</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -753,13 +753,13 @@
 			<iHealth>1</iHealth>
 			<iHappiness>0</iHappiness>
 			<iPlacementOrder>4</iPlacementOrder>
-			<iConstAppearance>50</iConstAppearance>
+			<iConstAppearance>65</iConstAppearance>
 			<iMinAreaSize>3</iMinAreaSize>
 			<iMinLatitude>0</iMinLatitude>
 			<iMaxLatitude>50</iMaxLatitude>
 			<Rands>
-				<iRandApp1>25</iRandApp1>
-				<iRandApp2>25</iRandApp2>
+				<iRandApp1>33</iRandApp1>
+				<iRandApp2>33</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -806,13 +806,13 @@
 			<iHealth>1</iHealth>
 			<iHappiness>0</iHappiness>
 			<iPlacementOrder>6</iPlacementOrder>
-			<iConstAppearance>260</iConstAppearance>
+			<iConstAppearance>338</iConstAppearance>
 			<iMinAreaSize>10</iMinAreaSize>
 			<iMinLatitude>40</iMinLatitude>
 			<iMaxLatitude>90</iMaxLatitude>
 			<Rands>
-				<iRandApp1>25</iRandApp1>
-				<iRandApp2>25</iRandApp2>
+				<iRandApp1>33</iRandApp1>
+				<iRandApp2>33</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -855,13 +855,13 @@
 			<iHealth>1</iHealth>
 			<iHappiness>0</iHappiness>
 			<iPlacementOrder>4</iPlacementOrder>
-			<iConstAppearance>50</iConstAppearance>
+			<iConstAppearance>65</iConstAppearance>
 			<iMinAreaSize>3</iMinAreaSize>
 			<iMinLatitude>30</iMinLatitude>
 			<iMaxLatitude>90</iMaxLatitude>
 			<Rands>
-				<iRandApp1>25</iRandApp1>
-				<iRandApp2>25</iRandApp2>
+				<iRandApp1>33</iRandApp1>
+				<iRandApp2>33</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -914,13 +914,13 @@
 			<iHealth>1</iHealth>
 			<iHappiness>0</iHappiness>
 			<iPlacementOrder>6</iPlacementOrder>
-			<iConstAppearance>260</iConstAppearance>
+			<iConstAppearance>338</iConstAppearance>
 			<iMinAreaSize>10</iMinAreaSize>
 			<iMinLatitude>0</iMinLatitude>
 			<iMaxLatitude>90</iMaxLatitude>
 			<Rands>
-				<iRandApp1>25</iRandApp1>
-				<iRandApp2>25</iRandApp2>
+				<iRandApp1>33</iRandApp1>
+				<iRandApp2>33</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -967,13 +967,13 @@
 			<iHealth>1</iHealth>
 			<iHappiness>0</iHappiness>
 			<iPlacementOrder>4</iPlacementOrder>
-			<iConstAppearance>50</iConstAppearance>
+			<iConstAppearance>65</iConstAppearance>
 			<iMinAreaSize>3</iMinAreaSize>
 			<iMinLatitude>10</iMinLatitude>
 			<iMaxLatitude>50</iMaxLatitude>
 			<Rands>
-				<iRandApp1>25</iRandApp1>
-				<iRandApp2>25</iRandApp2>
+				<iRandApp1>33</iRandApp1>
+				<iRandApp2>33</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -1026,13 +1026,13 @@
 			<iHealth>1</iHealth>
 			<iHappiness>0</iHappiness>
 			<iPlacementOrder>4</iPlacementOrder>
-			<iConstAppearance>50</iConstAppearance>
+			<iConstAppearance>65</iConstAppearance>
 			<iMinAreaSize>3</iMinAreaSize>
 			<iMinLatitude>0</iMinLatitude>
 			<iMaxLatitude>40</iMaxLatitude>
 			<Rands>
-				<iRandApp1>25</iRandApp1>
-				<iRandApp2>25</iRandApp2>
+				<iRandApp1>33</iRandApp1>
+				<iRandApp2>33</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -1085,13 +1085,13 @@
 			<iHealth>1</iHealth>
 			<iHappiness>0</iHappiness>
 			<iPlacementOrder>4</iPlacementOrder>
-			<iConstAppearance>50</iConstAppearance>
+			<iConstAppearance>65</iConstAppearance>
 			<iMinAreaSize>3</iMinAreaSize>
 			<iMinLatitude>30</iMinLatitude>
 			<iMaxLatitude>90</iMaxLatitude>
 			<Rands>
-				<iRandApp1>25</iRandApp1>
-				<iRandApp2>25</iRandApp2>
+				<iRandApp1>33</iRandApp1>
+				<iRandApp2>33</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -1138,13 +1138,13 @@
 			<iHealth>1</iHealth>
 			<iHappiness>0</iHappiness>
 			<iPlacementOrder>4</iPlacementOrder>
-			<iConstAppearance>50</iConstAppearance>
+			<iConstAppearance>65</iConstAppearance>
 			<iMinAreaSize>3</iMinAreaSize>
 			<iMinLatitude>0</iMinLatitude>
 			<iMaxLatitude>90</iMaxLatitude>
 			<Rands>
-				<iRandApp1>25</iRandApp1>
-				<iRandApp2>25</iRandApp2>
+				<iRandApp1>33</iRandApp1>
+				<iRandApp2>33</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -1188,13 +1188,13 @@
 			<iHealth>0</iHealth>
 			<iHappiness>1</iHappiness>
 			<iPlacementOrder>5</iPlacementOrder>
-			<iConstAppearance>50</iConstAppearance>
+			<iConstAppearance>65</iConstAppearance>
 			<iMinAreaSize>3</iMinAreaSize>
 			<iMinLatitude>0</iMinLatitude>
 			<iMaxLatitude>90</iMaxLatitude>
 			<Rands>
-				<iRandApp1>25</iRandApp1>
-				<iRandApp2>25</iRandApp2>
+				<iRandApp1>33</iRandApp1>
+				<iRandApp2>33</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -1242,13 +1242,13 @@
 			<iHealth>0</iHealth>
 			<iHappiness>1</iHappiness>
 			<iPlacementOrder>5</iPlacementOrder>
-			<iConstAppearance>50</iConstAppearance>
+			<iConstAppearance>65</iConstAppearance>
 			<iMinAreaSize>3</iMinAreaSize>
 			<iMinLatitude>0</iMinLatitude>
 			<iMaxLatitude>90</iMaxLatitude>
 			<Rands>
-				<iRandApp1>25</iRandApp1>
-				<iRandApp2>25</iRandApp2>
+				<iRandApp1>33</iRandApp1>
+				<iRandApp2>33</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -1309,13 +1309,13 @@
 			<iHealth>0</iHealth>
 			<iHappiness>1</iHappiness>
 			<iPlacementOrder>5</iPlacementOrder>
-			<iConstAppearance>50</iConstAppearance>
+			<iConstAppearance>65</iConstAppearance>
 			<iMinAreaSize>3</iMinAreaSize>
 			<iMinLatitude>0</iMinLatitude>
 			<iMaxLatitude>90</iMaxLatitude>
 			<Rands>
-				<iRandApp1>25</iRandApp1>
-				<iRandApp2>25</iRandApp2>
+				<iRandApp1>33</iRandApp1>
+				<iRandApp2>33</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -1363,13 +1363,13 @@
 			<iHealth>0</iHealth>
 			<iHappiness>1</iHappiness>
 			<iPlacementOrder>5</iPlacementOrder>
-			<iConstAppearance>50</iConstAppearance>
+			<iConstAppearance>65</iConstAppearance>
 			<iMinAreaSize>3</iMinAreaSize>
 			<iMinLatitude>0</iMinLatitude>
 			<iMaxLatitude>90</iMaxLatitude>
 			<Rands>
-				<iRandApp1>25</iRandApp1>
-				<iRandApp2>25</iRandApp2>
+				<iRandApp1>33</iRandApp1>
+				<iRandApp2>33</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -1416,13 +1416,13 @@
 			<iHealth>0</iHealth>
 			<iHappiness>1</iHappiness>
 			<iPlacementOrder>5</iPlacementOrder>
-			<iConstAppearance>50</iConstAppearance>
+			<iConstAppearance>65</iConstAppearance>
 			<iMinAreaSize>3</iMinAreaSize>
 			<iMinLatitude>0</iMinLatitude>
 			<iMaxLatitude>90</iMaxLatitude>
 			<Rands>
-				<iRandApp1>25</iRandApp1>
-				<iRandApp2>25</iRandApp2>
+				<iRandApp1>33</iRandApp1>
+				<iRandApp2>33</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -1464,14 +1464,14 @@
 			<iAIObjective>0</iAIObjective>
 			<iHealth>0</iHealth>
 			<iHappiness>1</iHappiness>
-			<iPlacementOrder>5</iPlacementOrder>
-			<iConstAppearance>50</iConstAppearance>
+			<iPlacementOrder>6</iPlacementOrder>
+			<iConstAppearance>65</iConstAppearance>
 			<iMinAreaSize>3</iMinAreaSize>
 			<iMinLatitude>0</iMinLatitude>
 			<iMaxLatitude>40</iMaxLatitude>
 			<Rands>
-				<iRandApp1>25</iRandApp1>
-				<iRandApp2>25</iRandApp2>
+				<iRandApp1>33</iRandApp1>
+				<iRandApp2>33</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -1524,13 +1524,13 @@
 			<iHealth>0</iHealth>
 			<iHappiness>1</iHappiness>
 			<iPlacementOrder>5</iPlacementOrder>
-			<iConstAppearance>50</iConstAppearance>
+			<iConstAppearance>65</iConstAppearance>
 			<iMinAreaSize>3</iMinAreaSize>
 			<iMinLatitude>0</iMinLatitude>
 			<iMaxLatitude>90</iMaxLatitude>
 			<Rands>
-				<iRandApp1>25</iRandApp1>
-				<iRandApp2>25</iRandApp2>
+				<iRandApp1>33</iRandApp1>
+				<iRandApp2>33</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -1583,13 +1583,13 @@
 			<iHealth>0</iHealth>
 			<iHappiness>1</iHappiness>
 			<iPlacementOrder>5</iPlacementOrder>
-			<iConstAppearance>50</iConstAppearance>
+			<iConstAppearance>65</iConstAppearance>
 			<iMinAreaSize>3</iMinAreaSize>
 			<iMinLatitude>0</iMinLatitude>
 			<iMaxLatitude>90</iMaxLatitude>
 			<Rands>
-				<iRandApp1>25</iRandApp1>
-				<iRandApp2>25</iRandApp2>
+				<iRandApp1>33</iRandApp1>
+				<iRandApp2>33</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -1635,14 +1635,14 @@
 			<iAIObjective>0</iAIObjective>
 			<iHealth>0</iHealth>
 			<iHappiness>1</iHappiness>
-			<iPlacementOrder>5</iPlacementOrder>
-			<iConstAppearance>50</iConstAppearance>
+			<iPlacementOrder>6</iPlacementOrder>
+			<iConstAppearance>65</iConstAppearance>
 			<iMinAreaSize>3</iMinAreaSize>
 			<iMinLatitude>0</iMinLatitude>
 			<iMaxLatitude>60</iMaxLatitude>
 			<Rands>
-				<iRandApp1>25</iRandApp1>
-				<iRandApp2>25</iRandApp2>
+				<iRandApp1>33</iRandApp1>
+				<iRandApp2>33</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -1698,13 +1698,13 @@
 			<iHealth>0</iHealth>
 			<iHappiness>1</iHappiness>
 			<iPlacementOrder>5</iPlacementOrder>
-			<iConstAppearance>50</iConstAppearance>
+			<iConstAppearance>65</iConstAppearance>
 			<iMinAreaSize>3</iMinAreaSize>
 			<iMinLatitude>0</iMinLatitude>
 			<iMaxLatitude>90</iMaxLatitude>
 			<Rands>
-				<iRandApp1>25</iRandApp1>
-				<iRandApp2>25</iRandApp2>
+				<iRandApp1>33</iRandApp1>
+				<iRandApp2>33</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -1752,13 +1752,13 @@
 			<iHealth>0</iHealth>
 			<iHappiness>1</iHappiness>
 			<iPlacementOrder>5</iPlacementOrder>
-			<iConstAppearance>50</iConstAppearance>
+			<iConstAppearance>65</iConstAppearance>
 			<iMinAreaSize>3</iMinAreaSize>
 			<iMinLatitude>20</iMinLatitude>
 			<iMaxLatitude>50</iMaxLatitude>
 			<Rands>
-				<iRandApp1>25</iRandApp1>
-				<iRandApp2>25</iRandApp2>
+				<iRandApp1>33</iRandApp1>
+				<iRandApp2>33</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
@@ -1802,13 +1802,13 @@
 			<iHealth>0</iHealth>
 			<iHappiness>1</iHappiness>
 			<iPlacementOrder>6</iPlacementOrder>
-			<iConstAppearance>50</iConstAppearance>
+			<iConstAppearance>65</iConstAppearance>
 			<iMinAreaSize>10</iMinAreaSize>
 			<iMinLatitude>50</iMinLatitude>
 			<iMaxLatitude>90</iMaxLatitude>
 			<Rands>
-				<iRandApp1>25</iRandApp1>
-				<iRandApp2>25</iRandApp2>
+				<iRandApp1>33</iRandApp1>
+				<iRandApp2>33</iRandApp2>
 				<iRandApp3>0</iRandApp3>
 				<iRandApp4>0</iRandApp4>
 			</Rands>
