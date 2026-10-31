@@ -403,6 +403,7 @@ bool CvXMLLoadUtility::SetPostGlobalsGlobalDefines()
 		GC.getDefinesVarSystem()->SetValue("BARBARIAN_LEADER", idx);
 
 		GC.readAutomatedProductionOrder(true); // automated production
+		GC.readBonusesInLakes(true); // lake resources
 
 		GC.clearDefineCache(); // perf
 		return true;

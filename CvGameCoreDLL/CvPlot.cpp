@@ -2169,6 +2169,11 @@ bool CvPlot::canHaveBonus(BonusTypes eBonus, bool bIgnoreLatitude) const
 		return false;
 	}
 
+	// lake resources (written by Claude): in a lake (a water area of at most LAKE_MAX_AREA_SIZE plots), a bonus listed in
+	// BONUSES_IN_LAKES (GlobalDefinesAlt.xml) needs neither its terrain nor its iMinAreaSize; its other rules still hold.
+	// Without the list no seafood goes in lakes (iMinAreaSize 10), and oil only on Ocean plots, which lakes seldom have.
+	const bool bLakeBonus = isWater() && GC.isBonusInLakes(eBonus) && isLake();
+
 	if (getFeatureType() != NO_FEATURE)
 	{
 		if (!(GC.getBonusInfo(eBonus).isFeature(getFeatureType())))
@@ -2183,7 +2188,7 @@ bool CvPlot::canHaveBonus(BonusTypes eBonus, bool bIgnoreLatitude) const
 	}
 	else
 	{
-		if (!(GC.getBonusInfo(eBonus).isTerrain(getTerrainType())))
+		if (!(GC.getBonusInfo(eBonus).isTerrain(getTerrainType())) && !bLakeBonus)
 		{
 			return false;
 		}
@@ -2212,7 +2217,7 @@ bool CvPlot::canHaveBonus(BonusTypes eBonus, bool bIgnoreLatitude) const
 		}
 	}
 
-	if (GC.getBonusInfo(eBonus).getMinAreaSize() != -1)
+	if (GC.getBonusInfo(eBonus).getMinAreaSize() != -1 && !bLakeBonus)
 	{
 		if (area()->getNumTiles() < GC.getBonusInfo(eBonus).getMinAreaSize())
 		{

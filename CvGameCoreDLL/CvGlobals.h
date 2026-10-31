@@ -699,6 +699,9 @@ public:
 	// automated production (written by Claude): AUTOMATED_PRODUCTION_ORDER in GlobalDefinesAlt.xml
 	void readAutomatedProductionOrder(bool bReportErrors);
 	const std::vector<BuildingClassTypes>& getAutomatedProductionOrder() const { return m_aeAutomatedProductionOrder; }
+	// lake resources (written by Claude): BONUSES_IN_LAKES in GlobalDefinesAlt.xml, see CvPlot::canHaveBonus
+	void readBonusesInLakes(bool bReportErrors);
+	bool isBonusInLakes(BonusTypes eBonus) const { return eBonus >= 0 && eBonus < (int)m_abBonusInLakes.size() && m_abBonusInLakes[eBonus]; }
 
 	inline int getEXTRA_YIELD() { return m_iEXTRA_YIELD; } // K-Mod (why aren't all these functions inline?)
 	int getMOVE_DENOMINATOR();
@@ -1344,6 +1347,7 @@ protected:
 	int m_iUSE_ON_UNIT_MOVE_CALLBACK;
 	int m_iUSE_GET_EXTRA_COST_CALLBACK;
 	std::vector<BuildingClassTypes> m_aeAutomatedProductionOrder; // automated production
+	std::vector<bool> m_abBonusInLakes; // lake resources, by bonus type
 };
 
 extern CvGlobals gGlobals;	// for debugging

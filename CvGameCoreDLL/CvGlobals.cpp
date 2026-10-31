@@ -2797,6 +2797,9 @@ void CvGlobals::cacheGlobals()
 	// automated production: when loading the XML, the defines come before the buildings (see SetPostGlobalsGlobalDefines)
 	if (getNumBuildingClassInfos() > 0)
 		readAutomatedProductionOrder(false);
+	// lake resources: likewise, once the bonuses are loaded
+	if (getNumBonusInfos() > 0)
+		readBonusesInLakes(false);
 }
 
 /************************************************************************************************/
@@ -3012,6 +3015,38 @@ void CvGlobals::readAutomatedProductionOrder(bool bReportErrors)
 		else if (bReportErrors)
 		{
 			gDLL->MessageBox(CvString::format("AUTOMATED_PRODUCTION_ORDER in GlobalDefinesAlt.xml: %s is not a building class.", szName.c_str()).c_str(), "XML Error");
+		}
+		iStart = szNames.find_first_not_of(szSeparators, iEnd);
+	}
+}
+
+// lake resources (written by Claude): BONUSES_IN_LAKES in GlobalDefinesAlt.xml lists the bonus types, separated by commas
+// or spaces, that the map may place in lakes (CvPlot::canHaveBonus). Read like AUTOMATED_PRODUCTION_ORDER: once the bonuses
+// are loaded (SetPostGlobalsGlobalDefines, which reports names that aren't bonus types), and whenever a define is set.
+void CvGlobals::readBonusesInLakes(bool bReportErrors)
+{
+	m_abBonusInLakes.assign(getNumBonusInfos(), false);
+
+	const char* szList = getDefineSTRING("BONUSES_IN_LAKES");
+	if (szList == NULL)
+		return;
+
+	const std::string szNames(szList);
+	const char* szSeparators = ", \t\r\n";
+	std::string::size_type iStart = szNames.find_first_not_of(szSeparators);
+	while (iStart != std::string::npos)
+	{
+		std::string::size_type iEnd = szNames.find_first_of(szSeparators, iStart);
+		std::string szName = szNames.substr(iStart, iEnd == std::string::npos ? std::string::npos : iEnd - iStart);
+		int iBonus = getInfoTypeForString(szName.c_str(), true);
+		// getInfoTypeForString knows the types of all infos; only take a bonus's
+		if (iBonus >= 0 && iBonus < getNumBonusInfos() && szName == getBonusInfo((BonusTypes)iBonus).getType())
+		{
+			m_abBonusInLakes[iBonus] = true;
+		}
+		else if (bReportErrors)
+		{
+			gDLL->MessageBox(CvString::format("BONUSES_IN_LAKES in GlobalDefinesAlt.xml: %s is not a bonus type.", szName.c_str()).c_str(), "XML Error");
 		}
 		iStart = szNames.find_first_not_of(szSeparators, iEnd);
 	}

@@ -234,4 +234,13 @@
 		<DefineName>GAME_SETUP_DEFAULT_CIVS</DefineName>
 		<iDefineIntVal>24</iDefineIntVal>
 	</Define>
+	<!-- Lake resources (written by Claude): the resources the map may place in lakes (water areas of at most 9 plots,
+		LAKE_MAX_AREA_SIZE). In a lake, a listed resource needs neither its terrain nor its iMinAreaSize; its other rules
+		still hold (latitude, oil not next to a river, the distance to other resources). Outside lakes nothing changes.
+		Without the list no seafood goes in lakes (its iMinAreaSize is 10), and oil only on Ocean plots, while lakes are
+		Coast. Bonus types from Terrain/CIV4BonusInfos.xml, separated by commas or spaces; empty = as in BtS. -->
+	<Define>
+		<DefineName>BONUSES_IN_LAKES</DefineName>
+		<DefineTextVal>BONUS_FISH, BONUS_CRAB, BONUS_CLAM, BONUS_OIL</DefineTextVal>
+	</Define>
 </Civ4Defines>
