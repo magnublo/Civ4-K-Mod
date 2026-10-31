@@ -14059,6 +14059,9 @@ void CvGameTextMgr::getAttitudeString(CvWStringBuffer& szBuffer, PlayerTypes ePl
 
 	// (K-Mod note: vassal information has been moved from here to a new function)
 
+	// Show Hidden Attitude Mod (BULL; ported by Claude): the BUG option, read once (it asks Python)
+	bool bShowHiddenAttitude = getBugOptionBOOL("MiscHover__LeaderheadHiddenAttitude", true, "BUG_LEADERHEAD_HOVER_HIDDEN_ATTITUDE");
+
 	// Attitude breakdown
 	for (iPass = 0; iPass < 2; iPass++)
 	{
@@ -14189,6 +14192,59 @@ void CvGameTextMgr::getAttitudeString(CvWStringBuffer& szBuffer, PlayerTypes ePl
 			szBuffer.append(NEWLINE);
 			szBuffer.append(szTempBuffer);
 		}
+
+		// BEGIN: Show Hidden Attitude Mod 01/22/2010 (from BULL; ported to K-Mod-Magnus by Claude, on by default)
+		if (bShowHiddenAttitude)
+		{
+			iAttitudeChange = kPlayer.AI_getBetterRankDifferenceAttitude(eTargetPlayer);
+			if ((iPass == 0) ? (iAttitudeChange > 0) : (iAttitudeChange < 0))
+			{
+				szTempBuffer.Format(SETCOLR L"%s" ENDCOLR, TEXT_COLOR((iAttitudeChange > 0) ? "COLOR_POSITIVE_TEXT" : "COLOR_NEGATIVE_TEXT"), gDLL->getText("TXT_KEY_MISC_ATTITUDE_BETTER_RANK", iAttitudeChange).GetCString());
+				szBuffer.append(NEWLINE);
+				szBuffer.append(szTempBuffer);
+			}
+
+			iAttitudeChange = kPlayer.AI_getWorseRankDifferenceAttitude(eTargetPlayer);
+			if ((iPass == 0) ? (iAttitudeChange > 0) : (iAttitudeChange < 0))
+			{
+				szTempBuffer.Format(SETCOLR L"%s" ENDCOLR, TEXT_COLOR((iAttitudeChange > 0) ? "COLOR_POSITIVE_TEXT" : "COLOR_NEGATIVE_TEXT"), gDLL->getText("TXT_KEY_MISC_ATTITUDE_WORSE_RANK", iAttitudeChange).GetCString());
+				szBuffer.append(NEWLINE);
+				szBuffer.append(szTempBuffer);
+			}
+
+			iAttitudeChange = kPlayer.AI_getLowRankAttitude(eTargetPlayer);
+			if ((iPass == 0) ? (iAttitudeChange > 0) : (iAttitudeChange < 0))
+			{
+				szTempBuffer.Format(SETCOLR L"%s" ENDCOLR, TEXT_COLOR((iAttitudeChange > 0) ? "COLOR_POSITIVE_TEXT" : "COLOR_NEGATIVE_TEXT"), gDLL->getText("TXT_KEY_MISC_ATTITUDE_LOW_RANK", iAttitudeChange).GetCString());
+				szBuffer.append(NEWLINE);
+				szBuffer.append(szTempBuffer);
+			}
+
+			iAttitudeChange = kPlayer.AI_getLostWarAttitude(eTargetPlayer);
+			if ((iPass == 0) ? (iAttitudeChange > 0) : (iAttitudeChange < 0))
+			{
+				szTempBuffer.Format(SETCOLR L"%s" ENDCOLR, TEXT_COLOR((iAttitudeChange > 0) ? "COLOR_POSITIVE_TEXT" : "COLOR_NEGATIVE_TEXT"), gDLL->getText("TXT_KEY_MISC_ATTITUDE_LOST_WAR", iAttitudeChange).GetCString());
+				szBuffer.append(NEWLINE);
+				szBuffer.append(szTempBuffer);
+			}
+
+			iAttitudeChange = kPlayer.AI_getTeamSizeAttitude(eTargetPlayer);
+			if ((iPass == 0) ? (iAttitudeChange > 0) : (iAttitudeChange < 0))
+			{
+				szTempBuffer.Format(SETCOLR L"%s" ENDCOLR, TEXT_COLOR((iAttitudeChange > 0) ? "COLOR_POSITIVE_TEXT" : "COLOR_NEGATIVE_TEXT"), gDLL->getText("TXT_KEY_MISC_ATTITUDE_TEAM_SIZE", iAttitudeChange).GetCString());
+				szBuffer.append(NEWLINE);
+				szBuffer.append(szTempBuffer);
+			}
+
+			iAttitudeChange = kPlayer.AI_getFirstImpressionAttitude(eTargetPlayer);
+			if ((iPass == 0) ? (iAttitudeChange > 0) : (iAttitudeChange < 0))
+			{
+				szTempBuffer.Format(SETCOLR L"%s" ENDCOLR, TEXT_COLOR((iAttitudeChange > 0) ? "COLOR_POSITIVE_TEXT" : "COLOR_NEGATIVE_TEXT"), gDLL->getText("TXT_KEY_MISC_ATTITUDE_FIRST_IMPRESSION", iAttitudeChange).GetCString());
+				szBuffer.append(NEWLINE);
+				szBuffer.append(szTempBuffer);
+			}
+		}
+		// END: Show Hidden Attitude Mod
 
 		for (iI = 0; iI < NUM_MEMORY_TYPES; ++iI)
 		{

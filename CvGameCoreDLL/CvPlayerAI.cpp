@@ -8500,6 +8500,182 @@ int CvPlayerAI::AI_getColonyAttitude(PlayerTypes ePlayer) const
 	return iAttitude;
 }
 
+// BEGIN: Show Hidden Attitude Mod 01/22/2009 (DaveMcW, from BULL; ported to K-Mod-Magnus by Claude)
+// The parts of AI_updateAttitudeCache that the leader hover didn't list: first impression (personality, difficulty, and
+// between AIs their peace weights and warmonger respect), team size, score rank, lost war. As in BULL, they show only
+// what the player can know: no personality parts with Random Personalities, the ranks among the civs the active
+// player has met, a peace weight without its random part, and war success only in the active player's wars; debug
+// mode shows everything.
+static bool isShowPersonalityModifiers()
+{
+	return !GC.getGameINLINE().isOption(GAMEOPTION_RANDOM_PERSONALITIES) || GC.getGameINLINE().isDebugMode();
+}
+
+static bool isShowSpoilerModifiers()
+{
+	return GC.getGameINLINE().isDebugMode();
+}
+
+int CvPlayerAI::AI_getFirstImpressionAttitude(PlayerTypes ePlayer) const
+{
+	const CvPlayerAI& kPlayer = GET_PLAYER(ePlayer);
+	int iAttitude = GC.getHandicapInfo(kPlayer.getHandicapType()).getAttitudeChange();
+
+	if (isShowPersonalityModifiers())
+	{
+		iAttitude += GC.getLeaderHeadInfo(getPersonalityType()).getBaseAttitude();
+		if (!kPlayer.isHuman())
+		{
+			if (isShowSpoilerModifiers())
+			{
+				// iBasePeaceWeight + iPeaceWeightRand
+				iAttitude += (4 - abs(AI_getPeaceWeight() - kPlayer.AI_getPeaceWeight()));
+			}
+			else
+			{
+				// iBasePeaceWeight
+				iAttitude += (4 - abs(GC.getLeaderHeadInfo(getPersonalityType()).getBasePeaceWeight() - GC.getLeaderHeadInfo(kPlayer.getPersonalityType()).getBasePeaceWeight()));
+			}
+			iAttitude += std::min(GC.getLeaderHeadInfo(getPersonalityType()).getWarmongerRespect(), GC.getLeaderHeadInfo(kPlayer.getPersonalityType()).getWarmongerRespect());
+		}
+	}
+
+	return iAttitude;
+}
+
+int CvPlayerAI::AI_getTeamSizeAttitude(PlayerTypes ePlayer) const
+{
+	return -std::max(0, (GET_TEAM(GET_PLAYER(ePlayer).getTeam()).getNumMembers() - GET_TEAM(getTeam()).getNumMembers()));
+}
+
+// Count only players visible on the active player's scoreboard
+int CvPlayerAI::AI_getKnownPlayerRank(PlayerTypes ePlayer) const
+{
+	PlayerTypes eActivePlayer = GC.getGameINLINE().getActivePlayer();
+	if (NO_PLAYER == eActivePlayer || GC.getGameINLINE().isDebugMode())
+	{
+		// Use the full scoreboard
+		return GC.getGameINLINE().getPlayerRank(ePlayer);
+	}
+
+	TeamTypes eActiveTeam = GC.getGameINLINE().getActiveTeam();
+	int iRank = 0;
+	for (int iI = 0; iI < MAX_CIV_PLAYERS; iI++)
+	{
+		PlayerTypes eRankPlayer = GC.getGameINLINE().getRankPlayer(iI);
+		if (eRankPlayer != NO_PLAYER)
+		{
+			const CvTeam& kRankTeam = GET_TEAM(GET_PLAYER(eRankPlayer).getTeam());
+			if (kRankTeam.isAlive() && (kRankTeam.isHasMet(eActiveTeam) || kRankTeam.isHuman()))
+			{
+				if (eRankPlayer == ePlayer)
+				{
+					return iRank;
+				}
+				iRank++;
+			}
+		}
+	}
+
+	// Should only get here if we tried to find the rank of an unknown player
+	return iRank + 1;
+}
+
+int CvPlayerAI::AI_getBetterRankDifferenceAttitude(PlayerTypes ePlayer) const
+{
+	if (!isShowPersonalityModifiers())
+	{
+		return 0;
+	}
+
+	int iRankDifference;
+	if (isShowSpoilerModifiers())
+	{
+		iRankDifference = GC.getGameINLINE().getPlayerRank(ePlayer) - GC.getGameINLINE().getPlayerRank(getID());
+	}
+	else
+	{
+		iRankDifference = AI_getKnownPlayerRank(ePlayer) - AI_getKnownPlayerRank(getID());
+	}
+
+	if (iRankDifference > 0)
+	{
+		return GC.getLeaderHeadInfo(getPersonalityType()).getBetterRankDifferenceAttitudeChange() * iRankDifference / (GC.getGameINLINE().countCivPlayersEverAlive() + 1);
+	}
+
+	return 0;
+}
+
+int CvPlayerAI::AI_getWorseRankDifferenceAttitude(PlayerTypes ePlayer) const
+{
+	if (!isShowPersonalityModifiers())
+	{
+		return 0;
+	}
+
+	int iRankDifference;
+	if (isShowSpoilerModifiers())
+	{
+		iRankDifference = GC.getGameINLINE().getPlayerRank(getID()) - GC.getGameINLINE().getPlayerRank(ePlayer);
+	}
+	else
+	{
+		iRankDifference = AI_getKnownPlayerRank(getID()) - AI_getKnownPlayerRank(ePlayer);
+	}
+
+	if (iRankDifference > 0)
+	{
+		return GC.getLeaderHeadInfo(getPersonalityType()).getWorseRankDifferenceAttitudeChange() * iRankDifference / (GC.getGameINLINE().countCivPlayersEverAlive() + 1);
+	}
+
+	return 0;
+}
+
+int CvPlayerAI::AI_getLowRankAttitude(PlayerTypes ePlayer) const
+{
+	int iThisPlayerRank;
+	int iPlayerRank;
+	if (isShowSpoilerModifiers())
+	{
+		iThisPlayerRank = GC.getGameINLINE().getPlayerRank(getID());
+		iPlayerRank = GC.getGameINLINE().getPlayerRank(ePlayer);
+	}
+	else
+	{
+		iThisPlayerRank = AI_getKnownPlayerRank(getID());
+		iPlayerRank = AI_getKnownPlayerRank(ePlayer);
+	}
+
+	int iMedianRank = GC.getGameINLINE().countCivPlayersEverAlive() / 2;
+	return (iThisPlayerRank >= iMedianRank && iPlayerRank >= iMedianRank) ? 1 : 0;
+}
+
+int CvPlayerAI::AI_getLostWarAttitude(PlayerTypes ePlayer) const
+{
+	if (!isShowPersonalityModifiers())
+	{
+		return 0;
+	}
+
+	TeamTypes eTeam = GET_PLAYER(ePlayer).getTeam();
+	if (!isShowSpoilerModifiers() && NO_PLAYER != GC.getGameINLINE().getActivePlayer())
+	{
+		// Hide war success for wars you are not involved in
+		if (GC.getGameINLINE().getActiveTeam() != getTeam() && GC.getGameINLINE().getActiveTeam() != eTeam)
+		{
+			return 0;
+		}
+	}
+
+	if (GET_TEAM(eTeam).AI_getWarSuccess(getTeam()) > GET_TEAM(getTeam()).AI_getWarSuccess(eTeam))
+	{
+		return GC.getLeaderHeadInfo(getPersonalityType()).getLostWarAttitudeChange();
+	}
+
+	return 0;
+}
+// END: Show Hidden Attitude Mod
+
 
 
 PlayerVoteTypes CvPlayerAI::AI_diploVote(const VoteSelectionSubData& kVoteData, VoteSourceTypes eVoteSource, bool bPropose)

@@ -176,6 +176,16 @@ public:
 	int AI_getRivalTradeAttitude(PlayerTypes ePlayer) const;
 	int AI_getMemoryAttitude(PlayerTypes ePlayer, MemoryTypes eMemory) const;
 	int AI_getColonyAttitude(PlayerTypes ePlayer) const;
+	// BEGIN: Show Hidden Attitude Mod 01/22/2010 (DaveMcW, from BULL; ported by Claude): the parts of the attitude that
+	// BtS doesn't list in the leader hover, for CvGameTextMgr::getAttitudeString (BUG option MiscHover__LeaderheadHiddenAttitude)
+	int AI_getFirstImpressionAttitude(PlayerTypes ePlayer) const;
+	int AI_getTeamSizeAttitude(PlayerTypes ePlayer) const;
+	int AI_getBetterRankDifferenceAttitude(PlayerTypes ePlayer) const;
+	int AI_getWorseRankDifferenceAttitude(PlayerTypes ePlayer) const;
+	int AI_getLowRankAttitude(PlayerTypes ePlayer) const;
+	int AI_getLostWarAttitude(PlayerTypes ePlayer) const;
+	int AI_getKnownPlayerRank(PlayerTypes ePlayer) const;
+	// END: Show Hidden Attitude Mod
 
 	PlayerVoteTypes AI_diploVote(const VoteSelectionSubData& kVoteData, VoteSourceTypes eVoteSource, bool bPropose);
 
