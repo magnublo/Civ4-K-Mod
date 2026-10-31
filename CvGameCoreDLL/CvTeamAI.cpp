@@ -1833,7 +1833,7 @@ int CvTeamAI::AI_warDiplomacyCost(TeamTypes eTarget) const
 	// Finally, reduce the value for large maps;
 	// so that this diplomacy stuff doesn't become huge relative to other parts of the war evaluation.
 	iDiploCost *= 3;
-	iDiploCost /= std::max(5, GC.getWorldInfo((WorldSizeTypes)GC.getMapINLINE().getWorldSize()).getDefaultPlayers());
+	iDiploCost /= std::max(5, GC.getWorldInfo((WorldSizeTypes)GC.getMapINLINE().getWorldSize()).getRulesDefaultPlayers());
 
 	return iDiploCost;
 }

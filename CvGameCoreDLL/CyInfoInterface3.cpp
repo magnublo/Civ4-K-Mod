@@ -300,7 +300,7 @@ void CyInfoPythonInterface3()
 
 	// CvWorldInfo
 	python::class_<CvWorldInfo, python::bases<CvInfoBase> >("CvWorldInfo")
-		.def("getDefaultPlayers", &CvWorldInfo::getDefaultPlayers, "int ()")
+		.def("getDefaultPlayers", &CvWorldInfo::getRulesDefaultPlayers, "int ()") // K-Mod-Magnus: the map size's iDefaultPlayers, as before (random events, map scripts)
 		.def("getUnitNameModifier", &CvWorldInfo::getUnitNameModifier, "int ()")
 		.def("getTargetNumCities", &CvWorldInfo::getTargetNumCities, "int ()")
 		.def("getNumFreeBuildingBonuses", &CvWorldInfo::getNumFreeBuildingBonuses, "int ()")

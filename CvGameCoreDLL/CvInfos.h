@@ -3752,7 +3752,11 @@ public:
 	CvWorldInfo();
 	virtual ~CvWorldInfo();
 
-	DllExport int getDefaultPlayers() const;				// Exposed to Python
+	// K-Mod-Magnus (written by Claude): the exe calls getDefaultPlayers only for the number of civs its game setup
+	// screens start with, and GAME_SETUP_DEFAULT_CIVS sets that number. The DLL's own code and Python use
+	// getRulesDefaultPlayers, the map size's iDefaultPlayers, which the AI and the random events scale by.
+	DllExport int getDefaultPlayers() const;
+	int getRulesDefaultPlayers() const;				// Exposed to Python (as getDefaultPlayers)
 	int getUnitNameModifier() const;				// Exposed to Python
 	int getTargetNumCities() const;				// Exposed to Python
 	int getNumFreeBuildingBonuses() const;				// Exposed to Python

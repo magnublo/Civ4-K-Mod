@@ -12946,7 +12946,7 @@ int CvPlayerAI::AI_nukeWeight() const
 	// Increase the weight based on how many nukes the world has made & used so far.
 	int iHistory = 2*GC.getGameINLINE().getNukesExploded() + GC.getGameINLINE().countTotalNukeUnits() - GC.getLeaderHeadInfo(getPersonalityType()).getBasePeaceWeight();
 	iHistory *= 35; // 5% for each nuke, 10% for each exploded
-	iHistory /= std::max(1, GC.getWorldInfo(GC.getMapINLINE().getWorldSize()).getDefaultPlayers());
+	iHistory /= std::max(1, GC.getWorldInfo(GC.getMapINLINE().getWorldSize()).getRulesDefaultPlayers());
 	iHistory = std::min(iHistory, 300);
 	if (iHistory > 0)
 	{
@@ -20918,7 +20918,7 @@ void CvPlayerAI::AI_updateStrategyHash()
 	iParanoia /= 3*(std::max(1, GC.getNumEraInfos()));
 	// That starts as a factor of 1, and drop to 1/3.  And now for game size...
 	iParanoia *= 14;
-	iParanoia /= (7+std::max(kTeam.getHasMetCivCount(true), GC.getWorldInfo(GC.getMapINLINE().getWorldSize()).getDefaultPlayers()));
+	iParanoia /= (7+std::max(kTeam.getHasMetCivCount(true), GC.getWorldInfo(GC.getMapINLINE().getWorldSize()).getRulesDefaultPlayers()));
 
 	// Alert strategy
 	if( iParanoia >= 200 )

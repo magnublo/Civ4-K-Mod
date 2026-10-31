@@ -226,4 +226,12 @@
 			BUILDINGCLASS_BUNKER, BUILDINGCLASS_BOMB_SHELTER
 		</DefineTextVal>
 	</Define>
+	<!-- Game setup (written by Claude): how many civs, you included, a new game starts with in the game's setup screens
+		(Custom Game, Play Now, also Quick Start from the ini), on every map size; you can still change it there.
+		0 = the map size's iDefaultPlayers (BtS: Duel 2, Tiny 3, Small 5, Standard 7, Large 9, Huge 11). The AI and the
+		random events keep scaling by iDefaultPlayers (e.g. how many harbors a quest asks for). -->
+	<Define>
+		<DefineName>GAME_SETUP_DEFAULT_CIVS</DefineName>
+		<iDefineIntVal>24</iDefineIntVal>
+	</Define>
 </Civ4Defines>

@@ -15036,9 +15036,19 @@ CvWorldInfo::~CvWorldInfo()
 {
 }
 
+// K-Mod-Magnus (written by Claude): for the exe's game setup screens only, see CvInfos.h.
+// GAME_SETUP_DEFAULT_CIVS is 0 or missing in other mods' XML: then the map size's own number, as in BtS.
 int CvWorldInfo::getDefaultPlayers() const
 {
-	return m_iDefaultPlayers; 
+	int iCivs = GC.getDefineINT("GAME_SETUP_DEFAULT_CIVS");
+	if (iCivs <= 0)
+		return m_iDefaultPlayers;
+	return std::min(iCivs, (int)MAX_CIV_PLAYERS);
+}
+
+int CvWorldInfo::getRulesDefaultPlayers() const
+{
+	return m_iDefaultPlayers;
 }
 
 int CvWorldInfo::getUnitNameModifier() const
