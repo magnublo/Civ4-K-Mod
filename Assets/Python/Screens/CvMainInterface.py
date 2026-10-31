@@ -2504,13 +2504,28 @@ class CvMainInterface:
 
 		return 0
 		
+	# pre-chop (written by Claude): the plot a build button is for, as CvGame::canHandleAction picks it. With Shift held,
+	# where the unit's queued missions end, so a worker ordered to move with Shift can pre-chop there next, as it can
+	# chop there; otherwise (or if that plot isn't visible) the plot the unit stands on. Shift as the DLL reads it
+	# (gc.isShiftKeyDown), since the DLL decides what the button does; the exe's CyInterface().shiftKey() for an older DLL.
+	def getBuildPlot( self, pUnit ):
+		if hasattr(gc, "isShiftKeyDown"):
+			bShift = gc.isShiftKeyDown()
+		else:
+			bShift = CyInterface().shiftKey()
+		if bShift and CyInterface().mirrorsSelectionGroup():
+			pPlot = pUnit.getGroup().lastMissionPlot()
+			if pPlot and not pPlot.isNone() and pPlot.isVisible(pUnit.getTeam(), False):
+				return pPlot
+		return pUnit.plot()
+
 	# pre-chop: build actions that only remove the plot's feature and give hammers for it (chopping a forest)
 	def isPreChopAction( self, iAction, pUnit ):
 		kAction = gc.getActionInfo(iAction)
 		if kAction.getMissionType() != MissionTypes.MISSION_BUILD:
 			return False
 		kBuild = gc.getBuildInfo(kAction.getMissionData())
-		eFeature = pUnit.plot().getFeatureType()
+		eFeature = self.getBuildPlot(pUnit).getFeatureType()
 		if eFeature == -1 or kBuild.getImprovement() != -1 or kBuild.getRoute() != -1:
 			return False
 		return kBuild.isFeatureRemove(eFeature) and kBuild.getFeatureProduction(eFeature) > 0
@@ -2520,7 +2535,7 @@ class CvMainInterface:
 		if not CyInterface().canHandleAction(iAction, False):
 			return False
 		eBuild = gc.getActionInfo(iAction).getMissionData()
-		pPlot = pUnit.plot()
+		pPlot = self.getBuildPlot(pUnit)
 		return pPlot.getBuildProgress(eBuild) + pUnit.workRate(True) < pPlot.getBuildTime(eBuild)
 
 	# pre-build: the toggle for the first wonder or project in the city's queue (WIDGET_PREBUILD in the DLL)

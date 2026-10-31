@@ -34,6 +34,8 @@ public:
 	bool isRealismInvictusArt() const;
 	bool isRealismInvictusArtAvailable() const;
 	void setRealismInvictusArt(bool bEnabled);
+	// pre-chop (written by Claude): Shift as the DLL reads it (GC.shiftKey), which decides where a build button acts
+	bool isShiftKeyDown() const;
 	CyGame* getCyGame() const;
 	CyMap* getCyMap() const;
 	CyPlayer* getCyPlayer(int idx);

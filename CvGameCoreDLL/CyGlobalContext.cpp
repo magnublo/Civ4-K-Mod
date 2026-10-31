@@ -58,6 +58,13 @@ void CyGlobalContext::setRealismInvictusArt(bool bEnabled)
 }
 // RI art end
 
+// pre-chop (written by Claude): CvGame::canHandleAction tests a build at the end of the queued missions while
+// GC.shiftKey() is true; CvMainInterface.py's pre-chop button asks the same (the exe's CyInterface().shiftKey() needn't agree)
+bool CyGlobalContext::isShiftKeyDown() const
+{
+	return GC.shiftKey();
+}
+
 CyGame* CyGlobalContext::getCyGame() const
 {
 	static CyGame cyGame(&GC.getGameINLINE());
