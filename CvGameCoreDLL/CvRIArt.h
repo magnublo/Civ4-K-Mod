@@ -2,10 +2,12 @@
 
 // RI art: Realism Invictus graphics. The unit and building art of the Realism Invictus mod, picked per civilization as
 // RI does, shown instead of K-Mod's while the option is on (BUG option "Realism Invictus graphics", which calls
-// gc.setRealismInvictusArt). It reaches the exe through CvUnit's art functions, CvPlayer::getUnitArtInfo and
-// getUnitButton (units), CvCity::getBuildingArtInfo and CvGame::getBuildingArtInfo (buildings) and
-// CvInitCore::getArtStyle (the city style: houses, walls, RI's regional versions of buildings; setArtStyle never
-// stores one of RI's styles).
+// gc.setRealismInvictusArt). It reaches the exe through CvUnit's art functions (getArtInfo, getGroupDefinitions,
+// getUnitGroupRequired, getAnimationMaxSpeed, getAnimationPadTime) and CvPlayer::getUnitArtInfo (units),
+// CvCity::getBuildingArtInfo and CvGame::getBuildingArtInfo (buildings) and CvInitCore::getArtStyle (the city style:
+// houses, walls, RI's regional versions of buildings; setArtStyle never stores one of RI's styles).
+// Buttons (icons) stay K-Mod's: CvUnit::getButton and CvPlayer::getUnitButton read K-Mod's art; building buttons come
+// from CvBuildingInfo, which RI doesn't touch.
 // The data is xml/Art/RI_CIV4ArtInfos.xml plus RI's art defines (types prefixed RI_), all written by
 // tools/ri_art/port_ri_art.py; without these files (a mod folder given only this DLL) nothing is loaded and the option
 // does nothing.

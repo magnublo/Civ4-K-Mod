@@ -3352,8 +3352,9 @@ ArtStyleTypes CvPlayer::getArtStyleType() const
 
 const TCHAR* CvPlayer::getUnitButton(UnitTypes eUnit) const
 {
-	//return GC.getUnitInfo(eUnit).getArtInfo(0, getCurrentEra(), (UnitArtStyleTypes) GC.getCivilizationInfo(getCivilizationType()).getUnitArtStyleType())->getButton();
-	return getUnitArtInfo(eUnit)->getButton(); // RI art: Realism Invictus' button if its art is shown
+	// RI art: K-Mod's button, also while Realism Invictus' art is shown (getUnitArtInfo would give RI's): the city
+	// screen, the tech tree and the Civilopedia keep the original icons (written by Claude, as the user asked)
+	return GC.getUnitInfo(eUnit).getArtInfo(0, getCurrentEra(), (UnitArtStyleTypes) GC.getCivilizationInfo(getCivilizationType()).getUnitArtStyleType())->getButton();
 }
 
 void CvPlayer::doTurn()

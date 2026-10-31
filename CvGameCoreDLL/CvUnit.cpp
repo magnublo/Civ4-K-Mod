@@ -13319,7 +13319,10 @@ const CvArtInfoUnit* CvUnit::getArtInfo(int i, EraTypes eEra) const
 
 const TCHAR* CvUnit::getButton() const
 {
-	const CvArtInfoUnit* pArtInfo = getArtInfo(0, GET_PLAYER(getOwnerINLINE()).getCurrentEra());
+	// RI art: K-Mod's button, also while Realism Invictus' art is shown, so the unit lists on the map and the messages
+	// keep the original icons (written by Claude, as the user asked)
+	//const CvArtInfoUnit* pArtInfo = getArtInfo(0, GET_PLAYER(getOwnerINLINE()).getCurrentEra());
+	const CvArtInfoUnit* pArtInfo = m_pUnitInfo->getArtInfo(0, GET_PLAYER(getOwnerINLINE()).getCurrentEra(), (UnitArtStyleTypes)GC.getCivilizationInfo(getCivilizationType()).getUnitArtStyleType());
 
 	if (NULL != pArtInfo)
 	{
