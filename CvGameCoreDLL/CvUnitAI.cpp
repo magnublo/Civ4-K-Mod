@@ -9922,8 +9922,9 @@ void CvUnitAI::AI_cityAutomated()
 
 // pre-chop automation (written by Claude): AUTOMATE_PRECHOP, the workers' "Automate Pre-chop" action. The group
 // pre-chops (works on a chop and stops one worker-turn before it would finish, as the pre-chop button does, which also
-// puts up the "prechopped" sign) the forests in its owner's territory whose chop gives a city hammers: first those
-// without an improvement, then those with one (the user's choice), each time the one it reaches soonest. A forest is
+// puts up the "prechopped" sign) the forests in its owner's territory whose chop gives a city hammers. Order (the
+// user's choices): forests in a city's work area (its 21 plots) before all others; among those, the one whose chop gives
+// more hammers now; then one without an improvement before one with one; then the one it reaches soonest. A forest is
 // done when the next worker-turn of the group's slowest worker would finish the chop; one that another group of the
 // owner is heading for, to build there, is left to that group. When none is left, the automation ends and the worker
 // waits for orders, with a message.
@@ -9953,48 +9954,57 @@ void CvUnitAI::AI_prechopMove()
 
 	CvPlot* pBestPlot = NULL;
 	BuildTypes eBestBuild = NO_BUILD;
-	for (int iPass = 0; iPass < 2 && pBestPlot == NULL && iMinWorkRate < MAX_INT; iPass++)
+	// ((-priority, step distance), (plot index, chop build)) of the forests left, so that sorting puts the best first.
+	// Priority (written by Claude, the user's order): in a city's work area, then the chop's hammers, then no improvement.
+	std::vector<std::pair<std::pair<int, int>, std::pair<int, BuildTypes> > > candidates;
+	for (int iI = 0; iI < GC.getMapINLINE().numPlotsINLINE() && iMinWorkRate < MAX_INT; iI++)
 	{
-		// (step distance, (plot index, chop build)) of the forests left: without an improvement in pass 0, with one in pass 1
-		std::vector<std::pair<int, std::pair<int, BuildTypes> > > candidates;
-		for (int iI = 0; iI < GC.getMapINLINE().numPlotsINLINE(); iI++)
+		CvPlot* pLoopPlot = GC.getMapINLINE().plotByIndexINLINE(iI);
+		if (pLoopPlot->getOwnerINLINE() != getOwnerINLINE() || pLoopPlot->getFeatureType() == NO_FEATURE || pLoopPlot->area() != area())
 		{
-			CvPlot* pLoopPlot = GC.getMapINLINE().plotByIndexINLINE(iI);
-			if (pLoopPlot->getOwnerINLINE() != getOwnerINLINE() || pLoopPlot->getFeatureType() == NO_FEATURE || pLoopPlot->area() != area() ||
-				(pLoopPlot->getImprovementType() == NO_IMPROVEMENT) != (iPass == 0))
-			{
-				continue;
-			}
-			BuildTypes eChop = NO_BUILD;
-			for (int iJ = 0; iJ < GC.getNumBuildInfos() && eChop == NO_BUILD; iJ++)
-			{
-				const CvBuildInfo& kBuild = GC.getBuildInfo((BuildTypes)iJ);
-				if (kBuild.getImprovement() == NO_IMPROVEMENT && kBuild.getRoute() == NO_ROUTE &&
-					kBuild.isFeatureRemove(pLoopPlot->getFeatureType()) && canBuild(pLoopPlot, (BuildTypes)iJ))
-				{
-					eChop = (BuildTypes)iJ;
-				}
-			}
-			CvCity* pCity;
-			if (eChop == NO_BUILD || pLoopPlot->getFeatureProduction(eChop, getTeam(), &pCity) <= 0 ||
-				pLoopPlot->getBuildProgress(eChop) + iMinWorkRate >= pLoopPlot->getBuildTime(eChop))
-			{
-				continue;
-			}
-			if (kOwner.AI_getAnyPlotDanger(pLoopPlot) || kOwner.AI_plotTargetMissionAIs(pLoopPlot, MISSIONAI_BUILD, getGroup()) > 0)
-			{
-				continue;
-			}
-			candidates.push_back(std::make_pair(stepDistance(getX_INLINE(), getY_INLINE(), pLoopPlot->getX_INLINE(), pLoopPlot->getY_INLINE()), std::make_pair(iI, eChop)));
+			continue;
 		}
-		std::sort(candidates.begin(), candidates.end());
+		BuildTypes eChop = NO_BUILD;
+		for (int iJ = 0; iJ < GC.getNumBuildInfos() && eChop == NO_BUILD; iJ++)
+		{
+			const CvBuildInfo& kBuild = GC.getBuildInfo((BuildTypes)iJ);
+			if (kBuild.getImprovement() == NO_IMPROVEMENT && kBuild.getRoute() == NO_ROUTE &&
+				kBuild.isFeatureRemove(pLoopPlot->getFeatureType()) && canBuild(pLoopPlot, (BuildTypes)iJ))
+			{
+				eChop = (BuildTypes)iJ;
+			}
+		}
+		CvCity* pCity;
+		int iHammers = (eChop == NO_BUILD) ? 0 : pLoopPlot->getFeatureProduction(eChop, getTeam(), &pCity);
+		if (iHammers <= 0 || pLoopPlot->getBuildProgress(eChop) + iMinWorkRate >= pLoopPlot->getBuildTime(eChop))
+		{
+			continue;
+		}
+		if (kOwner.AI_getAnyPlotDanger(pLoopPlot) || kOwner.AI_plotTargetMissionAIs(pLoopPlot, MISSIONAI_BUILD, getGroup()) > 0)
+		{
+			continue;
+		}
+		int iPriority = (pLoopPlot->getWorkingCity() != NULL ? 1 : 0); // a city's work area
+		iPriority = iPriority * 100000 + std::min(iHammers, 99999);
+		iPriority = iPriority * 2 + (pLoopPlot->getImprovementType() == NO_IMPROVEMENT ? 1 : 0);
+		candidates.push_back(std::make_pair(std::make_pair(-iPriority, stepDistance(getX_INLINE(), getY_INLINE(), pLoopPlot->getX_INLINE(), pLoopPlot->getY_INLINE())), std::make_pair(iI, eChop)));
+	}
+	std::sort(candidates.begin(), candidates.end());
 
-		// of the nearest few that can be reached safely, the one reached soonest
+	// the forests of the best priority that can be reached safely; of the nearest few of them, the one reached soonest
+	size_t iCandidate = 0;
+	while (iCandidate < candidates.size() && pBestPlot == NULL)
+	{
+		const int iPriority = candidates[iCandidate].first.first;
 		int iBestTurns = MAX_INT;
 		int iReachable = 0;
-		for (size_t i = 0; i < candidates.size() && iReachable < 8; i++)
+		for (; iCandidate < candidates.size() && candidates[iCandidate].first.first == iPriority; iCandidate++)
 		{
-			CvPlot* pLoopPlot = GC.getMapINLINE().plotByIndexINLINE(candidates[i].second.first);
+			if (iReachable >= 8)
+			{
+				continue;
+			}
+			CvPlot* pLoopPlot = GC.getMapINLINE().plotByIndexINLINE(candidates[iCandidate].second.first);
 			int iPathTurns = 0;
 			if (!atPlot(pLoopPlot) && !generatePath(pLoopPlot, MOVE_SAFE_TERRITORY, true, &iPathTurns))
 			{
@@ -10005,7 +10015,7 @@ void CvUnitAI::AI_prechopMove()
 			{
 				iBestTurns = iPathTurns;
 				pBestPlot = pLoopPlot;
-				eBestBuild = candidates[i].second.second;
+				eBestBuild = candidates[iCandidate].second.second;
 			}
 		}
 	}
