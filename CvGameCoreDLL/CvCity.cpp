@@ -4551,39 +4551,46 @@ int CvCity::getVassalUnhappiness() const
 }
 
 
-int CvCity::unhappyLevel(int iExtra) const
+// happiness garrison (written by Claude): the sum of the city's anger percentages (parts per PERCENT_ANGER_DIVISOR),
+// moved here from unhappyLevel so that getHappinessSurplusWithMilitaryUnits can use it too.
+int CvCity::getTotalPercentAnger(int iExtra) const
 {
-	int iAngerPercent;
-	int iUnhappiness;
-	int iI;
+	int iAngerPercent = 0;
 
-	iUnhappiness = 0;
-
-	if (!isNoUnhappiness())
-	{
-		iAngerPercent = 0;
-
-		iAngerPercent += getOvercrowdingPercentAnger(iExtra);
-		iAngerPercent += getNoMilitaryPercentAnger();
-		iAngerPercent += getCulturePercentAnger();
-		iAngerPercent += getReligionPercentAnger();
-		iAngerPercent += getHurryPercentAnger(iExtra);
-		iAngerPercent += getConscriptPercentAnger(iExtra);
-		iAngerPercent += getDefyResolutionPercentAnger(iExtra);
-		iAngerPercent += getWarWearinessPercentAnger();
+	iAngerPercent += getOvercrowdingPercentAnger(iExtra);
+	iAngerPercent += getNoMilitaryPercentAnger();
+	iAngerPercent += getCulturePercentAnger();
+	iAngerPercent += getReligionPercentAnger();
+	iAngerPercent += getHurryPercentAnger(iExtra);
+	iAngerPercent += getConscriptPercentAnger(iExtra);
+	iAngerPercent += getDefyResolutionPercentAnger(iExtra);
+	iAngerPercent += getWarWearinessPercentAnger();
 /*
 ** K-Mod, 5/jan/11, karadoc
 ** global warming anger _percent_; as part per 100.
 ** Unfortunately, people who made the rest of the game used anger percent to mean part per 1000
 ** so I have to multiply my GwPercentAnger by 10 to make it fit in.
 */
-		iAngerPercent += std::max(0, GET_PLAYER(getOwnerINLINE()).getGwPercentAnger()*10);
+	iAngerPercent += std::max(0, GET_PLAYER(getOwnerINLINE()).getGwPercentAnger()*10);
 // K-Mod end
 
-		for (iI = 0; iI < GC.getNumCivicInfos(); iI++)
-		{
-			iAngerPercent += GET_PLAYER(getOwnerINLINE()).getCivicPercentAnger((CivicTypes)iI);
-		}
+	for (int iI = 0; iI < GC.getNumCivicInfos(); iI++)
+	{
+		iAngerPercent += GET_PLAYER(getOwnerINLINE()).getCivicPercentAnger((CivicTypes)iI);
+	}
+
+	return iAngerPercent;
+}
+
+int CvCity::unhappyLevel(int iExtra) const
+{
+	int iUnhappiness;
+
+	iUnhappiness = 0;
+
+	if (!isNoUnhappiness())
+	{
+		int iAngerPercent = getTotalPercentAnger(iExtra); // happiness garrison: the sum was here
 
 		iUnhappiness = ((iAngerPercent * (getPopulation() + iExtra)) / GC.getPERCENT_ANGER_DIVISOR());
 
@@ -4636,6 +4643,34 @@ int CvCity::happyLevel() const
 
 
 	return std::max(0, iHappiness);
+}
+
+// happiness garrison (written by Claude): happy minus unhappy citizens if iChange more (or, negative, fewer) units with
+// military happiness were in the city, without changing anything: each adds getHappyPerMilitaryUnit, and the anger of a
+// city with no military unit (NO_MILITARY_PERCENT_ANGER) comes or goes. For CvUnitAI::AI_happyGarrisonMove.
+int CvCity::getHappinessSurplusWithMilitaryUnits(int iChange) const
+{
+	int iHappyPerUnit = GET_PLAYER(getOwnerINLINE()).getHappyPerMilitaryUnit();
+	int iNewUnits = std::max(0, getMilitaryHappinessUnits() + iChange);
+	int iOldMilitary = getMilitaryHappiness();
+	int iNewMilitary = iNewUnits * iHappyPerUnit;
+
+	// happyLevel and unhappyLevel count the positive and the negative part of the military happiness
+	int iHappy = happyLevel() - std::max(0, iOldMilitary) + std::max(0, iNewMilitary);
+	int iUnhappy = unhappyLevel(0);
+	if (!isNoUnhappiness())
+	{
+		iUnhappy += std::min(0, iOldMilitary) - std::min(0, iNewMilitary);
+		if ((getMilitaryHappinessUnits() == 0) != (iNewUnits == 0))
+		{
+			// getNoMilitaryPercentAnger: only while the city has no military unit
+			int iAnger = getTotalPercentAnger(0);
+			int iNewAnger = iAnger + (iNewUnits == 0 ? 1 : -1) * GC.getDefineINT("NO_MILITARY_PERCENT_ANGER");
+			iUnhappy += (iNewAnger * getPopulation()) / GC.getPERCENT_ANGER_DIVISOR() - (iAnger * getPopulation()) / GC.getPERCENT_ANGER_DIVISOR();
+		}
+		iUnhappy = std::max(0, iUnhappy);
+	}
+	return iHappy - iUnhappy;
 }
 
 

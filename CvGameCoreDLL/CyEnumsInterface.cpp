@@ -1002,6 +1002,7 @@ void CyEnumsPythonInterface()
 		.value("AUTOMATE_EXPLORE", AUTOMATE_EXPLORE)
 		.value("AUTOMATE_RELIGION", AUTOMATE_RELIGION)
 		.value("AUTOMATE_PRECHOP", AUTOMATE_PRECHOP) // pre-chop automation
+		.value("AUTOMATE_HAPPY_GARRISON", AUTOMATE_HAPPY_GARRISON) // happiness garrison
 		.value("NUM_AUTOMATE_TYPES", NUM_AUTOMATE_TYPES)
 		;
 

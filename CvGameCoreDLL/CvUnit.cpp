@@ -3171,6 +3171,15 @@ bool CvUnit::canAutomate(AutomateTypes eAutomate) const
 		}
 		break;
 
+	case AUTOMATE_HAPPY_GARRISON: // happiness garrison (written by Claude): units that make a city happier while the owner
+		// gets happiness from military units in cities (Hereditary Rule)
+		if (!m_pUnitInfo->isMilitaryHappiness() || GET_PLAYER(getOwnerINLINE()).getHappyPerMilitaryUnit() <= 0 ||
+			GET_PLAYER(getOwnerINLINE()).getNumCities() == 0)
+		{
+			return false;
+		}
+		break;
+
 	default:
 		FAssert(false);
 		break;

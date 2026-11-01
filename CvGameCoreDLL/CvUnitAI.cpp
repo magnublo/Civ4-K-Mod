@@ -233,6 +233,10 @@ bool CvUnitAI::AI_update()
 			AI_prechopMove();
 			break;
 
+		case AUTOMATE_HAPPY_GARRISON: // happiness garrison
+			AI_happyGarrisonMove();
+			break;
+
 		default:
 			FAssert(false);
 			break;
@@ -10033,6 +10037,119 @@ void CvUnitAI::AI_prechopMove()
 	// nothing left to pre-chop: the worker is the player's again
 	getGroup()->setAutomateType(NO_AUTOMATE);
 	gDLL->getInterfaceIFace()->addHumanMessage(getOwnerINLINE(), false, GC.getEVENT_MESSAGE_TIME(), gDLL->getText("TXT_KEY_AUTOMATE_PRECHOP_DONE", getNameKey()), NULL, MESSAGE_TYPE_INFO, getButton(), (ColorTypes)GC.getInfoTypeForString("COLOR_WHITE"), getX_INLINE(), getY_INLINE(), true, true);
+}
+
+
+// happiness garrison (written by Claude): AUTOMATE_HAPPY_GARRISON, the "Auto-garrison for Happiness" action of units
+// that make a city happier while their owner gets happiness from military units in cities (Hereditary Rule). The unit
+// goes to the owner's city with the lowest happiness surplus (happy minus unhappy citizens), counting the units already
+// on their way there with this action as if they had arrived; among equals, the city that grows soonest (a city that
+// doesn't grow comes last), then the nearest. The city it stands in counts without it. There it fortifies, and the
+// automation ends. A group goes as a whole, like the other automations (select one unit to send only that one); the
+// group's units all count. (Splitting a group here would end its automation in CvSelectionGroup::deleteUnitNode, and
+// the units of a selection get the command one by one.)
+void CvUnitAI::AI_happyGarrisonMove()
+{
+	PROFILE_FUNC();
+
+	CvSelectionGroup* pGroup = getGroup();
+	const CvPlayerAI& kOwner = GET_PLAYER(getOwnerINLINE());
+
+	// no longer possible (e.g. another civic): the unit waits for orders
+	if (!canAutomate(AUTOMATE_HAPPY_GARRISON))
+	{
+		pGroup->setAutomateType(NO_AUTOMATE);
+		return;
+	}
+
+	// on its way: the city was chosen when it set out
+	CvPlot* pTarget = pGroup->AI_getMissionAIPlot();
+	if (pGroup->AI_getMissionAIType() == MISSIONAI_GUARD_CITY && pTarget != NULL && pTarget->isCity() && pTarget->getOwnerINLINE() == getOwnerINLINE())
+	{
+		if (atPlot(pTarget))
+		{
+			pGroup->setAutomateType(NO_AUTOMATE);
+			pGroup->pushMission(canFortify(plot()) ? MISSION_FORTIFY : MISSION_SLEEP);
+			return;
+		}
+		if (generatePath(pTarget, 0, true))
+		{
+			pGroup->pushMission(MISSION_MOVE_TO, pTarget->getX_INLINE(), pTarget->getY_INLINE(), 0, false, false, MISSIONAI_GUARD_CITY, pTarget);
+			return;
+		}
+	}
+
+	// the units heading for each city with this action (by plot index)
+	std::map<int, int> mapIncoming;
+	int iLoop;
+	for (CvSelectionGroup* pLoopGroup = kOwner.firstSelectionGroup(&iLoop); pLoopGroup != NULL; pLoopGroup = kOwner.nextSelectionGroup(&iLoop))
+	{
+		if (pLoopGroup == pGroup || pLoopGroup->getAutomateType() != AUTOMATE_HAPPY_GARRISON || pLoopGroup->AI_getMissionAIType() != MISSIONAI_GUARD_CITY)
+		{
+			continue;
+		}
+		CvPlot* pLoopTarget = pLoopGroup->AI_getMissionAIPlot();
+		if (pLoopTarget == NULL || pLoopGroup->plot() == pLoopTarget)
+		{
+			continue;
+		}
+		for (CLLNode<IDInfo>* pUnitNode = pLoopGroup->headUnitNode(); pUnitNode != NULL; pUnitNode = pLoopGroup->nextUnitNode(pUnitNode))
+		{
+			if (::getUnit(pUnitNode->m_data)->getUnitInfo().isMilitaryHappiness())
+			{
+				mapIncoming[GC.getMapINLINE().plotNumINLINE(pLoopTarget->getX_INLINE(), pLoopTarget->getY_INLINE())]++;
+			}
+		}
+	}
+
+	// the units of this group that make a city happier (all of them leave the city the group stands in)
+	int iGroupUnits = 0;
+	for (CLLNode<IDInfo>* pUnitNode = pGroup->headUnitNode(); pUnitNode != NULL; pUnitNode = pGroup->nextUnitNode(pUnitNode))
+	{
+		if (::getUnit(pUnitNode->m_data)->getUnitInfo().isMilitaryHappiness())
+		{
+			iGroupUnits++;
+		}
+	}
+
+	// ((surplus, turns to grow), (step distance, city ID)): sorting puts the city to choose first
+	std::vector<std::pair<std::pair<int, int>, std::pair<int, int> > > aCities;
+	for (CvCity* pLoopCity = kOwner.firstCity(&iLoop); pLoopCity != NULL; pLoopCity = kOwner.nextCity(&iLoop))
+	{
+		if (getDomainType() == DOMAIN_LAND && pLoopCity->area() != area())
+		{
+			continue;
+		}
+		int iChange = mapIncoming[GC.getMapINLINE().plotNumINLINE(pLoopCity->getX_INLINE(), pLoopCity->getY_INLINE())];
+		if (atPlot(pLoopCity->plot()))
+		{
+			iChange -= iGroupUnits; // without this group
+		}
+		int iGrowTurns = pLoopCity->foodDifference() > 0 ? pLoopCity->getFoodTurnsLeft() : MAX_INT;
+		aCities.push_back(std::make_pair(std::make_pair(pLoopCity->getHappinessSurplusWithMilitaryUnits(iChange), iGrowTurns),
+			std::make_pair(stepDistance(getX_INLINE(), getY_INLINE(), pLoopCity->getX_INLINE(), pLoopCity->getY_INLINE()), pLoopCity->getID())));
+	}
+	std::sort(aCities.begin(), aCities.end());
+
+	for (size_t i = 0; i < aCities.size(); i++)
+	{
+		CvPlot* pCityPlot = kOwner.getCity(aCities[i].second.second)->plot();
+		if (atPlot(pCityPlot))
+		{
+			pGroup->setAutomateType(NO_AUTOMATE);
+			pGroup->pushMission(canFortify(plot()) ? MISSION_FORTIFY : MISSION_SLEEP);
+			return;
+		}
+		if (generatePath(pCityPlot, 0, true))
+		{
+			pGroup->pushMission(MISSION_MOVE_TO, pCityPlot->getX_INLINE(), pCityPlot->getY_INLINE(), 0, false, false, MISSIONAI_GUARD_CITY, pCityPlot);
+			return;
+		}
+	}
+
+	// no city it can reach: the unit waits for orders
+	pGroup->setAutomateType(NO_AUTOMATE);
+	gDLL->getInterfaceIFace()->addHumanMessage(getOwnerINLINE(), false, GC.getEVENT_MESSAGE_TIME(), gDLL->getText("TXT_KEY_AUTOMATE_HAPPY_GARRISON_NONE", getNameKey()), NULL, MESSAGE_TYPE_INFO, getButton(), (ColorTypes)GC.getInfoTypeForString("COLOR_WHITE"), getX_INLINE(), getY_INLINE(), true, true);
 }
 
 

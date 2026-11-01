@@ -195,6 +195,8 @@ public:
 	int getVassalUnhappiness() const;																		// Exposed to Python
 	int unhappyLevel(int iExtra = 0) const;																	// Exposed to Python 
 	int happyLevel() const;																				// Exposed to Python				
+	int getTotalPercentAnger(int iExtra = 0) const; // happiness garrison (written by Claude): unhappyLevel's anger sum
+	int getHappinessSurplusWithMilitaryUnits(int iChange) const; // happiness garrison (written by Claude)
 	int angryPopulation(int iExtra = 0) const;										// Exposed to Python
 
 	int visiblePopulation() const;

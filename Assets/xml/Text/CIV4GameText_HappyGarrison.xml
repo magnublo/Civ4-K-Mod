@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Texts for "Auto-garrison for Happiness" (K-Mod-Magnus, written by Claude): CvUnitAI::AI_happyGarrisonMove -->
+<Civ4GameText xmlns="http://www.firaxis.com">
+	<TEXT>
+		<Tag>TXT_KEY_ACTION_AUTOMATE_HAPPY_GARRISON</Tag>
+		<English>Auto-garrison for Happiness</English>
+		<French>Auto-garrison for Happiness</French>
+		<German>Auto-garrison for Happiness</German>
+		<Italian>Auto-garrison for Happiness</Italian>
+		<Spanish>Auto-garrison for Happiness</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_ACTION_AUTOMATE_HAPPY_GARRISON_HELP</Tag>
+		<English>The unit goes to your city with the lowest happiness surplus (happy minus unhappy citizens), counting the units already on their way there with this order; among equals, the city that grows soonest. There it fortifies. A selected group goes together; select one unit to send only that one. Only while military units in a city make it happier (Hereditary Rule).</English>
+		<French>The unit goes to your city with the lowest happiness surplus (happy minus unhappy citizens), counting the units already on their way there with this order; among equals, the city that grows soonest. There it fortifies. A selected group goes together; select one unit to send only that one. Only while military units in a city make it happier (Hereditary Rule).</French>
+		<German>The unit goes to your city with the lowest happiness surplus (happy minus unhappy citizens), counting the units already on their way there with this order; among equals, the city that grows soonest. There it fortifies. A selected group goes together; select one unit to send only that one. Only while military units in a city make it happier (Hereditary Rule).</German>
+		<Italian>The unit goes to your city with the lowest happiness surplus (happy minus unhappy citizens), counting the units already on their way there with this order; among equals, the city that grows soonest. There it fortifies. A selected group goes together; select one unit to send only that one. Only while military units in a city make it happier (Hereditary Rule).</Italian>
+		<Spanish>The unit goes to your city with the lowest happiness surplus (happy minus unhappy citizens), counting the units already on their way there with this order; among equals, the city that grows soonest. There it fortifies. A selected group goes together; select one unit to send only that one. Only while military units in a city make it happier (Hereditary Rule).</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_AUTOMATE_HAPPY_GARRISON_NONE</Tag>
+		<English>%s1_Unit: no city to garrison for happiness</English>
+		<French>%s1_Unit: no city to garrison for happiness</French>
+		<German>%s1_Unit: no city to garrison for happiness</German>
+		<Italian>%s1_Unit: no city to garrison for happiness</Italian>
+		<Spanish>%s1_Unit: no city to garrison for happiness</Spanish>
+	</TEXT>
+</Civ4GameText>
