@@ -19854,6 +19854,13 @@ bool CvUnitAI::AI_improveBonus() // K-Mod. (all that junk wasn't being used anyw
 				{
 					bCanImprove = true;
 				}
+				// automated work boats (written by Claude): a human's automated boat also takes the other
+				// seas, which it reaches through a coastal city between two of them; generatePath below
+				// decides. The AI's boats keep the rule above: each is built in the city next to its resource.
+				else if (DOMAIN_SEA == getDomainType() && pLoopPlot->isWater() && isHuman())
+				{
+					bCanImprove = true;
+				}
 			}
 
 			if (bCanImprove)
