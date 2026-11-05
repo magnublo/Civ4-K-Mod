@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Texts for "Sleep until Maximum Discount" (K-Mod-Magnus, written by Claude): MISSION_SLEEP_FOR_DISCOUNT, CvDLLWidgetData::parseActionHelp -->
+<Civ4GameText xmlns="http://www.firaxis.com">
+	<TEXT>
+		<Tag>TXT_KEY_MISSION_SLEEP_FOR_DISCOUNT</Tag>
+		<English>Sleep until Maximum Discount</English>
+		<French>Sleep until Maximum Discount</French>
+		<German>Sleep until Maximum Discount</German>
+		<Italian>Sleep until Maximum Discount</Italian>
+		<Spanish>Sleep until Maximum Discount</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_MISSION_SLEEP_FOR_DISCOUNT_HELP</Tag>
+		<English>The spy stays on this tile and sleeps until its discount on espionage missions here is at the maximum, then wakes up. The discount grows each turn the spy does not move.</English>
+		<French>The spy stays on this tile and sleeps until its discount on espionage missions here is at the maximum, then wakes up. The discount grows each turn the spy does not move.</French>
+		<German>The spy stays on this tile and sleeps until its discount on espionage missions here is at the maximum, then wakes up. The discount grows each turn the spy does not move.</German>
+		<Italian>The spy stays on this tile and sleeps until its discount on espionage missions here is at the maximum, then wakes up. The discount grows each turn the spy does not move.</Italian>
+		<Spanish>The spy stays on this tile and sleeps until its discount on espionage missions here is at the maximum, then wakes up. The discount grows each turn the spy does not move.</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_SLEEP_FOR_DISCOUNT_TURNS</Tag>
+		<English>[ICON_ESPIONAGE] Discount here: %d1%% now, %d2%% (the maximum) in %d3 [NUM3:turn:turns]</English>
+		<French>[ICON_ESPIONAGE] Discount here: %d1%% now, %d2%% (the maximum) in %d3 [NUM3:turn:turns]</French>
+		<German>[ICON_ESPIONAGE] Discount here: %d1%% now, %d2%% (the maximum) in %d3 [NUM3:turn:turns]</German>
+		<Italian>[ICON_ESPIONAGE] Discount here: %d1%% now, %d2%% (the maximum) in %d3 [NUM3:turn:turns]</Italian>
+		<Spanish>[ICON_ESPIONAGE] Discount here: %d1%% now, %d2%% (the maximum) in %d3 [NUM3:turn:turns]</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_SLEEP_FOR_DISCOUNT_MAX</Tag>
+		<English>[ICON_ESPIONAGE] Discount here: %d1%%, the maximum</English>
+		<French>[ICON_ESPIONAGE] Discount here: %d1%%, the maximum</French>
+		<German>[ICON_ESPIONAGE] Discount here: %d1%%, the maximum</German>
+		<Italian>[ICON_ESPIONAGE] Discount here: %d1%%, the maximum</Italian>
+		<Spanish>[ICON_ESPIONAGE] Discount here: %d1%%, the maximum</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_SLEEP_FOR_DISCOUNT_CARGO</Tag>
+		<English>[ICON_ESPIONAGE] The discount does not grow on a transport</English>
+		<French>[ICON_ESPIONAGE] The discount does not grow on a transport</French>
+		<German>[ICON_ESPIONAGE] The discount does not grow on a transport</German>
+		<Italian>[ICON_ESPIONAGE] The discount does not grow on a transport</Italian>
+		<Spanish>[ICON_ESPIONAGE] The discount does not grow on a transport</Spanish>
+	</TEXT>
+</Civ4GameText>

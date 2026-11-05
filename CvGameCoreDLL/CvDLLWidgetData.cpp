@@ -2663,6 +2663,48 @@ void CvDLLWidgetData::parseActionHelp(CvWidgetDataStruct &widgetDataStruct, CvWS
 
 				GAMETEXT.setEspionageMissionHelp(szBuffer, pHeadSelectedUnit);
 			}
+			// spy sleep (written by Claude): the discount now and the turns until it is at the maximum, for the
+			// selected spies on their tile (the one with the longest wait); nothing extra for a queued tile (Shift)
+			else if (GC.getActionInfo(widgetDataStruct.m_iData1).getMissionType() == MISSION_SLEEP_FOR_DISCOUNT)
+			{
+				int const iPercentPerTurn = GC.getDefineINT("ESPIONAGE_EACH_TURN_UNIT_COST_DECREASE");
+				int const iMaxPercent = GC.getDefineINT("MAX_FORTIFY_TURNS") * iPercentPerTurn;
+				int iWaitTurns = -1;
+				int iNowPercent = iMaxPercent;
+				bool bCargo = false;
+
+				for (pSelectedUnitNode = gDLL->getInterfaceIFace()->headSelectionListNode(); pSelectedUnitNode != NULL; pSelectedUnitNode = gDLL->getInterfaceIFace()->nextSelectionListNode(pSelectedUnitNode))
+				{
+					pSelectedUnit = ::getUnit(pSelectedUnitNode->m_data);
+					if (pSelectedUnit == NULL || !pSelectedUnit->atPlot(pMissionPlot) || !pSelectedUnit->canEspionage(pMissionPlot, true))
+					{
+						continue;
+					}
+					bCargo = bCargo || pSelectedUnit->isCargo();
+					if (pSelectedUnit->getSleepForDiscountTurns() > iWaitTurns)
+					{
+						iWaitTurns = pSelectedUnit->getSleepForDiscountTurns();
+						iNowPercent = std::min(iMaxPercent, pSelectedUnit->getFortifyTurns() * iPercentPerTurn);
+					}
+				}
+
+				if (iWaitTurns >= 0)
+				{
+					szBuffer.append(NEWLINE);
+					if (bCargo)
+					{
+						szBuffer.append(gDLL->getText("TXT_KEY_SLEEP_FOR_DISCOUNT_CARGO"));
+					}
+					else if (iWaitTurns == 0)
+					{
+						szBuffer.append(gDLL->getText("TXT_KEY_SLEEP_FOR_DISCOUNT_MAX", iMaxPercent));
+					}
+					else
+					{
+						szBuffer.append(gDLL->getText("TXT_KEY_SLEEP_FOR_DISCOUNT_TURNS", iNowPercent, iMaxPercent, iWaitTurns));
+					}
+				}
+			}
 			else if (GC.getActionInfo(widgetDataStruct.m_iData1).getMissionType() == MISSION_BUILD)
 			{
 				eBuild = ((BuildTypes)(GC.getActionInfo(widgetDataStruct.m_iData1).getMissionData()));

@@ -3803,6 +3803,47 @@ bool CvUnit::canSentry(const CvPlot* pPlot) const
 	return true;
 }
 
+// spy sleep (written by Claude): "Sleep until Maximum Discount" (MISSION_SLEEP_FOR_DISCOUNT). A spy's discount on
+// espionage missions grows each turn it does not move (its fortify turns, getEspionageMissionCostModifier), up to
+// MAX_FORTIFY_TURNS turns. The button shows for a spy on a tile where it can do espionage, or for its last queued
+// plot with Shift; it is greyed out when the spy has the maximum discount there already, and on a transport, where
+// the discount does not grow. The group then sleeps as with MISSION_SLEEP, and CvSelectionGroup::doTurn wakes it in
+// the turn its spies reach the maximum (it wakes sleeping spies outside their team's territory that way).
+bool CvUnit::canSleepForDiscount(const CvPlot* pPlot, bool bTestVisible) const
+{
+	if (!canEspionage(pPlot, true)) // a spy, on a tile of a player it may spy on
+	{
+		return false;
+	}
+
+	if (getGroup()->getActivityType() == ACTIVITY_SLEEP) // asleep already: the Wake button shows, as for canSleep
+	{
+		return false;
+	}
+
+	if (!bTestVisible && atPlot(pPlot))
+	{
+		if (isCargo() || getFortifyTurns() >= GC.getDefineINT("MAX_FORTIFY_TURNS"))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+// spy sleep (written by Claude): turns until this spy has the maximum discount on its tile if it stays there. Its
+// fortify turns grow at the start of each turn after one in which it did not move (CvUnit::doTurn).
+int CvUnit::getSleepForDiscountTurns() const
+{
+	int iTurns = std::max(0, GC.getDefineINT("MAX_FORTIFY_TURNS") - getFortifyTurns());
+	if (iTurns > 0 && hasMoved())
+	{
+		iTurns++; // this turn does not count
+	}
+	return iTurns;
+}
+
 
 int CvUnit::healRate(const CvPlot* pPlot, bool bLocation, bool bUnits) const
 {
@@ -7909,6 +7950,7 @@ BuildTypes CvUnit::getBuildType() const
 		case MISSION_LEAD:
 		case MISSION_ESPIONAGE:
 		case MISSION_DIE_ANIMATION:
+		case MISSION_SLEEP_FOR_DISCOUNT: // spy sleep (written by Claude)
 			break;
 
 		case MISSION_BUILD:

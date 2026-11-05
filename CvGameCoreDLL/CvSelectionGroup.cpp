@@ -155,17 +155,29 @@ void CvSelectionGroup::doTurn()
 	{
 		bool bCouldAllMove = canAllMove(); // K-Mod
 
-		// K-Mod. Wake spies when they reach max fortify turns in foreign territory. I'm only checking the head unit.
+		// K-Mod. Wake spies when they reach max fortify turns in foreign territory.
 		// Note: We only want to wake once. So this needs to be done before the fortify counter is increased.
-		if (isHuman() && getActivityType() == ACTIVITY_SLEEP)
+		// spy sleep (written by Claude): every spy of the group counts, so the group wakes in the turn its last spy
+		// reaches the maximum (the head unit may be another unit, or a spy that arrived earlier). The fortify turns
+		// are the spy's espionage discount; "Sleep until Maximum Discount" (MISSION_SLEEP_FOR_DISCOUNT) ends here.
+		if (isHuman() && getActivityType() == ACTIVITY_SLEEP && plot()->getTeam() != getTeam())
 		{
-			CvUnit* pHeadUnit = getHeadUnit();
-			if (pHeadUnit && pHeadUnit->isSpy() && pHeadUnit->plot()->getTeam() != getTeam())
+			int const iMaxTurns = GC.getDefineINT("MAX_FORTIFY_TURNS");
+			bool bSpyReachesMax = false; // a spy gets its last fortify turn this turn
+			bool bAllSpiesMax = true; // and after this turn every spy of the group has the maximum
+			for (CLLNode<IDInfo>* pUnitNode = headUnitNode(); pUnitNode != NULL; pUnitNode = nextUnitNode(pUnitNode))
 			{
-				if (pHeadUnit->getFortifyTurns() == GC.getDefineINT("MAX_FORTIFY_TURNS")-1)
-				{
-					setActivityType(ACTIVITY_AWAKE); // time to wake up!
-				}
+				CvUnit const* pLoopUnit = ::getUnit(pUnitNode->m_data);
+				if (pLoopUnit == NULL || !pLoopUnit->isSpy())
+					continue;
+				if (pLoopUnit->getFortifyTurns() == iMaxTurns - 1)
+					bSpyReachesMax = true;
+				else if (pLoopUnit->getFortifyTurns() < iMaxTurns - 1)
+					bAllSpiesMax = false;
+			}
+			if (bSpyReachesMax && bAllSpiesMax)
+			{
+				setActivityType(ACTIVITY_AWAKE); // time to wake up!
 			}
 		}
 		// K-Mod end
@@ -665,6 +677,7 @@ CvPlot* CvSelectionGroup::lastMissionPlot()
 		case MISSION_LEAD:
 		case MISSION_ESPIONAGE:
 		case MISSION_DIE_ANIMATION:
+		case MISSION_SLEEP_FOR_DISCOUNT: // spy sleep (written by Claude)
 			break;
 
 		default:
@@ -817,6 +830,14 @@ void CvSelectionGroup::startMission()
 			bDelete = true;
 			break;
 
+		// spy sleep (written by Claude): the group sleeps as for MISSION_SLEEP; doTurn wakes it in the turn its
+		// spies reach the maximum espionage discount
+		case MISSION_SLEEP_FOR_DISCOUNT:
+			setActivityType(ACTIVITY_SLEEP);
+			bNotify = true;
+			bDelete = true;
+			break;
+
 		case MISSION_AIRLIFT:
 		case MISSION_NUKE:
 		case MISSION_RECON:
@@ -907,7 +928,9 @@ void CvSelectionGroup::startMission()
 
 		if ( bNotify )
 		{
-			NotifyEntity( headMissionQueueNode()->m_data.eMissionType );
+			// spy sleep (written by Claude): the units show the sleep of MISSION_SLEEP; the exe gets only mission types it knows
+			MissionTypes eNotifyMission = headMissionQueueNode()->m_data.eMissionType;
+			NotifyEntity(eNotifyMission == MISSION_SLEEP_FOR_DISCOUNT ? MISSION_SLEEP : eNotifyMission);
 		}
 
 		// Individual unit effects
@@ -967,6 +990,7 @@ void CvSelectionGroup::startMission()
 				case MISSION_SENTRY:
 				case MISSION_PILLAGE:
 				case MISSION_BUILD:
+				case MISSION_SLEEP_FOR_DISCOUNT: // spy sleep (written by Claude)
 					pUnitNode = 0; // K-Mod. Nothing to do, so we might as well abort the unit loop.
 					break;
 				// K-Mod. (this use to be a "do nothing" case.)
@@ -1426,6 +1450,7 @@ bool CvSelectionGroup::continueMission_bulk(int iSteps)
 				case MISSION_SEAPATROL:
 				case MISSION_HEAL:
 				case MISSION_SENTRY:
+				case MISSION_SLEEP_FOR_DISCOUNT: // spy sleep (written by Claude): ends when it starts
 					FAssert(false);
 					break;
 
@@ -1513,6 +1538,7 @@ bool CvSelectionGroup::continueMission_bulk(int iSteps)
 			case MISSION_SEAPATROL:
 			case MISSION_HEAL:
 			case MISSION_SENTRY:
+			case MISSION_SLEEP_FOR_DISCOUNT: // spy sleep (written by Claude): ends when it starts
 				FAssert(false);
 				break;
 
@@ -3917,6 +3943,11 @@ bool CvSelectionGroup::canDoMission(int iMission, int iData1, int iData2, CvPlot
 
 		case MISSION_SENTRY:
 			if (pLoopUnit->canSentry(pPlot))
+				return true;
+			break;
+
+		case MISSION_SLEEP_FOR_DISCOUNT: // spy sleep (written by Claude)
+			if (pLoopUnit->canSleepForDiscount(pPlot, bTestVisible))
 				return true;
 			break;
 

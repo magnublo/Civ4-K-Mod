@@ -2788,6 +2788,7 @@ void getMissionTypeString(CvWString& szString, MissionTypes eMissionType)
 	case MISSION_DAMAGE: szString = L"MISSION_DAMAGE"; break;
 	case MISSION_MULTI_SELECT: szString = L"MISSION_MULTI_SELECT"; break;
 	case MISSION_MULTI_DESELECT: szString = L"MISSION_MULTI_DESELECT"; break;
+	case MISSION_SLEEP_FOR_DISCOUNT: szString = L"MISSION_SLEEP_FOR_DISCOUNT"; break; // spy sleep (written by Claude)
 
 	default: szString = CvWString::format(L"UNKOWN_MISSION(%d)", eMissionType); break;
 	}

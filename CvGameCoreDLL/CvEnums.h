@@ -1444,6 +1444,9 @@ enum MissionTypes				// Exposed to Python
 	MISSION_DAMAGE,
 	MISSION_MULTI_SELECT,
 	MISSION_MULTI_DESELECT,
+	// spy sleep (written by Claude): a spy sleeps until its espionage discount on its tile is at the maximum.
+	// After the exe's animation missions, which keep their numbers; the entry is last in Units/CIV4MissionInfos.xml too.
+	MISSION_SLEEP_FOR_DISCOUNT,
 
 #ifdef _USRDLL
 	NUM_MISSION_TYPES

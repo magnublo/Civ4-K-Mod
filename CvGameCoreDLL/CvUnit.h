@@ -147,6 +147,9 @@ public:
 
 	bool canHeal(const CvPlot* pPlot) const;																											// Exposed to Python
 	bool canSentry(const CvPlot* pPlot) const;																										// Exposed to Python
+	// spy sleep (written by Claude): "Sleep until Maximum Discount" for a spy on (or headed for) pPlot
+	bool canSleepForDiscount(const CvPlot* pPlot, bool bTestVisible) const;
+	int getSleepForDiscountTurns() const; // turns until the spy has the maximum discount on its tile
 
 	//int healRate(const CvPlot* pPlot) const;
 	int healRate(const CvPlot* pPlot, bool bLocation = true, bool bUnits = true) const; // K-Mod
