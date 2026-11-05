@@ -12,6 +12,7 @@ K-Mod-Magnus is a fork of [K-Mod](https://github.com/karadoc/Civ4-K-Mod) 1.46 by
 - turns 1.6 to 2.5 times faster than K-Mod 1.46 in big late games;
 - the Planet Generator map script, reworked so that its options hold, with more coast on request;
 - Blue Marble terrain textures;
+- optional [HD wonder movies](#hd-wonder-movies): the 36 wonder movies upscaled with AI to twice their resolution, in a movie box that grows with the screen (a separate download);
 - the unit, building and city graphics of the Realism Invictus mod, each civilization in its own look (an option, on by default).
 
 Everything that differs from K-Mod is listed under [Changes from K-Mod 1.46](#changes-from-k-mod-146). The mod's folder is called `K-Mod-Magnus`; it used to be `K-Mod, more resources`.
@@ -34,7 +35,7 @@ No compiler is needed. You need Beyond the Sword patched to **3.19** (the Steam 
 
 The game reads the mod's settings from the `.ini` file named like the folder, `K-Mod-Magnus.ini`. If you rename the folder, rename that file too, and see [Saves](#saves).
 
-**Updating:** download the files and the DLL again, delete the old `K-Mod-Magnus` folder and install the new one. Settings are kept elsewhere, and saves keep working unless a change says otherwise.
+**Updating:** download the files and the DLL again, delete the old `K-Mod-Magnus` folder and install the new one. Settings are kept elsewhere, and saves keep working unless a change says otherwise. The [HD wonder movies](#hd-wonder-movies) are in the mod's folder too: unpack them again.
 
 **Uninstalling:** delete the `K-Mod-Magnus` folder. BUG's settings (options screen, unit naming) are in `Documents\My Games\Beyond the Sword\K-Mod\`, which this mod shares with K-Mod: delete that only if you don't play K-Mod either.
 
@@ -49,6 +50,18 @@ The game reads the mod's settings from the `.ini` file named like the folder, `K
 
     With only a save as argument it prints the folder that save asks for. A K-Mod 1.45 save converted this way loaded with this mod's DLL and XML and played on (tested under Wine).
 - In multiplayer every computer needs the same mod files and the same DLL.
+
+## HD wonder movies
+
+The movie that plays when a wonder is completed is 720x486 pixels in the game, small and soft on today's screens. The HD wonder movies are all 36 of them, from the original game, Warlords and Beyond the Sword, upscaled with AI and encoded at 1440x960 as Bink files that the game plays like its own, with the original sound. With them comes `CvWonderMovieScreen.py`, Beyond the Sword's wonder movie screen with a movie box that grows with the screen resolution: 1350x900 at 2560x1440 and 2025x1350 at 3840x2160, the original 720x480 at 1024x768. They are a separate download of 4.8 GB, not part of the mod's files.
+
+**Installing:** from the [HD wonder movies release](https://github.com/magnublo/Civ4-K-Mod/releases/tag/wonder-movies/v1), download `K-Mod-Magnus-HD-wonder-movies-1-of-3.zip`, `-2-of-3.zip` and `-3-of-3.zip` and unpack all three into the `K-Mod-Magnus` folder (in Windows: right-click the zip → Extract All, and choose `...\Mods\K-Mod-Magnus` as the folder). You then have `...\Mods\K-Mod-Magnus\Assets\Art\Movies\Wonders\GreatPyramids.bik` with the other 35 movies next to it, and `...\Mods\K-Mod-Magnus\Assets\Python\Screens\CvWonderMovieScreen.py`. The game plays these movies instead of its own.
+
+**Updating and removing:** the movies live in the mod's folder, so unpack them again after updating the mod. To go back to the game's own movies, delete `Assets\Art\Movies` and `Assets\Python\Screens\CvWonderMovieScreen.py` from the mod's folder.
+
+The release also has three of the movies as MP4 videos at the full 4x size (2880x1944), to watch without the game: the Great Pyramids, the Taj Mahal and Christ the Redeemer.
+
+**How they were made:** each movie was cleaned of Bink's compression artefacts with the [1x-DeBink_TFDAT](https://github.com/Kim2091/Kim2091-Models/releases/tag/1x-DeBink_TFDAT) model and upscaled 4x with [4x-UltraSharpV2](https://huggingface.co/Kim2091/UltraSharpV2), with the broad colours held to the original's after each model, then scaled to 1440x960 and compressed at 6 MB/s with RAD Video Tools 1.8i, from the same Bink 1.8 series as the game's own player. Each movie has the original's frames and frame rate, and its sound is the original's, byte for byte. Decoded with the game's own `binkw32.dll`, each movie's average colour is within about half a level (of 255) of the original's. They have not been watched in a running game yet.
 
 ## Changes from K-Mod 1.46
 
@@ -352,4 +365,5 @@ If you are preparing changes for review:
 - **Planet Generator** map script by Nercury (Mac support by AlanH).
 - **DaveMcW**: the Show Hidden Attitude mod, as included in **BULL** (BUG's DLL, by EmperorFool and the BUG team): the hidden attitude modifiers and their texts.
 - **Realism Invictus** 3.81 by Walter Hawkwood, Takofloppa and the Realism Invictus team, and the many artists credited in its manual ("Credits and thanks"): the unit, building and city art and the city layouts of [Realism Invictus graphics](#realism-invictus-graphics) ([CivFanatics thread](https://forums.civfanatics.com/threads/realism-invictus.411799/), [SourceForge](https://sourceforge.net/projects/civ4mods/)). RI's `License.txt` allows "full and unrestricted use" of the RI team's assets; the other files belong to their authors, mostly CivFanatics artists, and RI's manual names other games some of its models come from.
+- The **HD wonder movies** are Firaxis's wonder movies, upscaled with Kim2091's [1x-DeBink_TFDAT](https://github.com/Kim2091/Kim2091-Models/releases/tag/1x-DeBink_TFDAT) and [4x-UltraSharpV2](https://huggingface.co/Kim2091/UltraSharpV2) models and encoded with RAD Game Tools' RAD Video Tools 1.8i.
 - This fork: magnublo, with GitHub Copilot and Claude as coding agents (the turn-time work is Claude's).
