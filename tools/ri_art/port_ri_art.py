@@ -11,13 +11,15 @@ repository, and writes into the repository:
                                                   and each civilization's RI city art style (+ its schema,
                                                   RI_CIV4ArtSchema.xml)
   Assets/xml/Buildings/CIV4CityLSystem.xml        BtS's city layout plus RI's (building placements, houses, walls)
-  Assets/xml/GlobalTypes.xml                      BtS's, plus RI's city art styles
+  Assets/xml/Buildings/CIV4PlotLSystem.xml        BtS's plot layout, its cottage-to-town houses also in RI's styles
+  Assets/xml/GlobalTypes.xml                      the mod's (at first BtS's), plus RI's city art styles
   Assets/Art/RI/...                               the RI files these need (RI's Art/X goes to Art/RI/X)
   Assets/Art/Structures/Cities/RI/...             RI's city houses (the game looks for them in Art/Structures/Cities)
 
 The DLL switches between K-Mod's art and this one (option "Realism Invictus graphics"). With the option off the
 game looks as before: RI files live only in the two RI folders, RI's types, city layouts and art styles are
-prefixed RI_, and BtS's houses are limited to BtS's art styles.
+prefixed RI_, and BtS's houses are limited to BtS's art styles. Improvements look the same either way: in the plot
+layout each RI city style gets the BtS houses of its civilizations.
 
 Usage: port_ri_art.py --ri RI_FOLDER --civ4 CIV4_FOLDER [--mod REPO] [--dry-run] [--report FILE]
   RI_FOLDER    folder that holds RI's Assets (e.g. "$_4_" in the extracted installer)
@@ -414,6 +416,7 @@ class Port:
 		print('reading game data ...')
 		self.km = Mod(xml_finder(os.path.join(self.mod, 'Assets'), *bases))
 		self.bts_lsystem = xml_finder(*bases)('Buildings', r'CIV4CityLSystem\.xml')[0]
+		self.bts_plot_lsystem = xml_finder(*bases)('Buildings', r'CIV4PlotLSystem\.xml')[0]
 		self.bts_global_types = [p for p in xml_finder(*bases)('', r'GlobalTypes\.xml')][0]
 		self.ri = Mod(xml_finder(os.path.join(self.ri_dir, 'Assets')))
 		self.version = self._ri_version()
@@ -857,12 +860,52 @@ class Port:
 		return r
 
 	def port_global_types(self):
-		s = open(self.bts_global_types, encoding='latin-1').read()
+		"""the mod's GlobalTypes.xml (BtS's if it has none) with RI's city styles at the end of the art styles"""
+		path = os.path.join(self.mod, 'Assets/xml/GlobalTypes.xml')
+		if os.path.isfile(path):
+			s = open(path, encoding='utf-8').read()
+			s = re.sub(r'[ \t]*<!-- Realism Invictus city styles [^\n]*\n', '', s)
+			s = re.sub(r'[ \t]*<ArtStyleType>%s\w+</ArtStyleType>\n' % PREFIX, '', s)
+		else:
+			s = open(self.bts_global_types, encoding='latin-1').read()
 		i = s.index('</ArtStyleTypes>')
 		j = s.rindex('\n', 0, i) + 1
 		add = '\t\t<!-- Realism Invictus city styles (K-Mod-Magnus, option "Realism Invictus graphics") -->\n'
 		add += ''.join('\t\t<ArtStyleType>%s%s</ArtStyleType>\n' % (PREFIX, st) for st in self.city_styles)
 		return s[:j] + add + s[j:]
+
+	def ri_city_style(self, civ):
+		"""the RI city style (without RI_) of a K-Mod civilization, or None"""
+		ri_civ = CIV_MAP.get(civ)
+		style = self.ri.civs.get(ri_civ, {}).get('art_style') if ri_civ else None
+		return style if style in self.city_styles else None
+
+	# ----- plot layout -----
+
+	def port_plot_lsystem(self):
+		"""BtS's plot layout, each ArtStyle list extended by the RI styles whose civilizations have a style in it.
+		The houses of cottages, hamlets, villages and towns are picked by the owner's city style (written by Claude)."""
+		bts_styles = self.bts_styles()
+		bts_of_ri = collections.defaultdict(list)  # for each RI style, the BtS styles of the civilizations that get it
+		for civ, c in sorted(self.km.civs.items()):
+			style = self.ri_city_style(civ)
+			if style and c['art_style'] and c['art_style'] not in bts_of_ri[style]:
+				bts_of_ri[style].append(c['art_style'])
+		for style, bts in sorted(bts_of_ri.items()):
+			if len(bts) > 1:
+				warn('RI city style %s goes to civilizations of the BtS styles %s: its cottages mix their houses'
+					% (style, ', '.join(bts)))
+		self.n_plot_refs = 0
+
+		def extend(m):
+			styles = self.style_set(m.group(1), bts_styles)
+			ri = [PREFIX + st for st in self.city_styles if set(bts_of_ri.get(st, [])) & set(styles)]
+			if not ri:
+				return m.group(0)
+			self.n_plot_refs += 1
+			return '<Attribute Class="ArtStyle">%s</Attribute>' % ','.join(styles + ri)
+		bts = open(self.bts_plot_lsystem, encoding='latin-1').read()
+		return re.sub(r'<Attribute Class="ArtStyle">([^<]*)</Attribute>', extend, bts)
 
 	def fix_lsystem(self, e, tag):
 		"""<LSystem>: RI's building layout (prefixed), or the K-Mod building's where RI has none"""
@@ -891,6 +934,7 @@ class Port:
 		self.port_units()
 		self.port_buildings()
 		lsystem = self.port_lsystem()  # first: building art defines need RI's layout names
+		plot_lsystem = self.port_plot_lsystem()
 		tags = []
 		for unit, civs, spec in self.unit_specs:
 			for req, tiers in spec['groups']:
@@ -920,7 +964,9 @@ class Port:
 			write_xml(os.path.join(mod, 'Assets/xml/Art/RI_CIV4ArtDefines_Building.xml'), root,
 				'CIV4ArtDefinesSchema.xml', self.version)
 			bdir = [d for d in os.listdir(os.path.join(mod, 'Assets/xml')) if d.lower() == 'buildings']
-			write_text(os.path.join(mod, 'Assets/xml', bdir[0] if bdir else 'Buildings', 'CIV4CityLSystem.xml'), lsystem)
+			bpath = os.path.join(mod, 'Assets/xml', bdir[0] if bdir else 'Buildings')
+			write_text(os.path.join(bpath, 'CIV4CityLSystem.xml'), lsystem)
+			write_text(os.path.join(bpath, 'CIV4PlotLSystem.xml'), plot_lsystem)
 			write_text(os.path.join(mod, 'Assets/xml/GlobalTypes.xml'), self.port_global_types())
 			self.write_infos()
 			self.copy_files()
@@ -954,9 +1000,8 @@ class Port:
 			sub(e, 'ArtDefineTag', PREFIX + tag)
 		civs = sub(root, 'RICivilizationArtInfos')
 		for civ in self.km.civs:
-			ri_civ = CIV_MAP.get(civ)
-			style = self.ri.civs.get(ri_civ, {}).get('art_style') if ri_civ else None
-			if style in self.city_styles:
+			style = self.ri_city_style(civ)
+			if style:
 				e = sub(civs, 'RICivilizationArtInfo')
 				sub(e, 'CivilizationType', civ)
 				sub(e, 'ArtStyleType', PREFIX + style)
@@ -981,6 +1026,7 @@ class Port:
 			len(set(u for u, c, s in self.unit_specs)), len(self.km.units), len(self.unit_specs)))
 		print('buildings with RI art: %d of %d (%d entries)' % (
 			len(set(b for b, c, t in self.building_specs)), len(self.km.buildings), len(self.building_specs)))
+		print('plot layout entries open to RI styles too: %d' % self.n_plot_refs)
 		print('unit art defines: %d, building art defines: %d' % (self.n_unit_art, self.n_building_art))
 		print('files: %d (%.1f MB), %d of them the game\'s own, copied next to RI\'s' % (len(self.copies), size / 1e6, n_base))
 		if self.missing:
