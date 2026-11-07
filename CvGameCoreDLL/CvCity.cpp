@@ -8595,6 +8595,12 @@ void CvCity::setCultureLevel(CultureLevelTypes eNewValue, bool bUpdatePlotGroups
 				// ONEVENT - Culture growth
 				CvEventReporter::getInstance().cultureExpansion(this, getOwnerINLINE());
 				
+				// citizens on border growth (written by Claude): the governor takes over the human's city again, new plots included
+				if (isHuman() && !isCitizensAutomated())
+				{
+					setCitizensAutomated(true);
+				}
+
 				//Stop Build Culture
 				/* original BTS code
 				if (isProductionProcess())
