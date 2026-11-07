@@ -9996,7 +9996,8 @@ void CvUnitAI::AI_prechopMove()
 	}
 	std::sort(candidates.begin(), candidates.end());
 
-	// the forests of the best priority that can be reached safely; of the nearest few of them, the one reached soonest
+	// the forests of the best priority that can be reached without entering the territory of a civ at war with us (the
+	// pathfinder keeps automated workers off plots in danger); of the nearest few of them, the one reached soonest
 	size_t iCandidate = 0;
 	while (iCandidate < candidates.size() && pBestPlot == NULL)
 	{
@@ -10011,7 +10012,7 @@ void CvUnitAI::AI_prechopMove()
 			}
 			CvPlot* pLoopPlot = GC.getMapINLINE().plotByIndexINLINE(candidates[iCandidate].second.first);
 			int iPathTurns = 0;
-			if (!atPlot(pLoopPlot) && !generatePath(pLoopPlot, MOVE_SAFE_TERRITORY, true, &iPathTurns))
+			if (!atPlot(pLoopPlot) && !generatePath(pLoopPlot, MOVE_NO_ENEMY_TERRITORY, true, &iPathTurns))
 			{
 				continue;
 			}
@@ -10029,7 +10030,7 @@ void CvUnitAI::AI_prechopMove()
 	{
 		if (!atPlot(pBestPlot))
 		{
-			getGroup()->pushMission(MISSION_MOVE_TO, pBestPlot->getX_INLINE(), pBestPlot->getY_INLINE(), MOVE_SAFE_TERRITORY, false, false, MISSIONAI_BUILD, pBestPlot);
+			getGroup()->pushMission(MISSION_MOVE_TO, pBestPlot->getX_INLINE(), pBestPlot->getY_INLINE(), MOVE_NO_ENEMY_TERRITORY, false, false, MISSIONAI_BUILD, pBestPlot);
 		}
 		getGroup()->pushMission(MISSION_BUILD, eBestBuild, BUILD_MISSION_STOP_SHORT, 0, true, false, MISSIONAI_BUILD, pBestPlot);
 		return;
