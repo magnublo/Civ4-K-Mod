@@ -2002,6 +2002,12 @@ void CvUnitAI::AI_workerMove()
 		}
 	}
 
+	// pre-chop automation (written by Claude): a human's automated worker with nothing else to do pre-chops forests
+	if (isHuman() && getGroup()->getAutomateType() == AUTOMATE_BUILD && AI_prechopForest())
+	{
+		return;
+	}
+
 	if (AI_retreatToCity(false, true))
 	{
 		return;
@@ -9926,13 +9932,8 @@ void CvUnitAI::AI_cityAutomated()
 }
 
 // pre-chop automation (written by Claude): AUTOMATE_PRECHOP, the workers' "Automate Pre-chop" action. The group
-// pre-chops (works on a chop and stops one worker-turn before it would finish, as the pre-chop button does, which also
-// puts up the "prechopped" sign) the forests in its owner's territory whose chop gives a city hammers. Order (the
-// user's choices): forests in a city's work area (its 21 plots) before all others; among those, the one whose chop gives
-// more hammers now; then one without an improvement before one with one; then the one it reaches soonest. A forest is
-// done when the next worker-turn of the group's slowest worker would finish the chop; one that another group of the
-// owner is heading for, to build there, is left to that group. When none is left, the automation ends and the worker
-// waits for orders, with a message.
+// pre-chops forests (AI_prechopForest) until none is left; then the automation ends and the worker waits for orders,
+// with a message.
 void CvUnitAI::AI_prechopMove()
 {
 	PROFILE_FUNC();
@@ -9946,6 +9947,29 @@ void CvUnitAI::AI_prechopMove()
 			return;
 		}
 	}
+
+	if (AI_prechopForest())
+	{
+		return;
+	}
+
+	// nothing left to pre-chop: the worker is the player's again
+	getGroup()->setAutomateType(NO_AUTOMATE);
+	gDLL->getInterfaceIFace()->addHumanMessage(getOwnerINLINE(), false, GC.getEVENT_MESSAGE_TIME(), gDLL->getText("TXT_KEY_AUTOMATE_PRECHOP_DONE", getNameKey()), NULL, MESSAGE_TYPE_INFO, getButton(), (ColorTypes)GC.getInfoTypeForString("COLOR_WHITE"), getX_INLINE(), getY_INLINE(), true, true);
+}
+
+// pre-chop automation (written by Claude): sends the group to pre-chop a forest in its owner's territory whose chop
+// gives a city hammers (work on the chop and stop one worker-turn before it would finish, as the pre-chop button does,
+// which also puts up the "prechopped" sign); false when there is none. Order (the user's choices): forests in a city's
+// work area (its 21 plots) before all others; among those, the one whose chop gives more hammers now; then one without
+// an improvement before one with one; then the one it reaches soonest. A forest is done when the next worker-turn of the
+// group's slowest worker would finish the chop; one that another group of the owner is heading for, to build there, is
+// left to that group.
+bool CvUnitAI::AI_prechopForest()
+{
+	PROFILE_FUNC();
+
+	const CvPlayerAI& kOwner = GET_PLAYER(getOwnerINLINE());
 
 	int iMinWorkRate = MAX_INT;
 	for (CLLNode<IDInfo>* pUnitNode = getGroup()->headUnitNode(); pUnitNode != NULL; pUnitNode = getGroup()->nextUnitNode(pUnitNode))
@@ -10033,12 +10057,10 @@ void CvUnitAI::AI_prechopMove()
 			getGroup()->pushMission(MISSION_MOVE_TO, pBestPlot->getX_INLINE(), pBestPlot->getY_INLINE(), MOVE_NO_ENEMY_TERRITORY, false, false, MISSIONAI_BUILD, pBestPlot);
 		}
 		getGroup()->pushMission(MISSION_BUILD, eBestBuild, BUILD_MISSION_STOP_SHORT, 0, true, false, MISSIONAI_BUILD, pBestPlot);
-		return;
+		return true;
 	}
 
-	// nothing left to pre-chop: the worker is the player's again
-	getGroup()->setAutomateType(NO_AUTOMATE);
-	gDLL->getInterfaceIFace()->addHumanMessage(getOwnerINLINE(), false, GC.getEVENT_MESSAGE_TIME(), gDLL->getText("TXT_KEY_AUTOMATE_PRECHOP_DONE", getNameKey()), NULL, MESSAGE_TYPE_INFO, getButton(), (ColorTypes)GC.getInfoTypeForString("COLOR_WHITE"), getX_INLINE(), getY_INLINE(), true, true);
+	return false;
 }
 
 

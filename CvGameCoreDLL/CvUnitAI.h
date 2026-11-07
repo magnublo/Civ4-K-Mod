@@ -113,6 +113,7 @@ protected:
 	void AI_networkAutomated();
 	void AI_cityAutomated();
 	void AI_prechopMove(); // pre-chop automation
+	bool AI_prechopForest(); // pre-chop automation
 	void AI_happyGarrisonMove(); // happiness garrison
 
 	int AI_promotionValue(PromotionTypes ePromotion);
