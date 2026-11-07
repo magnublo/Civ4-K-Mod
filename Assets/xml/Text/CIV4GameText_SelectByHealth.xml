@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Texts for selecting units by health (K-Mod-Magnus, written by Claude): CONTROL_SELECT_FULL_HEALTH in CvGame::doControl -->
+<Civ4GameText xmlns="http://www.firaxis.com">
+	<TEXT>
+		<Tag>TXT_KEY_ACTION_SELECT_FULL_HEALTH</Tag>
+		<English>Select Units at Full Health with Moves Left</English>
+		<French>Select Units at Full Health with Moves Left</French>
+		<German>Select Units at Full Health with Moves Left</German>
+		<Italian>Select Units at Full Health with Moves Left</Italian>
+		<Spanish>Select Units at Full Health with Moves Left</Spanish>
+	</TEXT>
+</Civ4GameText>

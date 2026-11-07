@@ -1592,6 +1592,7 @@ enum ControlTypes					// Exposed to Python
 	CONTROL_SELECT_HEALTHY,
 	CONTROL_ESPIONAGE_SCREEN,
 	CONTROL_FREE_COLONY,
+	CONTROL_SELECT_FULL_HEALTH, // selection by health (written by Claude)
 
 #ifdef _USRDLL
 	NUM_CONTROL_TYPES

@@ -1453,6 +1453,7 @@ bool CvGame::canDoControl(ControlTypes eControl) const
 	case CONTROL_SELECTYUNITTYPE:
 	case CONTROL_SELECTYUNITALL:
 	case CONTROL_SELECT_HEALTHY:
+	case CONTROL_SELECT_FULL_HEALTH: // selection by health
 	case CONTROL_SELECTCITY:
 	case CONTROL_SELECTCAPITAL:
 	case CONTROL_NEXTUNIT:
@@ -1638,7 +1639,10 @@ void CvGame::doControl(ControlTypes eControl)
 		break;
 
 	case CONTROL_SELECT_HEALTHY:
+	case CONTROL_SELECT_FULL_HEALTH: // selection by health (written by Claude): Ctrl+H selects the hurt units of the plot,
+		// Ctrl+J those at full health, both only the ones with moves left
 		{
+			bool bHurt = (eControl == CONTROL_SELECT_HEALTHY);
 			CvUnit* pGroupHead = NULL;
 			pHeadSelectedUnit = gDLL->getInterfaceIFace()->getHeadSelectedUnit();
 			gDLL->getInterfaceIFace()->clearSelectionList();
@@ -1656,7 +1660,7 @@ void CvGame::doControl(ControlTypes eControl)
 					{
 						//if (!isMPOption(MPOPTION_SIMULTANEOUS_TURNS) || getTurnSlice() - pUnit->getLastMoveTurn() > GC.getDefineINT("MIN_TIMER_UNIT_DOUBLE_MOVES")) // disabled by K-Mod
 						{
-							if (pUnit->isHurt())
+							if (pUnit->isHurt() == bHurt && pUnit->canMove()) // selection by health
 							{
 								if (pGroupHead != NULL)
 								{
