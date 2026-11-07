@@ -18,6 +18,22 @@
 		<Spanish>The unit goes to your city with the lowest happiness surplus (happy minus unhappy citizens), counting the units already on their way there with this order; among equals, the city that grows soonest. There it fortifies. A selected group goes together; select one unit to send only that one. Only while military units in a city make it happier (Hereditary Rule).</Spanish>
 	</TEXT>
 	<TEXT>
+		<Tag>TXT_KEY_PLAYER_OPTION_MILITARY_AUTOMATED</Tag>
+		<English>Military Units Start Automated</English>
+		<French>Military Units Start Automated</French>
+		<German>Military Units Start Automated</German>
+		<Italian>Military Units Start Automated</Italian>
+		<Spanish>Military Units Start Automated</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_PLAYER_OPTION_MILITARY_AUTOMATED_HELP</Tag>
+		<English>Military units start with Auto-garrison for Happiness when a city builds them, while military units make cities happier (Hereditary Rule)</English>
+		<French>Military units start with Auto-garrison for Happiness when a city builds them, while military units make cities happier (Hereditary Rule)</French>
+		<German>Military units start with Auto-garrison for Happiness when a city builds them, while military units make cities happier (Hereditary Rule)</German>
+		<Italian>Military units start with Auto-garrison for Happiness when a city builds them, while military units make cities happier (Hereditary Rule)</Italian>
+		<Spanish>Military units start with Auto-garrison for Happiness when a city builds them, while military units make cities happier (Hereditary Rule)</Spanish>
+	</TEXT>
+	<TEXT>
 		<Tag>TXT_KEY_AUTOMATE_HAPPY_GARRISON_NONE</Tag>
 		<English>%s1_Unit: no city to garrison for happiness</English>
 		<French>%s1_Unit: no city to garrison for happiness</French>

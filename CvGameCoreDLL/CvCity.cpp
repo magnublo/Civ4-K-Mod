@@ -12561,6 +12561,11 @@ void CvCity::popOrder(int iNum, bool bFinish, bool bChoose)
 					{
 						pUnit->automate(AUTOMATE_RELIGION);
 					}
+
+					if (GET_PLAYER(getOwnerINLINE()).isOption(PLAYEROPTION_MILITARY_AUTOMATED)) // happiness garrison (written by Claude)
+					{
+						pUnit->automate(AUTOMATE_HAPPY_GARRISON);
+					}
 				}
 
 				CvEventReporter::getInstance().unitBuilt(this, pUnit);

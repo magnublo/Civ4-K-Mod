@@ -162,5 +162,8 @@
 #define AUTOMATED_WORKERS_BUILD				(0)
 #define AUTOMATED_WORKERS_NEVER_BUILD		(1)
 #define AUTOMATED_WORKERS_REPLACE			(2) // never build it, and replace it where it is
+// happiness garrison: BtS's spare player option 1, "Military Units Start Automated" on the Options screen
+// (USE_MODDERS_PLAYEROPTION_1 in GlobalDefinesAlt.xml shows it)
+#define PLAYEROPTION_MILITARY_AUTOMATED		PLAYEROPTION_MODDER_1
 
 #endif	// CVDEFINES_H
