@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Texts for the executives' automations (K-Mod-Magnus, written by Claude): CvUnitAI::AI_spreadsCorporationOnlyAtHome -->
+<Civ4GameText xmlns="http://www.firaxis.com">
+	<TEXT>
+		<Tag>TXT_KEY_ACTION_AUTOMATE_RELIGION_AT_HOME_HELP</Tag>
+		<English>Will order the unit to automatically spread its religion or corporation. Executives spread their corporation only to your own cities.</English>
+		<French>Will order the unit to automatically spread its religion or corporation. Executives spread their corporation only to your own cities.</French>
+		<German>Will order the unit to automatically spread its religion or corporation. Executives spread their corporation only to your own cities.</German>
+		<Italian>Will order the unit to automatically spread its religion or corporation. Executives spread their corporation only to your own cities.</Italian>
+		<Spanish>Will order the unit to automatically spread its religion or corporation. Executives spread their corporation only to your own cities.</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_ACTION_AUTOMATE_CORPORATION_ABROAD</Tag>
+		<English>Spread Automatically at Home and Abroad</English>
+		<French>Spread Automatically at Home and Abroad</French>
+		<German>Spread Automatically at Home and Abroad</German>
+		<Italian>Spread Automatically at Home and Abroad</Italian>
+		<Spanish>Spread Automatically at Home and Abroad</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_ACTION_AUTOMATE_CORPORATION_ABROAD_HELP</Tag>
+		<English>Will order the executive to automatically spread its corporation, to your own cities and to those of other civilizations.</English>
+		<French>Will order the executive to automatically spread its corporation, to your own cities and to those of other civilizations.</French>
+		<German>Will order the executive to automatically spread its corporation, to your own cities and to those of other civilizations.</German>
+		<Italian>Will order the executive to automatically spread its corporation, to your own cities and to those of other civilizations.</Italian>
+		<Spanish>Will order the executive to automatically spread its corporation, to your own cities and to those of other civilizations.</Spanish>
+	</TEXT>
+</Civ4GameText>

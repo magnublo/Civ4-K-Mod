@@ -3180,6 +3180,24 @@ bool CvUnit::canAutomate(AutomateTypes eAutomate) const
 		}
 		break;
 
+	case AUTOMATE_CORPORATION_ABROAD: // executive automation (written by Claude): units that spread a corporation
+	{
+		if (AI_getUnitAIType() != UNITAI_MISSIONARY)
+		{
+			return false;
+		}
+		bool bExecutive = false;
+		for (int iCorp = 0; iCorp < GC.getNumCorporationInfos() && !bExecutive; ++iCorp)
+		{
+			bExecutive = m_pUnitInfo->getCorporationSpreads(iCorp) > 0;
+		}
+		if (!bExecutive)
+		{
+			return false;
+		}
+		break;
+	}
+
 	default:
 		FAssert(false);
 		break;

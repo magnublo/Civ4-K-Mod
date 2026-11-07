@@ -155,6 +155,7 @@ protected:
 	bool AI_spreadCorporation();
 	bool AI_spreadReligionAirlift();
 	bool AI_spreadCorporationAirlift();
+	bool AI_spreadsCorporationOnlyAtHome() const; // executive automation
 	bool AI_discover(bool bThisTurnOnly = false, bool bFirstResearchOnly = false);
 	bool AI_lead(std::vector<UnitAITypes>& aeAIUnitTypes);
 	bool AI_join(int iMaxCount = MAX_INT);

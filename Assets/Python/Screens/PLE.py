@@ -2281,7 +2281,7 @@ class PLE:
 			elif (eAutomationType == AutomateTypes.AUTOMATE_NETWORK):
 				szFileNameAction = ArtFileMgr.getInterfaceArtInfo("OVERLAY_ACTION_AUTO_NETWORK").getPath()
 			# is unit automated spread religion (only missionary units)
-			elif (eAutomationType == AutomateTypes.AUTOMATE_RELIGION):
+			elif (eAutomationType == AutomateTypes.AUTOMATE_RELIGION or eAutomationType == AutomateTypes.AUTOMATE_CORPORATION_ABROAD): # K-Mod-Magnus: executive automation
 				szFileNameAction = ArtFileMgr.getInterfaceArtInfo("OVERLAY_ACTION_AUTO_RELIGION").getPath()
 			# has unit a mission
 			elif (pLoopUnit.getGroup().getLengthMissionQueue() > 0):

@@ -81,7 +81,8 @@
 		</AutomateInfo>
 		<AutomateInfo>
 			<Description>TXT_KEY_ACTION_AUTOMATE_RELIGION</Description>
-			<Help>TXT_KEY_ACTION_AUTOMATE_RELIGION_HELP</Help>
+			<!-- K-Mod-Magnus (written by Claude): executives spread only to your own cities (CvUnitAI::AI_spreadsCorporationOnlyAtHome) -->
+			<Help>TXT_KEY_ACTION_AUTOMATE_RELIGION_AT_HOME_HELP</Help>
 			<HotKey>KB_R</HotKey>
 			<bAltDown>0</bAltDown>
 			<bShiftDown>0</bShiftDown>
@@ -135,6 +136,25 @@
 			<Automate>AUTOMATE_HAPPY_GARRISON</Automate>
 			<bVisible>1</bVisible>
 			<Button>Art/Interface/Buttons/Actions/AutoHappyGarrison.dds</Button>
+		</AutomateInfo>
+		<!-- K-Mod-Magnus (written by Claude): executives spread their corporation to your cities and to other players' cities -->
+		<AutomateInfo>
+			<Description>TXT_KEY_ACTION_AUTOMATE_CORPORATION_ABROAD</Description>
+			<Help>TXT_KEY_ACTION_AUTOMATE_CORPORATION_ABROAD_HELP</Help>
+			<HotKey>KB_R</HotKey>
+			<bAltDown>0</bAltDown>
+			<bShiftDown>1</bShiftDown>
+			<bCtrlDown>0</bCtrlDown>
+			<iHotKeyPriority>0</iHotKeyPriority>
+			<HotKeyAlt/>
+			<bAltDownAlt>0</bAltDownAlt>
+			<bShiftDownAlt>0</bShiftDownAlt>
+			<bCtrlDownAlt>0</bCtrlDownAlt>
+			<iHotKeyPriorityAlt>0</iHotKeyPriorityAlt>
+			<Command>COMMAND_AUTOMATE</Command>
+			<Automate>AUTOMATE_CORPORATION_ABROAD</Automate>
+			<bVisible>1</bVisible>
+			<Button>Art/Interface/Buttons/Actions/AutoSpreadAbroad.dds</Button>
 		</AutomateInfo>
 	</AutomateInfos>
 </Civ4AutomateInfos>

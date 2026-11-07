@@ -223,6 +223,7 @@ bool CvUnitAI::AI_update()
 			break;
 
 		case AUTOMATE_RELIGION:
+		case AUTOMATE_CORPORATION_ABROAD: // executive automation
 			if (AI_getUnitAIType() == UNITAI_MISSIONARY)
 			{
 				AI_missionaryMove();
@@ -13132,6 +13133,13 @@ bool CvUnitAI::AI_spreadReligion()
 }
 
 
+// executive automation (written by Claude): a human's executive under Spread Automatically (AUTOMATE_RELIGION) spreads its
+// corporation only to its owner's cities. Under AUTOMATE_CORPORATION_ABROAD, and for the AI, other players' cities count too.
+bool CvUnitAI::AI_spreadsCorporationOnlyAtHome() const
+{
+	return isHuman() && getGroup()->getAutomateType() == AUTOMATE_RELIGION;
+}
+
 // K-Mod: I've basically rewritten this whole function.
 // Returns true if a mission was pushed...
 bool CvUnitAI::AI_spreadCorporation()
@@ -13157,6 +13165,7 @@ bool CvUnitAI::AI_spreadCorporation()
 		return false;
 	}
 	bool bHasHQ = GET_TEAM(getTeam()).hasHeadquarters(eCorporation);
+	bool bHomeOnly = AI_spreadsCorporationOnlyAtHome(); // executive automation
 
 	int iBestValue = 0;
 	CvPlot* pBestPlot = NULL;
@@ -13169,6 +13178,7 @@ bool CvUnitAI::AI_spreadCorporation()
 		CvPlot* pMissionPlot = getGroup()->AI_getMissionAIPlot();
 		if (pMissionPlot != NULL &&
 			pMissionPlot->getPlotCity() != NULL &&
+			(!bHomeOnly || pMissionPlot->getOwnerINLINE() == getOwnerINLINE()) && // executive automation
 			canSpreadCorporation(pMissionPlot, eCorporation, true) && // don't check gold here
 			!pMissionPlot->isVisibleEnemyUnit(this) &&
 			generatePath(pMissionPlot, MOVE_NO_ENEMY_TERRITORY, true))
@@ -13182,12 +13192,15 @@ bool CvUnitAI::AI_spreadCorporation()
 	{
 		PlayerTypes eTargetPlayer = NO_PLAYER;
 
-		if (isHuman())
+		if (bHomeOnly) // executive automation
+			eTargetPlayer = getOwnerINLINE();
+		else if (isHuman())
 			eTargetPlayer = plot()->isOwned() ? plot()->getOwnerINLINE() : getOwnerINLINE();
 
-		if (eTargetPlayer == NO_PLAYER ||
+		if (!bHomeOnly && // executive automation: the owner stays the target
+			(eTargetPlayer == NO_PLAYER ||
 			GET_PLAYER(eTargetPlayer).isNoCorporations() || GET_PLAYER(eTargetPlayer).isNoForeignCorporations() ||
-			GET_PLAYER(eTargetPlayer).countCorporations(eCorporation, area()) >= area()->getCitiesPerPlayer(eTargetPlayer))
+			GET_PLAYER(eTargetPlayer).countCorporations(eCorporation, area()) >= area()->getCitiesPerPlayer(eTargetPlayer)))
 		{
 			if (kOwner.AI_executiveValue(area(), eCorporation, &eTargetPlayer, true) <= 0)
 				return false; // corp is not worth spreading in this region.
@@ -13199,7 +13212,7 @@ bool CvUnitAI::AI_spreadCorporation()
 			if (kLoopPlayer.isAlive() && canEnterTerritory(kLoopPlayer.getTeam()) && area()->getCitiesPerPlayer((PlayerTypes)iI) > 0)
 			{
 				AttitudeTypes eAttitude = GET_TEAM(getTeam()).AI_getAttitude(kLoopPlayer.getTeam());
-				if (iI == eTargetPlayer || getTeam() == kLoopPlayer.getTeam())
+				if (iI == eTargetPlayer || (!bHomeOnly && getTeam() == kLoopPlayer.getTeam())) // executive automation: teammates are abroad
 				{
 					int iLoop;
 					for (CvCity* pLoopCity = kLoopPlayer.firstCity(&iLoop); pLoopCity; pLoopCity = kLoopPlayer.nextCity(&iLoop))
@@ -13457,11 +13470,12 @@ bool CvUnitAI::AI_spreadCorporationAirlift()
 
 	int iBestValue = 0;
 	CvPlot* pBestPlot = NULL;
+	bool bHomeOnly = AI_spreadsCorporationOnlyAtHome(); // executive automation
 
 	for (int iI = 0; iI < MAX_PLAYERS; iI++)
 	{
 		CvPlayer& kLoopPlayer = GET_PLAYER((PlayerTypes)iI);
-		if (kLoopPlayer.isAlive() && (getTeam() == kLoopPlayer.getTeam()))
+		if (kLoopPlayer.isAlive() && (getTeam() == kLoopPlayer.getTeam()) && (!bHomeOnly || iI == getOwnerINLINE()))
 		{
 			int iLoop;
 			for (CvCity* pLoopCity = kLoopPlayer.firstCity(&iLoop); NULL != pLoopCity; pLoopCity = kLoopPlayer.nextCity(&iLoop))

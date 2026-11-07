@@ -101,6 +101,7 @@
 		<AutomateType>AUTOMATE_RELIGION</AutomateType>
 		<AutomateType>AUTOMATE_PRECHOP</AutomateType> <!-- K-Mod-Magnus: pre-chop automation -->
 		<AutomateType>AUTOMATE_HAPPY_GARRISON</AutomateType> <!-- K-Mod-Magnus: happiness garrison -->
+		<AutomateType>AUTOMATE_CORPORATION_ABROAD</AutomateType> <!-- K-Mod-Magnus: executive automation -->
 	</AutomateTypes>
 	<DirectionTypes>
 		<!--Changes must be reflected in CvEnums.h-->

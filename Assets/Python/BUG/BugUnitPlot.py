@@ -589,7 +589,7 @@ class BupUnit:
 		elif (eAutomationType == AutomateTypes.AUTOMATE_NETWORK):
 			return "OVERLAY_ACTION_AUTO_NETWORK"
 		# is unit automated spread religion (only missionary units)
-		elif (eAutomationType == AutomateTypes.AUTOMATE_RELIGION):
+		elif (eAutomationType == AutomateTypes.AUTOMATE_RELIGION or eAutomationType == AutomateTypes.AUTOMATE_CORPORATION_ABROAD): # K-Mod-Magnus: executive automation
 			return "OVERLAY_ACTION_AUTO_RELIGION"
 		# has unit a mission
 		elif (pUnit.getGroup().getLengthMissionQueue() > 0):

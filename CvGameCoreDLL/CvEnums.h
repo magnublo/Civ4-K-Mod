@@ -1385,6 +1385,7 @@ enum AutomateTypes			// Exposed to Python
 	AUTOMATE_RELIGION,
 	AUTOMATE_PRECHOP, // pre-chop automation (written by Claude)
 	AUTOMATE_HAPPY_GARRISON, // happiness garrison (written by Claude)
+	AUTOMATE_CORPORATION_ABROAD, // executive automation (written by Claude)
 
 #ifdef _USRDLL
 	NUM_AUTOMATE_TYPES
