@@ -249,4 +249,10 @@
 		<DefineName>USE_MODDERS_PLAYEROPTION_1</DefineName>
 		<iDefineIntVal>1</iDefineIntVal>
 	</Define>
+	<!-- Options screen (written by Claude): 1 shows BtS's spare player option 2, which this mod uses for "Fighters Start
+		Automated" (GameInfo/CIV4PlayerOptionInfos.xml) -->
+	<Define>
+		<DefineName>USE_MODDERS_PLAYEROPTION_2</DefineName>
+		<iDefineIntVal>1</iDefineIntVal>
+	</Define>
 </Civ4Defines>

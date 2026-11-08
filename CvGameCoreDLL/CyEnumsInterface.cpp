@@ -1004,6 +1004,7 @@ void CyEnumsPythonInterface()
 		.value("AUTOMATE_PRECHOP", AUTOMATE_PRECHOP) // pre-chop automation
 		.value("AUTOMATE_HAPPY_GARRISON", AUTOMATE_HAPPY_GARRISON) // happiness garrison
 		.value("AUTOMATE_CORPORATION_ABROAD", AUTOMATE_CORPORATION_ABROAD) // executive automation
+		.value("AUTOMATE_FLY_TO_CARRIER", AUTOMATE_FLY_TO_CARRIER) // fly to carrier
 		.value("NUM_AUTOMATE_TYPES", NUM_AUTOMATE_TYPES)
 		;
 

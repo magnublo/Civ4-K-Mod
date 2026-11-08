@@ -115,6 +115,7 @@ protected:
 	void AI_prechopMove(); // pre-chop automation
 	bool AI_prechopForest(); // pre-chop automation
 	void AI_happyGarrisonMove(); // happiness garrison
+	void AI_flyToCarrierMove(); // fly to carrier
 
 	int AI_promotionValue(PromotionTypes ePromotion);
 

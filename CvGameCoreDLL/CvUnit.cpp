@@ -3198,6 +3198,15 @@ bool CvUnit::canAutomate(AutomateTypes eAutomate) const
 		break;
 	}
 
+	case AUTOMATE_FLY_TO_CARRIER: // fly to carrier (written by Claude): air units that can board a ship outside a city
+		// (fighters and jet fighters; missiles board only in a city), not on one already
+		if (getDomainType() != DOMAIN_AIR || getSpecialUnitType() == NO_SPECIALUNIT || isCargo() ||
+			GC.getSpecialUnitInfo(getSpecialUnitType()).isCityLoad())
+		{
+			return false;
+		}
+		break;
+
 	default:
 		FAssert(false);
 		break;

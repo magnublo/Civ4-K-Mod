@@ -12587,14 +12587,22 @@ void CvCity::popOrder(int iNum, bool bFinish, bool bChoose)
 					logBBAI("    City %S finishes production of unit %S with UNITAI %S", getName().GetCString(), pUnit->getName(0).GetCString(), szString.GetCString() );
 				}
 
+				bool bUnitAlive = true; // fly to carrier (written by Claude)
 				if (GC.getUnitInfo(eTrainUnit).getDomainType() == DOMAIN_AIR)
 				{
 					if (plot()->countNumAirUnits(getTeam()) > getAirUnitCapacity(getTeam()))
 					{
-						pUnit->jumpToNearestValidPlot();  // can destroy unit
+						bUnitAlive = pUnit->jumpToNearestValidPlot();  // can destroy unit
 					}
 				}
 				// end original build code
+
+				// fly to carrier (written by Claude): after that jump, which gives the unit a group of its own
+				if (bUnitAlive && isHuman() && GET_PLAYER(getOwnerINLINE()).isOption(PLAYEROPTION_FIGHTERS_AUTOMATED))
+				{
+					pUnit->automate(AUTOMATE_FLY_TO_CARRIER);
+				}
+
 				if (!canTrain(eTrainUnit))
 					break; //  can't build any more.
 			}

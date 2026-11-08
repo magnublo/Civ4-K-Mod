@@ -128,9 +128,10 @@
 			<bDefault>0</bDefault>
 		</PlayerOptionInfo>
 		<PlayerOptionInfo>
+			<!-- K-Mod-Magnus (written by Claude): "Fighters Start Automated" (PLAYEROPTION_FIGHTERS_AUTOMATED in CvDefines.h) -->
 			<Type>PLAYEROPTION_MODDER_2</Type>
-			<Description>TXT_KEY_PLAYER_OPTION_MODDER_2</Description>
-			<Help>TXT_KEY_PLAYER_OPTION_MODDER_2_HELP</Help>
+			<Description>TXT_KEY_PLAYER_OPTION_FIGHTERS_AUTOMATED</Description>
+			<Help>TXT_KEY_PLAYER_OPTION_FIGHTERS_AUTOMATED_HELP</Help>
 			<bDefault>0</bDefault>
 		</PlayerOptionInfo>
 		<PlayerOptionInfo>

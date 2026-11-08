@@ -238,6 +238,10 @@ bool CvUnitAI::AI_update()
 			AI_happyGarrisonMove();
 			break;
 
+		case AUTOMATE_FLY_TO_CARRIER: // fly to carrier
+			AI_flyToCarrierMove();
+			break;
+
 		default:
 			FAssert(false);
 			break;
@@ -10174,6 +10178,125 @@ void CvUnitAI::AI_happyGarrisonMove()
 	// no city it can reach: the unit waits for orders
 	pGroup->setAutomateType(NO_AUTOMATE);
 	gDLL->getInterfaceIFace()->addHumanMessage(getOwnerINLINE(), false, GC.getEVENT_MESSAGE_TIME(), gDLL->getText("TXT_KEY_AUTOMATE_HAPPY_GARRISON_NONE", getNameKey()), NULL, MESSAGE_TYPE_INFO, getButton(), (ColorTypes)GC.getInfoTypeForString("COLOR_WHITE"), getX_INLINE(), getY_INLINE(), true, true);
+}
+
+
+// fly to carrier (written by Claude): AUTOMATE_FLY_TO_CARRIER, the "Automatically Fly to Carrier" action of air units
+// that can board a ship outside a city (fighters and jet fighters). An air unit rebases to any plot it can move into, at
+// any distance and for one move, so the nearest carrier (plotDistance) of the team with room is reached at once: one pass
+// over the team's units collects the room per plot. The group's units fill the nearest carriers first; each boards and
+// sleeps there, and its automation ends. Units that find no room stay in the group, which keeps waiting for room.
+void CvUnitAI::AI_flyToCarrierMove()
+{
+	PROFILE_FUNC();
+
+	CvSelectionGroup* pGroup = getGroup();
+
+	if (!canAutomate(AUTOMATE_FLY_TO_CARRIER))
+	{
+		pGroup->setAutomateType(NO_AUTOMATE);
+		return;
+	}
+
+	// free places for this unit's kind on the team's carriers, by plot index
+	std::map<int, int> mapRoom;
+	for (int iPlayer = 0; iPlayer < MAX_PLAYERS; iPlayer++)
+	{
+		const CvPlayer& kPlayer = GET_PLAYER((PlayerTypes)iPlayer);
+		if (!kPlayer.isAlive() || kPlayer.getTeam() != getTeam())
+		{
+			continue;
+		}
+		int iLoop;
+		for (CvUnit* pLoopUnit = kPlayer.firstUnit(&iLoop); pLoopUnit != NULL; pLoopUnit = kPlayer.nextUnit(&iLoop))
+		{
+			int iRoom = pLoopUnit->cargoSpaceAvailable(getSpecialUnitType(), DOMAIN_AIR);
+			if (iRoom > 0 && canLoadUnit(pLoopUnit, pLoopUnit->plot()))
+			{
+				mapRoom[GC.getMapINLINE().plotNumINLINE(pLoopUnit->getX_INLINE(), pLoopUnit->getY_INLINE())] += iRoom;
+			}
+		}
+	}
+
+	// (plot distance, plot index) of the plots it can fly to, nearest first
+	std::vector<std::pair<int, int> > aTargets;
+	for (std::map<int, int>::const_iterator it = mapRoom.begin(); it != mapRoom.end(); ++it)
+	{
+		CvPlot* pLoopPlot = GC.getMapINLINE().plotByIndexINLINE(it->first);
+		if (atPlot(pLoopPlot) || canMoveInto(pLoopPlot))
+		{
+			aTargets.push_back(std::make_pair(plotDistance(getX_INLINE(), getY_INLINE(), pLoopPlot->getX_INLINE(), pLoopPlot->getY_INLINE()), it->first));
+		}
+	}
+	std::sort(aTargets.begin(), aTargets.end());
+
+	// this unit goes last: when it finds a place, all the others have found one
+	std::vector<CvUnit*> aUnits;
+	for (CLLNode<IDInfo>* pUnitNode = pGroup->headUnitNode(); pUnitNode != NULL; pUnitNode = pGroup->nextUnitNode(pUnitNode))
+	{
+		CvUnit* pLoopUnit = ::getUnit(pUnitNode->m_data);
+		if (pLoopUnit != this)
+		{
+			aUnits.push_back(pLoopUnit);
+		}
+	}
+	aUnits.push_back(this);
+
+	size_t iTarget = 0;
+	int iWaiting = 0;
+	CvUnit* pWaitingUnit = NULL;
+	for (size_t i = 0; i < aUnits.size(); i++)
+	{
+		CvUnit* pUnit = aUnits[i];
+		if (pUnit->getSpecialUnitType() != getSpecialUnitType() || !pUnit->canAutomate(AUTOMATE_FLY_TO_CARRIER))
+		{
+			pUnit->joinGroup(NULL, true);
+			continue;
+		}
+		while (iTarget < aTargets.size() && mapRoom[aTargets[iTarget].second] <= 0)
+		{
+			iTarget++;
+		}
+		if (iTarget == aTargets.size() || !pUnit->canMove())
+		{
+			iWaiting++;
+			pWaitingUnit = pUnit;
+			continue;
+		}
+		CvPlot* pTarget = GC.getMapINLINE().plotByIndexINLINE(aTargets[iTarget].second);
+		mapRoom[aTargets[iTarget].second]--;
+		if (pUnit != this || iWaiting > 0)
+		{
+			pUnit->joinGroup(NULL, true);
+		}
+		if (!pUnit->atPlot(pTarget))
+		{
+			pUnit->getGroup()->pushMission(MISSION_MOVE_TO, pTarget->getX_INLINE(), pTarget->getY_INLINE());
+		}
+		// in a city it lands rather than boards
+		if (!pUnit->isCargo() && pUnit->atPlot(pTarget))
+		{
+			pUnit->load();
+		}
+		pUnit->getGroup()->setAutomateType(NO_AUTOMATE);
+		if (pUnit->isCargo())
+		{
+			pUnit->getGroup()->setActivityType(ACTIVITY_SLEEP);
+		}
+	}
+
+	if (iWaiting == 0)
+	{
+		return;
+	}
+	// the units left wait in the group (units that left it ended its automation)
+	pGroup->setAutomateType(AUTOMATE_FLY_TO_CARRIER);
+	pGroup->pushMission(MISSION_SKIP);
+	if (!GET_PLAYER(getOwnerINLINE()).isAutoMoves()) // an order just given
+	{
+		CvWString szBuffer = (iWaiting == 1) ? gDLL->getText("TXT_KEY_AUTOMATE_FLY_TO_CARRIER_NONE", pWaitingUnit->getNameKey()) : gDLL->getText("TXT_KEY_AUTOMATE_FLY_TO_CARRIER_NONE_MANY", iWaiting);
+		gDLL->getInterfaceIFace()->addHumanMessage(getOwnerINLINE(), false, GC.getEVENT_MESSAGE_TIME(), szBuffer, NULL, MESSAGE_TYPE_INFO, pWaitingUnit->getButton(), (ColorTypes)GC.getInfoTypeForString("COLOR_WHITE"), pWaitingUnit->getX_INLINE(), pWaitingUnit->getY_INLINE(), true, true);
+	}
 }
 
 

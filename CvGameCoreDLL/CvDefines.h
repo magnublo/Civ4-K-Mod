@@ -165,5 +165,8 @@
 // happiness garrison: BtS's spare player option 1, "Military Units Start Automated" on the Options screen
 // (USE_MODDERS_PLAYEROPTION_1 in GlobalDefinesAlt.xml shows it)
 #define PLAYEROPTION_MILITARY_AUTOMATED		PLAYEROPTION_MODDER_1
+// fly to carrier: BtS's spare player option 2, "Fighters Start Automated" on the Options screen
+// (USE_MODDERS_PLAYEROPTION_2 in GlobalDefinesAlt.xml shows it)
+#define PLAYEROPTION_FIGHTERS_AUTOMATED		PLAYEROPTION_MODDER_2
 
 #endif	// CVDEFINES_H

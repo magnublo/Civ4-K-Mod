@@ -156,5 +156,25 @@
 			<bVisible>1</bVisible>
 			<Button>Art/Interface/Buttons/Actions/AutoSpreadAbroad.dds</Button>
 		</AutomateInfo>
+		<!-- K-Mod-Magnus (written by Claude): a fighter flies to the nearest carrier with room (CvUnitAI::AI_flyToCarrierMove).
+			 R with priority 1, so it comes before Recon (R, priority 0) where both are possible -->
+		<AutomateInfo>
+			<Description>TXT_KEY_ACTION_AUTOMATE_FLY_TO_CARRIER</Description>
+			<Help>TXT_KEY_ACTION_AUTOMATE_FLY_TO_CARRIER_HELP</Help>
+			<HotKey>KB_R</HotKey>
+			<bAltDown>0</bAltDown>
+			<bShiftDown>0</bShiftDown>
+			<bCtrlDown>0</bCtrlDown>
+			<iHotKeyPriority>1</iHotKeyPriority>
+			<HotKeyAlt/>
+			<bAltDownAlt>0</bAltDownAlt>
+			<bShiftDownAlt>0</bShiftDownAlt>
+			<bCtrlDownAlt>0</bCtrlDownAlt>
+			<iHotKeyPriorityAlt>0</iHotKeyPriorityAlt>
+			<Command>COMMAND_AUTOMATE</Command>
+			<Automate>AUTOMATE_FLY_TO_CARRIER</Automate>
+			<bVisible>1</bVisible>
+			<Button>Art/Interface/Buttons/Actions/AutoFlyToCarrier.dds</Button>
+		</AutomateInfo>
 	</AutomateInfos>
 </Civ4AutomateInfos>

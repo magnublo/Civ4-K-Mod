@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Texts for "Automatically Fly to Carrier" and "Fighters Start Automated" (K-Mod-Magnus, written by Claude):
+     CvUnitAI::AI_flyToCarrierMove, CvCity::popOrder -->
+<Civ4GameText xmlns="http://www.firaxis.com">
+	<TEXT>
+		<Tag>TXT_KEY_ACTION_AUTOMATE_FLY_TO_CARRIER</Tag>
+		<English>Automatically Fly to Carrier</English>
+		<French>Automatically Fly to Carrier</French>
+		<German>Automatically Fly to Carrier</German>
+		<Italian>Automatically Fly to Carrier</Italian>
+		<Spanish>Automatically Fly to Carrier</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_ACTION_AUTOMATE_FLY_TO_CARRIER_HELP</Tag>
+		<English>The aircraft rebases to the nearest carrier with room for it and sleeps on board. A rebase has no range limit, so it gets there in one move. A selected group fills the nearest carriers first. If no carrier has room, it waits until one has.</English>
+		<French>The aircraft rebases to the nearest carrier with room for it and sleeps on board. A rebase has no range limit, so it gets there in one move. A selected group fills the nearest carriers first. If no carrier has room, it waits until one has.</French>
+		<German>The aircraft rebases to the nearest carrier with room for it and sleeps on board. A rebase has no range limit, so it gets there in one move. A selected group fills the nearest carriers first. If no carrier has room, it waits until one has.</German>
+		<Italian>The aircraft rebases to the nearest carrier with room for it and sleeps on board. A rebase has no range limit, so it gets there in one move. A selected group fills the nearest carriers first. If no carrier has room, it waits until one has.</Italian>
+		<Spanish>The aircraft rebases to the nearest carrier with room for it and sleeps on board. A rebase has no range limit, so it gets there in one move. A selected group fills the nearest carriers first. If no carrier has room, it waits until one has.</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_PLAYER_OPTION_FIGHTERS_AUTOMATED</Tag>
+		<English>Fighters Start Automated</English>
+		<French>Fighters Start Automated</French>
+		<German>Fighters Start Automated</German>
+		<Italian>Fighters Start Automated</Italian>
+		<Spanish>Fighters Start Automated</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_PLAYER_OPTION_FIGHTERS_AUTOMATED_HELP</Tag>
+		<English>Fighters and jet fighters start with Automatically Fly to Carrier when a city builds them, and wait in the city while no carrier has room</English>
+		<French>Fighters and jet fighters start with Automatically Fly to Carrier when a city builds them, and wait in the city while no carrier has room</French>
+		<German>Fighters and jet fighters start with Automatically Fly to Carrier when a city builds them, and wait in the city while no carrier has room</German>
+		<Italian>Fighters and jet fighters start with Automatically Fly to Carrier when a city builds them, and wait in the city while no carrier has room</Italian>
+		<Spanish>Fighters and jet fighters start with Automatically Fly to Carrier when a city builds them, and wait in the city while no carrier has room</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_AUTOMATE_FLY_TO_CARRIER_NONE</Tag>
+		<English>%s1_Unit waits: no carrier has room for it</English>
+		<French>%s1_Unit waits: no carrier has room for it</French>
+		<German>%s1_Unit waits: no carrier has room for it</German>
+		<Italian>%s1_Unit waits: no carrier has room for it</Italian>
+		<Spanish>%s1_Unit waits: no carrier has room for it</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_AUTOMATE_FLY_TO_CARRIER_NONE_MANY</Tag>
+		<English>%d1_Num aircraft wait: no carrier has room for them</English>
+		<French>%d1_Num aircraft wait: no carrier has room for them</French>
+		<German>%d1_Num aircraft wait: no carrier has room for them</German>
+		<Italian>%d1_Num aircraft wait: no carrier has room for them</Italian>
+		<Spanish>%d1_Num aircraft wait: no carrier has room for them</Spanish>
+	</TEXT>
+</Civ4GameText>

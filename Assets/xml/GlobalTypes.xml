@@ -102,6 +102,7 @@
 		<AutomateType>AUTOMATE_PRECHOP</AutomateType> <!-- K-Mod-Magnus: pre-chop automation -->
 		<AutomateType>AUTOMATE_HAPPY_GARRISON</AutomateType> <!-- K-Mod-Magnus: happiness garrison -->
 		<AutomateType>AUTOMATE_CORPORATION_ABROAD</AutomateType> <!-- K-Mod-Magnus: executive automation -->
+		<AutomateType>AUTOMATE_FLY_TO_CARRIER</AutomateType> <!-- K-Mod-Magnus: fly to carrier -->
 	</AutomateTypes>
 	<DirectionTypes>
 		<!--Changes must be reflected in CvEnums.h-->
