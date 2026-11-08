@@ -199,9 +199,9 @@
 	<!-- Automated production (written by Claude): what a city of yours builds when you let the governor choose its
 		production (the city screen's "automate production" button). It builds the first building of this list that it
 		can build, and nothing else: no units, no wonders, no buildings that aren't on the list. When nothing on the list
-		can be built, it makes Wealth or Research, whichever the AI rates higher, and goes back to the list as soon as it
-		can. Building classes from Buildings/CIV4BuildingClassInfos.xml (a civilization's unique building takes the place
-		of its class), separated by commas or spaces; empty = K-Mod's governor chooses.
+		can be built, the automation turns itself off and the city asks you what to build. Building classes from
+		Buildings/CIV4BuildingClassInfos.xml (a civilization's unique building takes the place of its class), separated
+		by commas or spaces; empty = K-Mod's governor chooses.
 		A power plant is skipped where the city already has clean power, and a dirty one (Coal Plant, Shale Plant) also
 		where it has any power, so HYDRO_PLANT, COAL_PLANT means a hydro plant if possible, else a coal plant.
 		Left out so that they are never built: the cathedrals (Stupa, Cathedral, Academy, Mandir, Mosque, Synagogue,

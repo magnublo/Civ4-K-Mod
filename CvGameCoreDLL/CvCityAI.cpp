@@ -8370,8 +8370,7 @@ bool CvCityAI::AI_chooseProject()
 // no wonders, no buildings off the list (the user's choice). A power plant is skipped where the city already has clean
 // power, and a dirty one also where it has any power, so "Hydro Plant, Coal Plant" means a hydro plant if possible, else
 // a coal plant (and a hydro plant later, which ends the coal plant's unhealthiness). When nothing on the list can be
-// built, the city makes Wealth or Research, whichever AI_processValue rates higher. A city on a process chooses again
-// every turn (CvCity::doProduction), so it starts the next listed building as soon as it can.
+// built, the automation turns itself off with a message and the human is asked what to build.
 void CvCityAI::AI_chooseAutomatedProductionOrder()
 {
 	const std::vector<BuildingClassTypes>& aeOrder = GC.getAutomatedProductionOrder();
@@ -8387,26 +8386,9 @@ void CvCityAI::AI_chooseAutomatedProductionOrder()
 		return;
 	}
 
-	ProcessTypes eBestProcess = NO_PROCESS;
-	int iBestValue = -1;
-	for (int iI = 0; iI < GC.getNumProcessInfos(); iI++)
-	{
-		ProcessTypes eProcess = (ProcessTypes)iI;
-		const CvProcessInfo& kProcess = GC.getProcessInfo(eProcess);
-		if ((kProcess.getProductionToCommerceModifier(COMMERCE_GOLD) > 0 || kProcess.getProductionToCommerceModifier(COMMERCE_RESEARCH) > 0) && canMaintain(eProcess))
-		{
-			int iValue = AI_processValue(eProcess);
-			if (iValue > iBestValue)
-			{
-				iBestValue = iValue;
-				eBestProcess = eProcess;
-			}
-		}
-	}
-	if (eBestProcess != NO_PROCESS)
-	{
-		pushOrder(ORDER_MAINTAIN, eBestProcess);
-	}
+	setProductionAutomated(false, false);
+	gDLL->getInterfaceIFace()->addHumanMessage(getOwnerINLINE(), false, GC.getEVENT_MESSAGE_TIME(), gDLL->getText("TXT_KEY_AUTOMATED_PRODUCTION_DONE", getNameKey()), NULL, MESSAGE_TYPE_MINOR_EVENT, NULL, (ColorTypes)GC.getInfoTypeForString("COLOR_WHITE"), getX_INLINE(), getY_INLINE(), true, true);
+	chooseProduction();
 }
 
 bool CvCityAI::AI_chooseProcess(CommerceTypes eCommerceType)

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Texts for automated production (K-Mod-Magnus, written by Claude): CvCityAI::AI_chooseProduction -->
+<Civ4GameText xmlns="http://www.firaxis.com">
+	<TEXT>
+		<Tag>TXT_KEY_AUTOMATED_PRODUCTION_DONE</Tag>
+		<English>Automated production in %s1_CityName turned off: nothing on the list can be built</English>
+		<French>Automated production in %s1_CityName turned off: nothing on the list can be built</French>
+		<German>Automated production in %s1_CityName turned off: nothing on the list can be built</German>
+		<Italian>Automated production in %s1_CityName turned off: nothing on the list can be built</Italian>
+		<Spanish>Automated production in %s1_CityName turned off: nothing on the list can be built</Spanish>
+	</TEXT>
+</Civ4GameText>

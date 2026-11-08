@@ -8391,7 +8391,7 @@ void CvCity::setProductionAutomated(bool bNewValue, bool bClear)
 			}
 		}
 
-		if (!isProduction())
+		if (bNewValue && !isProduction()) // automated production (written by Claude): switching it off leaves an empty queue to the human
 		{
 			AI_chooseProduction();
 		}
