@@ -969,5 +969,67 @@
 			<bCtrlDownAlt>0</bCtrlDownAlt>
 			<iHotKeyPriorityAlt>0</iHotKeyPriorityAlt>
 		</ControlInfo>
+		<!-- K-Mod-Magnus (written by Claude): the same for ships only (Ctrl+Alt+H, Ctrl+Alt+J) and aircraft only
+			 (Ctrl+Alt+Shift+H, Ctrl+Alt+Shift+J); Ctrl+H and Ctrl+J take land units first -->
+		<ControlInfo>
+			<Type>CONTROL_SELECT_HURT_SEA</Type>
+			<Description>TXT_KEY_ACTION_SELECT_HURT_SEA</Description>
+			<Help/>
+			<HotKey>KB_H</HotKey>
+			<bAltDown>1</bAltDown>
+			<bShiftDown>0</bShiftDown>
+			<bCtrlDown>1</bCtrlDown>
+			<iHotKeyPriority>0</iHotKeyPriority>
+			<HotKeyAlt/>
+			<bAltDownAlt>0</bAltDownAlt>
+			<bShiftDownAlt>0</bShiftDownAlt>
+			<bCtrlDownAlt>0</bCtrlDownAlt>
+			<iHotKeyPriorityAlt>0</iHotKeyPriorityAlt>
+		</ControlInfo>
+		<ControlInfo>
+			<Type>CONTROL_SELECT_HURT_AIR</Type>
+			<Description>TXT_KEY_ACTION_SELECT_HURT_AIR</Description>
+			<Help/>
+			<HotKey>KB_H</HotKey>
+			<bAltDown>1</bAltDown>
+			<bShiftDown>1</bShiftDown>
+			<bCtrlDown>1</bCtrlDown>
+			<iHotKeyPriority>0</iHotKeyPriority>
+			<HotKeyAlt/>
+			<bAltDownAlt>0</bAltDownAlt>
+			<bShiftDownAlt>0</bShiftDownAlt>
+			<bCtrlDownAlt>0</bCtrlDownAlt>
+			<iHotKeyPriorityAlt>0</iHotKeyPriorityAlt>
+		</ControlInfo>
+		<ControlInfo>
+			<Type>CONTROL_SELECT_FULL_HEALTH_SEA</Type>
+			<Description>TXT_KEY_ACTION_SELECT_FULL_HEALTH_SEA</Description>
+			<Help/>
+			<HotKey>KB_J</HotKey>
+			<bAltDown>1</bAltDown>
+			<bShiftDown>0</bShiftDown>
+			<bCtrlDown>1</bCtrlDown>
+			<iHotKeyPriority>0</iHotKeyPriority>
+			<HotKeyAlt/>
+			<bAltDownAlt>0</bAltDownAlt>
+			<bShiftDownAlt>0</bShiftDownAlt>
+			<bCtrlDownAlt>0</bCtrlDownAlt>
+			<iHotKeyPriorityAlt>0</iHotKeyPriorityAlt>
+		</ControlInfo>
+		<ControlInfo>
+			<Type>CONTROL_SELECT_FULL_HEALTH_AIR</Type>
+			<Description>TXT_KEY_ACTION_SELECT_FULL_HEALTH_AIR</Description>
+			<Help/>
+			<HotKey>KB_J</HotKey>
+			<bAltDown>1</bAltDown>
+			<bShiftDown>1</bShiftDown>
+			<bCtrlDown>1</bCtrlDown>
+			<iHotKeyPriority>0</iHotKeyPriority>
+			<HotKeyAlt/>
+			<bAltDownAlt>0</bAltDownAlt>
+			<bShiftDownAlt>0</bShiftDownAlt>
+			<bCtrlDownAlt>0</bCtrlDownAlt>
+			<iHotKeyPriorityAlt>0</iHotKeyPriorityAlt>
+		</ControlInfo>
 	</ControlInfos>
 </Civ4ControlInfos>

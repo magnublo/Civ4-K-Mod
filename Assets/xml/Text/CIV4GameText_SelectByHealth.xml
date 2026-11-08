@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<!-- Texts for selecting units by health (K-Mod-Magnus, written by Claude): CONTROL_SELECT_FULL_HEALTH in CvGame::doControl -->
+<!-- Texts for selecting units by health (K-Mod-Magnus, written by Claude): CONTROL_SELECT_FULL_HEALTH and the sea and air
+     variants in CvGame::doControl -->
 <Civ4GameText xmlns="http://www.firaxis.com">
 	<TEXT>
 		<Tag>TXT_KEY_ACTION_SELECT_FULL_HEALTH</Tag>
@@ -8,5 +9,37 @@
 		<German>Select Units at Full Health with Moves Left</German>
 		<Italian>Select Units at Full Health with Moves Left</Italian>
 		<Spanish>Select Units at Full Health with Moves Left</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_ACTION_SELECT_HURT_SEA</Tag>
+		<English>Select Hurt Ships with Moves Left</English>
+		<French>Select Hurt Ships with Moves Left</French>
+		<German>Select Hurt Ships with Moves Left</German>
+		<Italian>Select Hurt Ships with Moves Left</Italian>
+		<Spanish>Select Hurt Ships with Moves Left</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_ACTION_SELECT_HURT_AIR</Tag>
+		<English>Select Hurt Aircraft with Moves Left</English>
+		<French>Select Hurt Aircraft with Moves Left</French>
+		<German>Select Hurt Aircraft with Moves Left</German>
+		<Italian>Select Hurt Aircraft with Moves Left</Italian>
+		<Spanish>Select Hurt Aircraft with Moves Left</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_ACTION_SELECT_FULL_HEALTH_SEA</Tag>
+		<English>Select Ships at Full Health with Moves Left</English>
+		<French>Select Ships at Full Health with Moves Left</French>
+		<German>Select Ships at Full Health with Moves Left</German>
+		<Italian>Select Ships at Full Health with Moves Left</Italian>
+		<Spanish>Select Ships at Full Health with Moves Left</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_ACTION_SELECT_FULL_HEALTH_AIR</Tag>
+		<English>Select Aircraft at Full Health with Moves Left</English>
+		<French>Select Aircraft at Full Health with Moves Left</French>
+		<German>Select Aircraft at Full Health with Moves Left</German>
+		<Italian>Select Aircraft at Full Health with Moves Left</Italian>
+		<Spanish>Select Aircraft at Full Health with Moves Left</Spanish>
 	</TEXT>
 </Civ4GameText>

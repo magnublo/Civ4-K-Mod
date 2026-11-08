@@ -1454,6 +1454,10 @@ bool CvGame::canDoControl(ControlTypes eControl) const
 	case CONTROL_SELECTYUNITALL:
 	case CONTROL_SELECT_HEALTHY:
 	case CONTROL_SELECT_FULL_HEALTH: // selection by health
+	case CONTROL_SELECT_HURT_SEA: // selection by domain
+	case CONTROL_SELECT_HURT_AIR:
+	case CONTROL_SELECT_FULL_HEALTH_SEA:
+	case CONTROL_SELECT_FULL_HEALTH_AIR:
 	case CONTROL_SELECTCITY:
 	case CONTROL_SELECTCAPITAL:
 	case CONTROL_NEXTUNIT:
@@ -1638,43 +1642,88 @@ void CvGame::doControl(ControlTypes eControl)
 		}
 		break;
 
+	// selection by health and domain (written by Claude): Ctrl+H selects the hurt units of the plot, Ctrl+J those at full
+	// health, both only the ones with moves left and of one domain, as a group can't mix them: land units, else sea units,
+	// else air units. With Alt they select sea units only, with Alt and Shift air units only.
 	case CONTROL_SELECT_HEALTHY:
-	case CONTROL_SELECT_FULL_HEALTH: // selection by health (written by Claude): Ctrl+H selects the hurt units of the plot,
-		// Ctrl+J those at full health, both only the ones with moves left
+	case CONTROL_SELECT_FULL_HEALTH:
+	case CONTROL_SELECT_HURT_SEA:
+	case CONTROL_SELECT_HURT_AIR:
+	case CONTROL_SELECT_FULL_HEALTH_SEA:
+	case CONTROL_SELECT_FULL_HEALTH_AIR:
 		{
-			bool bHurt = (eControl == CONTROL_SELECT_HEALTHY);
+			bool bHurt = (eControl == CONTROL_SELECT_HEALTHY || eControl == CONTROL_SELECT_HURT_SEA || eControl == CONTROL_SELECT_HURT_AIR);
+			DomainTypes eDomain = NO_DOMAIN;
+			if (eControl == CONTROL_SELECT_HURT_SEA || eControl == CONTROL_SELECT_FULL_HEALTH_SEA)
+			{
+				eDomain = DOMAIN_SEA;
+			}
+			else if (eControl == CONTROL_SELECT_HURT_AIR || eControl == CONTROL_SELECT_FULL_HEALTH_AIR)
+			{
+				eDomain = DOMAIN_AIR;
+			}
 			CvUnit* pGroupHead = NULL;
 			pHeadSelectedUnit = gDLL->getInterfaceIFace()->getHeadSelectedUnit();
-			gDLL->getInterfaceIFace()->clearSelectionList();
 			if (pHeadSelectedUnit != NULL)
 			{
 				CvPlot* pPlot = pHeadSelectedUnit->plot();
 				std::vector<CvUnit *> plotUnits;
 				getPlotUnits(pPlot, plotUnits);
-				gDLL->getInterfaceIFace()->selectionListPreChange();
+				std::vector<CvUnit *> aMatching;
 				for (int iI = 0; iI < (int) plotUnits.size(); iI++)
 				{
 					pUnit = plotUnits[iI];
-
-					if (pUnit->getOwnerINLINE() == getActivePlayer())
+					//if (!isMPOption(MPOPTION_SIMULTANEOUS_TURNS) || getTurnSlice() - pUnit->getLastMoveTurn() > GC.getDefineINT("MIN_TIMER_UNIT_DOUBLE_MOVES")) // disabled by K-Mod
+					if (pUnit->getOwnerINLINE() == getActivePlayer() && pUnit->isHurt() == bHurt && pUnit->canMove()) // selection by health
 					{
-						//if (!isMPOption(MPOPTION_SIMULTANEOUS_TURNS) || getTurnSlice() - pUnit->getLastMoveTurn() > GC.getDefineINT("MIN_TIMER_UNIT_DOUBLE_MOVES")) // disabled by K-Mod
+						aMatching.push_back(pUnit);
+					}
+				}
+				const DomainTypes aeDefaultOrder[] = {DOMAIN_LAND, DOMAIN_SEA, DOMAIN_AIR};
+				for (int iD = 0; iD < 3 && eDomain == NO_DOMAIN; iD++)
+				{
+					for (int iI = 0; iI < (int) aMatching.size(); iI++)
+					{
+						if (aMatching[iI]->getDomainType() == aeDefaultOrder[iD])
 						{
-							if (pUnit->isHurt() == bHurt && pUnit->canMove()) // selection by health
-							{
-								if (pGroupHead != NULL)
-								{
-									CvMessageControl::getInstance().sendJoinGroup(pUnit->getID(), pGroupHead->getID());
-								}
-								else
-								{
-									pGroupHead = pUnit;
-								}
-
-								gDLL->getInterfaceIFace()->insertIntoSelectionList(pUnit, false, false, true, true, true);
-							}
+							eDomain = aeDefaultOrder[iD];
+							break;
 						}
 					}
+				}
+				// with no such unit the selection stays as it is
+				if (eDomain == NO_DOMAIN)
+				{
+					break;
+				}
+				bool bFound = false;
+				for (int iI = 0; iI < (int) aMatching.size() && !bFound; iI++)
+				{
+					bFound = (aMatching[iI]->getDomainType() == eDomain);
+				}
+				if (!bFound)
+				{
+					break;
+				}
+				gDLL->getInterfaceIFace()->clearSelectionList();
+				gDLL->getInterfaceIFace()->selectionListPreChange();
+				for (int iI = 0; iI < (int) aMatching.size(); iI++)
+				{
+					pUnit = aMatching[iI];
+					if (pUnit->getDomainType() != eDomain)
+					{
+						continue;
+					}
+					if (pGroupHead != NULL)
+					{
+						CvMessageControl::getInstance().sendJoinGroup(pUnit->getID(), pGroupHead->getID());
+					}
+					else
+					{
+						pGroupHead = pUnit;
+					}
+
+					gDLL->getInterfaceIFace()->insertIntoSelectionList(pUnit, false, false, true, true, true);
 				}
 
 				gDLL->getInterfaceIFace()->selectionListPostChange();
