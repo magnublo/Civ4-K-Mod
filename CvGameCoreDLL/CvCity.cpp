@@ -12483,7 +12483,11 @@ void CvCity::popOrder(int iNum, bool bFinish, bool bChoose)
 		return;
 	}
 
-	if (bFinish && pOrderNode->m_data.bSave)
+	// automated production (written by Claude): a human's automated city builds a unit once, even a repeated one; then
+	// its queue is cleared, so the list decides what comes next
+	bool bClearQueue = bFinish && pOrderNode->m_data.eOrderType == ORDER_TRAIN && isHuman() && isProductionAutomated() && !GC.getAutomatedProductionOrder().empty();
+
+	if (bFinish && pOrderNode->m_data.bSave && !bClearQueue)
 	{
 		//pushOrder(pOrderNode->m_data.eOrderType, pOrderNode->m_data.iData1, pOrderNode->m_data.iData2, true, false, true);
 		pushOrder(pOrderNode->m_data.eOrderType, pOrderNode->m_data.iData1, pOrderNode->m_data.iData2, true, false, -1);
@@ -12858,6 +12862,11 @@ void CvCity::popOrder(int iNum, bool bFinish, bool bChoose)
 	if (bStart)
 	{
 		startHeadOrder();
+	}
+
+	if (bClearQueue)
+	{
+		clearOrderQueue();
 	}
 
 	if ((getTeam() == GC.getGameINLINE().getActiveTeam()) || GC.getGameINLINE().isDebugMode())

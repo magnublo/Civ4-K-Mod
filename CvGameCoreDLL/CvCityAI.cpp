@@ -521,6 +521,13 @@ void CvCityAI::AI_chooseProduction()
 {
 	PROFILE_FUNC();
 
+	// automated production (written by Claude): a unit at the head of a human's queue is finished first, then popOrder
+	// clears the queue and the list decides again
+	if (isHuman() && isProductionAutomated() && isProductionUnit() && !GC.getAutomatedProductionOrder().empty())
+	{
+		return;
+	}
+
 	bool bWasFoodProduction = isFoodProduction();
 	bool bDanger = AI_isDanger();
 
