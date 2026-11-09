@@ -9195,6 +9195,12 @@ int CvCityAI::AI_yieldValue(short* piYields, short* piCommerceYields, bool bRemo
 			int iCommerceWeight = kOwner.AI_commerceWeight((CommerceTypes)iI, this); // (Should we still use this with bWorkerOptimization?)
 			if (AI_isEmphasizeCommerce((CommerceTypes)iI))
 			{
+				// Emphasize Espionage: espionage counts at least as much as research, as for a human whose
+				// espionage rate is 60% or more (CvPlayerAI::AI_updateCommerceWeights). (written by Claude)
+				if (iI == COMMERCE_ESPIONAGE)
+				{
+					iCommerceWeight = std::max(iCommerceWeight, GC.getCommerceInfo(COMMERCE_RESEARCH).getAIWeightPercent());
+				}
 				iCommerceWeight *= 2;
 			}
 			if (!bWorkerOptimization && iI == COMMERCE_CULTURE && getCultureLevel() <= (CultureLevelTypes)1)
@@ -12429,7 +12435,22 @@ void CvCityAI::read(FDataStreamBase* pStream)
 	pStream->Read(&m_bForceEmphasizeCulture);
 	pStream->Read(NUM_CITY_PLOTS, m_aiBestBuildValue);
 	pStream->Read(NUM_CITY_PLOTS, (int*)m_aeBestBuild);
-	pStream->Read(GC.getNumEmphasizeInfos(), m_pbEmphasize);
+	// The number of emphasize types is saved since uiFlag 3; older saves have BtS's six. (written by Claude)
+	int iSavedEmphasizeInfos = 6;
+	if (uiFlag >= 3)
+	{
+		pStream->Read(&iSavedEmphasizeInfos);
+	}
+	FAssert(iSavedEmphasizeInfos <= GC.getNumEmphasizeInfos());
+	for (int iI = 0; iI < iSavedEmphasizeInfos; iI++)
+	{
+		bool bEmphasize;
+		pStream->Read(&bEmphasize);
+		if (iI < GC.getNumEmphasizeInfos())
+		{
+			m_pbEmphasize[iI] = bEmphasize;
+		}
+	}
 	pStream->Read(NUM_YIELD_TYPES, m_aiSpecialYieldMultiplier);
 	pStream->Read(&m_iCachePlayerClosenessTurn);
 	pStream->Read(&m_iCachePlayerClosenessDistance);
@@ -12458,7 +12479,7 @@ void CvCityAI::write(FDataStreamBase* pStream)
 {
 	CvCity::write(pStream);
 
-	uint uiFlag=2;
+	uint uiFlag=3;
 	pStream->Write(uiFlag);		// flag for expansion
 
 	pStream->Write(m_iEmphasizeAvoidGrowthCount);
@@ -12474,6 +12495,7 @@ void CvCityAI::write(FDataStreamBase* pStream)
 	pStream->Write(m_bForceEmphasizeCulture);
 	pStream->Write(NUM_CITY_PLOTS, m_aiBestBuildValue);
 	pStream->Write(NUM_CITY_PLOTS, (int*)m_aeBestBuild);
+	pStream->Write(GC.getNumEmphasizeInfos()); // uiFlag >= 3
 	pStream->Write(GC.getNumEmphasizeInfos(), m_pbEmphasize);
 	pStream->Write(NUM_YIELD_TYPES, m_aiSpecialYieldMultiplier);
 	pStream->Write(m_iCachePlayerClosenessTurn);

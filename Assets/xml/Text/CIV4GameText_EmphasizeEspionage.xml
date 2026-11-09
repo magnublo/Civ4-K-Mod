@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Texts for the city governor's Emphasize Espionage (K-Mod-Magnus, written by Claude): EMPHASIZE_ESPIONAGE in
+     GameInfo/CIV4EmphasizeInfo.xml -->
+<Civ4GameText xmlns="http://www.firaxis.com">
+	<TEXT>
+		<Tag>TXT_KEY_EMPHASIZE_ESPIONAGE</Tag>
+		<English>Emphasize Espionage</English>
+		<French>Privil&#233;gier l'espionnage</French>
+		<German>Schwerpunkt Spionage</German>
+		<Italian>Privilegia lo spionaggio</Italian>
+		<Spanish>Favorecer espionaje</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_EMPHASIZE_ESPIONAGE_HELP</Tag>
+		<English>[ICON_BULLET]Prefers spies, and commerce while your espionage rate is above zero</English>
+		<French>[ICON_BULLET]Prefers spies, and commerce while your espionage rate is above zero</French>
+		<German>[ICON_BULLET]Prefers spies, and commerce while your espionage rate is above zero</German>
+		<Italian>[ICON_BULLET]Prefers spies, and commerce while your espionage rate is above zero</Italian>
+		<Spanish>[ICON_BULLET]Prefers spies, and commerce while your espionage rate is above zero</Spanish>
+	</TEXT>
+</Civ4GameText>

@@ -4635,6 +4635,14 @@ void CvDLLWidgetData::parseEmphasizeHelp(CvWidgetDataStruct &widgetDataStruct, C
 	}
 
 	szBuffer.append(GC.getEmphasizeInfo((EmphasizeTypes)widgetDataStruct.m_iData1).getDescription());
+
+	// The optional Help of an emphasize type, as a second line. (written by Claude)
+	CvWString szHelp = GC.getEmphasizeInfo((EmphasizeTypes)widgetDataStruct.m_iData1).getHelp();
+	if (!szHelp.empty())
+	{
+		szBuffer.append(NEWLINE);
+		szBuffer.append(szHelp);
+	}
 }
 
 

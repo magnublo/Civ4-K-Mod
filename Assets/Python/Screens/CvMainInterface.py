@@ -2224,10 +2224,12 @@ class CvMainInterface:
 
 				iBtnSX = xResolution - 284
 				
+				# The draft, hurry and automate rows are 25 and 26 pixels high, so that three rows of emphasize buttons fit
+				# below them (written by Claude)
 				iBtnX = iBtnSX
-				iBtnY = yResolution - 140
+				iBtnY = yResolution - 144
 				iBtnW = 64
-				iBtnH = 30
+				iBtnH = 25
 
 				# Conscript button
 				szText = "<font=1>" + localText.getText("TXT_KEY_DRAFT", ()) + "</font>"
@@ -2237,7 +2239,7 @@ class CvMainInterface:
 
 				iBtnY += iBtnH
 				iBtnW = 32
-				iBtnH = 28
+				iBtnH = 26
 				
 				# Hurry Buttons		
 				screen.setButtonGFC( "Hurry0", "", "", iBtnX, iBtnY, iBtnW, iBtnH, WidgetTypes.WIDGET_HURRY, 0, -1, ButtonStyles.BUTTON_STYLE_STANDARD )
@@ -2266,55 +2268,34 @@ class CvMainInterface:
 				iBtnY += iBtnH
 				iBtnX = iBtnSX
 
+				# Set Emphasize buttons: BtS's two rows of three in the theme's styles Button_CityB1_Style to
+				# Button_CityB6_Style, and the emphasize types after those six in a third row (written by Claude). A
+				# button of the third row shows its Button (and when on, the same file ending in "On") on a bottom piece
+				# of the theme's panel, Button_CityBtn09_Style to Button_CityBtn11_Style. Research, above it, then
+				# goes on a square piece with a copy of its icon.
 				iBtnW	= 22
 				iBtnWa	= 20
-				iBtnH	= 24
-				iBtnHa	= 27
-			
-				# Set Emphasize buttons
-				i = 0
-				szButtonID = "Emphasize" + str(i)
-				screen.addCheckBoxGFC( szButtonID, "", "", iBtnX, iBtnY, iBtnW, iBtnH, WidgetTypes.WIDGET_EMPHASIZE, i, -1, ButtonStyles.BUTTON_STYLE_LABEL )
-				szStyle = "Button_CityB" + str(i+1) + "_Style"
-				screen.setStyle( szButtonID, szStyle )
-				screen.hide( szButtonID )
-
-				i+=1
-				szButtonID = "Emphasize" + str(i)
-				screen.addCheckBoxGFC( szButtonID, "", "", iBtnX+iBtnW, iBtnY, iBtnWa, iBtnH, WidgetTypes.WIDGET_EMPHASIZE, i, -1, ButtonStyles.BUTTON_STYLE_LABEL )
-				szStyle = "Button_CityB" + str(i+1) + "_Style"
-				screen.setStyle( szButtonID, szStyle )
-				screen.hide( szButtonID )
-
-				i+=1
-				szButtonID = "Emphasize" + str(i)
-				screen.addCheckBoxGFC( szButtonID, "", "", iBtnX+iBtnW+iBtnWa, iBtnY, iBtnW, iBtnH, WidgetTypes.WIDGET_EMPHASIZE, i, -1, ButtonStyles.BUTTON_STYLE_LABEL )
-				szStyle = "Button_CityB" + str(i+1) + "_Style"
-				screen.setStyle( szButtonID, szStyle )
-				screen.hide( szButtonID )
-
-				iBtnY += iBtnH
-				
-				i+=1
-				szButtonID = "Emphasize" + str(i)
-				screen.addCheckBoxGFC( szButtonID, "", "", iBtnX, iBtnY, iBtnW, iBtnHa, WidgetTypes.WIDGET_EMPHASIZE, i, -1, ButtonStyles.BUTTON_STYLE_LABEL )
-				szStyle = "Button_CityB" + str(i+1) + "_Style"
-				screen.setStyle( szButtonID, szStyle )
-				screen.hide( szButtonID )
-
-				i+=1
-				szButtonID = "Emphasize" + str(i)
-				screen.addCheckBoxGFC( szButtonID, "", "", iBtnX+iBtnW, iBtnY, iBtnWa, iBtnHa, WidgetTypes.WIDGET_EMPHASIZE, i, -1, ButtonStyles.BUTTON_STYLE_LABEL )
-				szStyle = "Button_CityB" + str(i+1) + "_Style"
-				screen.setStyle( szButtonID, szStyle )
-				screen.hide( szButtonID )
-
-				i+=1
-				szButtonID = "Emphasize" + str(i)
-				screen.addCheckBoxGFC( szButtonID, "", "", iBtnX+iBtnW+iBtnWa, iBtnY, iBtnW, iBtnHa, WidgetTypes.WIDGET_EMPHASIZE, i, -1, ButtonStyles.BUTTON_STYLE_LABEL )
-				szStyle = "Button_CityB" + str(i+1) + "_Style"
-				screen.setStyle( szButtonID, szStyle )
-				screen.hide( szButtonID )
+				iBtnH	= 22
+				for i in range( g_NumEmphasizeInfos ):
+					iCol = i % 3
+					iX = iBtnX + ( 0, iBtnW, iBtnW + iBtnWa )[iCol]
+					iY = iBtnY + ( i / 3 ) * iBtnH
+					iW = ( iBtnW, iBtnWa, iBtnW )[iCol]
+					szButtonID = "Emphasize" + str(i)
+					szButton = ""
+					szButtonOn = ""
+					szStyle = "Button_CityB" + str(i+1) + "_Style"
+					if i >= 6:
+						szButton = gc.getEmphasizeInfo(i).getButton()
+						szStyle = "Button_CityBtn%02d_Style" % ( 9 + iCol )
+					elif i == 3 and g_NumEmphasizeInfos > 6:
+						szButton = "Art/Interface/Buttons/Governor/EmphasizeResearch.dds"
+						szStyle = "Button_CityBtn06_Style"
+					if szButton:
+						szButtonOn = szButton[:-len(".dds")] + "On.dds"
+					screen.addCheckBoxGFC( szButtonID, szButton, szButtonOn, iX, iY, iW, iBtnH, WidgetTypes.WIDGET_EMPHASIZE, i, -1, ButtonStyles.BUTTON_STYLE_LABEL )
+					screen.setStyle( szButtonID, szStyle )
+					screen.hide( szButtonID )
 				
 				g_pSelectedUnit = 0
 				screen.setState( "AutomateCitizens", pHeadSelectedCity.isCitizensAutomated() )
