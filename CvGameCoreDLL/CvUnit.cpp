@@ -11691,7 +11691,12 @@ void CvUnit::setTransportUnit(CvUnit* pTransportUnit)
 			}
 
 			pTransportUnit->changeCargo(1);
-			pTransportUnit->getGroup()->setActivityType(ACTIVITY_AWAKE);
+			// carrier orders (written by Claude): aircraft boarding a human's ship leave it asleep, on sentry, healing or
+			// blockading. An AI's ship still wakes, so the AI updates it again with the new cargo.
+			if (getDomainType() != DOMAIN_AIR || !pTransportUnit->isHuman())
+			{
+				pTransportUnit->getGroup()->setActivityType(ACTIVITY_AWAKE);
+			}
 		}
 		else
 		{
