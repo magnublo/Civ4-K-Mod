@@ -3804,7 +3804,10 @@ bool CvSelectionGroup::readyToSelect(bool bAny)
 bool CvSelectionGroup::readyToMove(bool bAny)
 {
 	//return (((bAny) ? canAnyMove() : canAllMove()) && (headMissionQueueNode() == NULL) && (getActivityType() == ACTIVITY_AWAKE) && !isBusy() && !isCargoBusy());
-	return (bAny ? canAnyMove() : canAllMove()) && (isForceUpdate() || (headMissionQueueNode() == NULL && getActivityType() == ACTIVITY_AWAKE)) && !isBusy() && !isCargoBusy(); // K-Mod
+	// K-Mod's force update, counted only while the AI controls the group (written by Claude). A human's automated
+	// group keeps the flag from the start of the turn until its AI update at the end, also when the human takes it
+	// over by hand first, and then Skip Turn or Sleep must still take it out of the unit cycle.
+	return (bAny ? canAnyMove() : canAllMove()) && ((isForceUpdate() && AI_isControlled()) || (headMissionQueueNode() == NULL && getActivityType() == ACTIVITY_AWAKE)) && !isBusy() && !isCargoBusy();
 }
 
 
