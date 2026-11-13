@@ -168,5 +168,8 @@
 // fly to carrier: BtS's spare player option 2, "Fighters Start Automated" on the Options screen
 // (USE_MODDERS_PLAYEROPTION_2 in GlobalDefinesAlt.xml shows it)
 #define PLAYEROPTION_FIGHTERS_AUTOMATED		PLAYEROPTION_MODDER_2
+// carrier intercept: BtS's spare player option 3, "Fighters on Carriers Intercept" on the Options screen
+// (USE_MODDERS_PLAYEROPTION_3 in GlobalDefinesAlt.xml shows it)
+#define PLAYEROPTION_CARRIER_INTERCEPT		PLAYEROPTION_MODDER_3
 
 #endif	// CVDEFINES_H

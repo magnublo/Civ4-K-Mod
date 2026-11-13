@@ -135,9 +135,10 @@
 			<bDefault>0</bDefault>
 		</PlayerOptionInfo>
 		<PlayerOptionInfo>
+			<!-- K-Mod-Magnus (written by Claude): "Fighters on Carriers Intercept" (PLAYEROPTION_CARRIER_INTERCEPT in CvDefines.h) -->
 			<Type>PLAYEROPTION_MODDER_3</Type>
-			<Description>TXT_KEY_PLAYER_OPTION_MODDER_3</Description>
-			<Help>TXT_KEY_PLAYER_OPTION_MODDER_3_HELP</Help>
+			<Description>TXT_KEY_PLAYER_OPTION_CARRIER_INTERCEPT</Description>
+			<Help>TXT_KEY_PLAYER_OPTION_CARRIER_INTERCEPT_HELP</Help>
 			<bDefault>0</bDefault>
 		</PlayerOptionInfo>
 	</PlayerOptionInfos>

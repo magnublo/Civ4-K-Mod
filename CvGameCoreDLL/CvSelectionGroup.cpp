@@ -250,6 +250,9 @@ void CvSelectionGroup::doTurn()
 					clearMissionQueue();
 				// K-Mod end
 			}
+
+			// carrier intercept (written by Claude): aircraft on a ship that would wait for orders this turn intercept
+			interceptOnCarrier();
 		}
 
 		if (isHuman())
@@ -4314,6 +4317,41 @@ void CvSelectionGroup::setActivityType(ActivityTypes eNewValue)
 			gDLL->getInterfaceIFace()->setDirty(SelectionButtons_DIRTY_BIT, true);
 		}
 	}
+}
+
+
+// carrier intercept (written by Claude): with the option Fighters on Carriers Intercept, a human's group that would wait
+// for orders (awake, no missions, not automated) and whose units are all aircraft on a ship that can intercept goes on
+// intercept, the activity of the Intercept button (MISSION_AIRPATROL). That spends no moves; an aircraft that has moved
+// this turn intercepts from the start of its next turn. Returns true if the group intercepts.
+bool CvSelectionGroup::interceptOnCarrier()
+{
+	if (getActivityType() == ACTIVITY_INTERCEPT)
+	{
+		return true;
+	}
+
+	if (getActivityType() != ACTIVITY_AWAKE || headMissionQueueNode() != NULL || isAutomated() || getNumUnits() == 0)
+	{
+		return false;
+	}
+
+	if (!isHuman() || !GET_PLAYER(getOwnerINLINE()).isOption(PLAYEROPTION_CARRIER_INTERCEPT))
+	{
+		return false;
+	}
+
+	for (CLLNode<IDInfo>* pUnitNode = headUnitNode(); pUnitNode != NULL; pUnitNode = nextUnitNode(pUnitNode))
+	{
+		CvUnit const* pLoopUnit = ::getUnit(pUnitNode->m_data);
+		if (pLoopUnit == NULL || !pLoopUnit->isCargo() || !pLoopUnit->canAirPatrol(pLoopUnit->plot()))
+		{
+			return false;
+		}
+	}
+
+	setActivityType(ACTIVITY_INTERCEPT);
+	return true;
 }
 
 

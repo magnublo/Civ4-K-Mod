@@ -11684,6 +11684,12 @@ void CvUnit::setTransportUnit(CvUnit* pTransportUnit)
 			{
 				getGroup()->setActivityType(ACTIVITY_SLEEP);
 			}
+			// carrier intercept (written by Claude): with the option, an aircraft that boards goes on intercept rather than
+			// waiting for orders
+			else
+			{
+				getGroup()->interceptOnCarrier();
+			}
 
 			if (GC.getGameINLINE().isFinalInitialized())
 			{

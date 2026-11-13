@@ -163,6 +163,7 @@ public:
 
 	ActivityTypes getActivityType() const;																															// Exposed to Python
 	void setActivityType(ActivityTypes eNewValue);																											// Exposed to Python
+	bool interceptOnCarrier(); // carrier intercept (written by Claude)
 
 	AutomateTypes getAutomateType() const;																																		// Exposed to Python
 	bool isAutomated() const; // Exposed to Python

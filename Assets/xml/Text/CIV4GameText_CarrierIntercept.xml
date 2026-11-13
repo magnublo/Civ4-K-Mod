@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Texts for "Fighters on Carriers Intercept" (K-Mod-Magnus, written by Claude): CvSelectionGroup::interceptOnCarrier -->
+<Civ4GameText xmlns="http://www.firaxis.com">
+	<TEXT>
+		<Tag>TXT_KEY_PLAYER_OPTION_CARRIER_INTERCEPT</Tag>
+		<English>Fighters on Carriers Intercept</English>
+		<French>Fighters on Carriers Intercept</French>
+		<German>Fighters on Carriers Intercept</German>
+		<Italian>Fighters on Carriers Intercept</Italian>
+		<Spanish>Fighters on Carriers Intercept</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_PLAYER_OPTION_CARRIER_INTERCEPT_HELP</Tag>
+		<English>Fighters and jet fighters on a carrier go on intercept instead of waiting for orders: when they board (also with Automatically Fly to Carrier), and at the start of a turn in which they would wait for orders, after an air strike for example. Sleeping ones stay asleep. Intercept uses no moves, so you can still select them and give other orders.</English>
+		<French>Fighters and jet fighters on a carrier go on intercept instead of waiting for orders: when they board (also with Automatically Fly to Carrier), and at the start of a turn in which they would wait for orders, after an air strike for example. Sleeping ones stay asleep. Intercept uses no moves, so you can still select them and give other orders.</French>
+		<German>Fighters and jet fighters on a carrier go on intercept instead of waiting for orders: when they board (also with Automatically Fly to Carrier), and at the start of a turn in which they would wait for orders, after an air strike for example. Sleeping ones stay asleep. Intercept uses no moves, so you can still select them and give other orders.</German>
+		<Italian>Fighters and jet fighters on a carrier go on intercept instead of waiting for orders: when they board (also with Automatically Fly to Carrier), and at the start of a turn in which they would wait for orders, after an air strike for example. Sleeping ones stay asleep. Intercept uses no moves, so you can still select them and give other orders.</Italian>
+		<Spanish>Fighters and jet fighters on a carrier go on intercept instead of waiting for orders: when they board (also with Automatically Fly to Carrier), and at the start of a turn in which they would wait for orders, after an air strike for example. Sleeping ones stay asleep. Intercept uses no moves, so you can still select them and give other orders.</Spanish>
+	</TEXT>
+</Civ4GameText>

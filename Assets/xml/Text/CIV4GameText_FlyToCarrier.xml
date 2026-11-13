@@ -12,11 +12,11 @@
 	</TEXT>
 	<TEXT>
 		<Tag>TXT_KEY_ACTION_AUTOMATE_FLY_TO_CARRIER_HELP</Tag>
-		<English>The aircraft rebases to the nearest carrier with room for it and sleeps on board. A rebase has no range limit, so it gets there in one move. A selected group fills the nearest carriers first. If no carrier has room, it waits until one has.</English>
-		<French>The aircraft rebases to the nearest carrier with room for it and sleeps on board. A rebase has no range limit, so it gets there in one move. A selected group fills the nearest carriers first. If no carrier has room, it waits until one has.</French>
-		<German>The aircraft rebases to the nearest carrier with room for it and sleeps on board. A rebase has no range limit, so it gets there in one move. A selected group fills the nearest carriers first. If no carrier has room, it waits until one has.</German>
-		<Italian>The aircraft rebases to the nearest carrier with room for it and sleeps on board. A rebase has no range limit, so it gets there in one move. A selected group fills the nearest carriers first. If no carrier has room, it waits until one has.</Italian>
-		<Spanish>The aircraft rebases to the nearest carrier with room for it and sleeps on board. A rebase has no range limit, so it gets there in one move. A selected group fills the nearest carriers first. If no carrier has room, it waits until one has.</Spanish>
+		<English>The aircraft rebases to the nearest carrier with room for it and sleeps on board (with Fighters on Carriers Intercept, it intercepts). A rebase has no range limit, so it gets there in one move. A selected group fills the nearest carriers first. If no carrier has room, it waits until one has.</English>
+		<French>The aircraft rebases to the nearest carrier with room for it and sleeps on board (with Fighters on Carriers Intercept, it intercepts). A rebase has no range limit, so it gets there in one move. A selected group fills the nearest carriers first. If no carrier has room, it waits until one has.</French>
+		<German>The aircraft rebases to the nearest carrier with room for it and sleeps on board (with Fighters on Carriers Intercept, it intercepts). A rebase has no range limit, so it gets there in one move. A selected group fills the nearest carriers first. If no carrier has room, it waits until one has.</German>
+		<Italian>The aircraft rebases to the nearest carrier with room for it and sleeps on board (with Fighters on Carriers Intercept, it intercepts). A rebase has no range limit, so it gets there in one move. A selected group fills the nearest carriers first. If no carrier has room, it waits until one has.</Italian>
+		<Spanish>The aircraft rebases to the nearest carrier with room for it and sleeps on board (with Fighters on Carriers Intercept, it intercepts). A rebase has no range limit, so it gets there in one move. A selected group fills the nearest carriers first. If no carrier has room, it waits until one has.</Spanish>
 	</TEXT>
 	<TEXT>
 		<Tag>TXT_KEY_PLAYER_OPTION_FIGHTERS_AUTOMATED</Tag>

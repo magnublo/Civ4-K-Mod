@@ -10185,7 +10185,8 @@ void CvUnitAI::AI_happyGarrisonMove()
 // that can board a ship outside a city (fighters and jet fighters). An air unit rebases to any plot it can move into, at
 // any distance and for one move, so the nearest carrier (plotDistance) of the team with room is reached at once: one pass
 // over the team's units collects the room per plot. The group's units fill the nearest carriers first; each boards and
-// sleeps there, and its automation ends. Units that find no room stay in the group, which keeps waiting for room.
+// sleeps there (intercepts, with the option Fighters on Carriers Intercept), and its automation ends. Units that
+// find no room stay in the group, which keeps waiting for room.
 void CvUnitAI::AI_flyToCarrierMove()
 {
 	PROFILE_FUNC();
@@ -10279,7 +10280,8 @@ void CvUnitAI::AI_flyToCarrierMove()
 			pUnit->load();
 		}
 		pUnit->getGroup()->setAutomateType(NO_AUTOMATE);
-		if (pUnit->isCargo())
+		// carrier intercept (written by Claude): with the option Fighters on Carriers Intercept it intercepts on board instead
+		if (pUnit->isCargo() && !pUnit->getGroup()->interceptOnCarrier())
 		{
 			pUnit->getGroup()->setActivityType(ACTIVITY_SLEEP);
 		}
