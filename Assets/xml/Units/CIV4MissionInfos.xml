@@ -815,7 +815,8 @@
 		</MissionInfo>
 		<!-- K-Mod-Magnus (written by Claude): a spy sleeps until its espionage discount on its tile is at the maximum,
 			 then wakes up (CvUnit::canSleepForDiscount, CvSelectionGroup::doTurn). Last, after the exe's animation
-			 missions, as in CvEnums.h. iOrderPriority 14: right after Sleep. -->
+			 missions, as in CvEnums.h. iOrderPriority 14: right after Sleep. Hotkey F with priority 1, so F takes it over
+			 Sleep and Fortify (priority 0) wherever it can be done. -->
 		<MissionInfo>
 			<Type>MISSION_SLEEP_FOR_DISCOUNT</Type>
 			<Description>TXT_KEY_MISSION_SLEEP_FOR_DISCOUNT</Description>
@@ -826,11 +827,11 @@
 			<bTarget>0</bTarget>
 			<bBuild>0</bBuild>
 			<bSound>1</bSound>
-			<HotKey/>
+			<HotKey>KB_F</HotKey>
 			<bAltDown>0</bAltDown>
 			<bShiftDown>0</bShiftDown>
 			<bCtrlDown>0</bCtrlDown>
-			<iHotKeyPriority>0</iHotKeyPriority>
+			<iHotKeyPriority>1</iHotKeyPriority>
 			<HotKeyAlt/>
 			<bAltDownAlt>0</bAltDownAlt>
 			<bShiftDownAlt>0</bShiftDownAlt>
