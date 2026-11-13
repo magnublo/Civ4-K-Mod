@@ -12,6 +12,21 @@ gc = CyGlobalContext()
 ArtFileMgr = CyArtFileMgr()
 localText = CyTranslator()
 
+# The buttons above the leaders that change the weight against all of them (written by Claude): widget name, art
+# (an interface art type or a path), hover text, and the change sent for each team. 99 is the game's maximum
+# weight, so -99 always ends at 0.
+WEIGHTS_BUTTONS = [
+	("EspionageWeightsUp", "INTERFACE_BUTTONS_PLUS", "TXT_KEY_ESPIONAGE_WEIGHTS_UP_HELP", 1),
+	("EspionageWeightsDown", "INTERFACE_BUTTONS_MINUS", "TXT_KEY_ESPIONAGE_WEIGHTS_DOWN_HELP", -1),
+	("EspionageWeightsZero", "Art/Interface/Buttons/General/ZERO.dds", "TXT_KEY_ESPIONAGE_WEIGHTS_ZERO_HELP", -99),
+]
+
+# the hover text of those buttons (WIDGET_ESPIONAGE_WEIGHTS, Config/Espionage Weights.xml): iData1 is the button
+def getWeightsHelp(eWidget, iData1, iData2, bOption):
+	if iData1 >= 0 and iData1 < len(WEIGHTS_BUTTONS):
+		return localText.getText(WEIGHTS_BUTTONS[iData1][2], ())
+	return u""
+
 class CvEspionageAdvisor:
 
 	def __init__(self):
@@ -115,9 +130,10 @@ class CvEspionageAdvisor:
 			self.X_LEFT_PANE, self.Y_LEFT_PANE, self.W_LEFT_PANE, self.H_LEFT_PANE, PanelStyles.PANEL_STYLE_MAIN )
 
 		self.X_SCROLL = self.X_LEFT_PANE + 20
-		self.Y_SCROLL= 90
+		self.Y_WEIGHTS = 92 # the row of buttons for all leaders, above the list (written by Claude)
+		self.Y_SCROLL= 114
 		self.W_SCROLL= 360
-		self.H_SCROLL= 580
+		self.H_SCROLL= 556
 
 		self.szScrollPanel = "ScrollPanel"
 		screen.addPanel( self.szScrollPanel, "", "", true, true,
@@ -236,6 +252,18 @@ class CvEspionageAdvisor:
 
 			self.W_NAME_PANEL = 220
 			self.H_NAME_PANEL = 30
+
+			# the buttons for all leaders (written by Claude), in line with the buttons of each leader below (the
+			# leaders' panels start 3 px into the scroll panel)
+			eWidget = getattr(WidgetTypes, "WIDGET_ESPIONAGE_WEIGHTS", WidgetTypes.WIDGET_GENERAL)
+			iX = self.X_SCROLL + 3 + 53
+			for i in range(len(WEIGHTS_BUTTONS)):
+				szArt = WEIGHTS_BUTTONS[i][1]
+				if szArt.startswith("INTERFACE_"):
+					szArt = ArtFileMgr.getInterfaceArtInfo(szArt).getPath()
+				screen.setImageButton(WEIGHTS_BUTTONS[i][0], szArt, iX + 15 * i, self.Y_WEIGHTS, 16, 16, eWidget, i, -1)
+			szText = u"<font=2>" + localText.getText("TXT_KEY_ESPIONAGE_WEIGHTS_ALL_LEADERS", ()) + u"</font>"
+			screen.setLabel("EspionageWeightsText", "Background", szText, CvUtil.FONT_LEFT_JUSTIFY, iX + 15 * len(WEIGHTS_BUTTONS) + 4, self.Y_WEIGHTS, self.Z_CONTROLS, FontTypes.TITLE_FONT, WidgetTypes.WIDGET_GENERAL, -1, -1)
 
 			iPlayerLoop = 0
 
@@ -565,6 +593,13 @@ class CvEspionageAdvisor:
 
 		if (self.iTargetPlayer != -1):
 
+			##### Buttons for all leaders (written by Claude) #####
+			if (inputClass.getNotifyCode() == NotifyCode.NOTIFY_CLICKED):
+				for i in range(len(WEIGHTS_BUTTONS)):
+					if (inputClass.getFunctionName() == WEIGHTS_BUTTONS[i][0]):
+						self.changeAllWeights(WEIGHTS_BUTTONS[i][3])
+						return 1
+
 			##### Player Images #####
 			if (inputClass.getData1() == self.iLeaderImagesID):
 
@@ -657,6 +692,17 @@ class CvEspionageAdvisor:
 						CyInterface().setDirty(InterfaceDirtyBits.Espionage_Advisor_DIRTY_BIT, True)
 
 		return 0
+
+	# one weight change for each team in the list (a team can have several leaders); the game keeps each weight
+	# within 0 to 99 (written by Claude)
+	def changeAllWeights(self, iChange):
+		aiTeams = []
+		for iPlayerID in self.aiKnownPlayers:
+			iTeam = gc.getPlayer(iPlayerID).getTeam()
+			if iTeam not in aiTeams:
+				aiTeams.append(iTeam)
+				CyMessageControl().sendEspionageSpendingWeightChange(iTeam, iChange)
+		CyInterface().setDirty(InterfaceDirtyBits.Espionage_Advisor_DIRTY_BIT, True)
 
 	def update(self, fDelta):
 		if (CyInterface().isDirty(InterfaceDirtyBits.Espionage_Advisor_DIRTY_BIT) == True):

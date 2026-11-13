@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!--
+	Espionage weights for all leaders (K-Mod-Magnus, written by Claude)
+
+	The hover texts of the espionage screen's buttons that change the weight of every leader at once
+	(Python/Screens/CvEspionageAdvisor.py).
+-->
+<mod id="EspionageWeights"
+	 module="CvEspionageAdvisor"
+	 name="Espionage weights for all leaders"
+	 author="K-Mod-Magnus"
+	 version="1.0"
+	 date="11/13/2026">
+
+	<widget name="WIDGET_ESPIONAGE_WEIGHTS" function="getWeightsHelp"/>
+</mod>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Texts for the espionage screen's buttons for all leaders (K-Mod-Magnus, written by Claude): Python/Screens/CvEspionageAdvisor.py -->
+<Civ4GameText xmlns="http://www.firaxis.com">
+	<TEXT>
+		<Tag>TXT_KEY_ESPIONAGE_WEIGHTS_ALL_LEADERS</Tag>
+		<English>All leaders</English>
+		<French>All leaders</French>
+		<German>All leaders</German>
+		<Italian>All leaders</Italian>
+		<Spanish>All leaders</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_ESPIONAGE_WEIGHTS_UP_HELP</Tag>
+		<English>Raise the weight of every leader by 1 (up to 99)</English>
+		<French>Raise the weight of every leader by 1 (up to 99)</French>
+		<German>Raise the weight of every leader by 1 (up to 99)</German>
+		<Italian>Raise the weight of every leader by 1 (up to 99)</Italian>
+		<Spanish>Raise the weight of every leader by 1 (up to 99)</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_ESPIONAGE_WEIGHTS_DOWN_HELP</Tag>
+		<English>Lower the weight of every leader by 1 (down to 0)</English>
+		<French>Lower the weight of every leader by 1 (down to 0)</French>
+		<German>Lower the weight of every leader by 1 (down to 0)</German>
+		<Italian>Lower the weight of every leader by 1 (down to 0)</Italian>
+		<Spanish>Lower the weight of every leader by 1 (down to 0)</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_ESPIONAGE_WEIGHTS_ZERO_HELP</Tag>
+		<English>Set the weight of every leader to 0[NEWLINE]Leaders with weight 0 get no espionage points, unless every weight is 0: then all leaders get an equal share.</English>
+		<French>Set the weight of every leader to 0[NEWLINE]Leaders with weight 0 get no espionage points, unless every weight is 0: then all leaders get an equal share.</French>
+		<German>Set the weight of every leader to 0[NEWLINE]Leaders with weight 0 get no espionage points, unless every weight is 0: then all leaders get an equal share.</German>
+		<Italian>Set the weight of every leader to 0[NEWLINE]Leaders with weight 0 get no espionage points, unless every weight is 0: then all leaders get an equal share.</Italian>
+		<Spanish>Set the weight of every leader to 0[NEWLINE]Leaders with weight 0 get no espionage points, unless every weight is 0: then all leaders get an equal share.</Spanish>
+	</TEXT>
+</Civ4GameText>
