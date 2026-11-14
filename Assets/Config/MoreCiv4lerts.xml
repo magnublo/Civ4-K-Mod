@@ -22,6 +22,9 @@
 					get="isShowCityPendingExpandBorderAlert" set="setShowCityPendingExpandBorderAlert" 
 					label="Pending Border Expansion" 
 					help="When checked, displays an alert when a city will expand its curltural borders next turn."/>
+			<!-- culture takes tile (K-Mod-Magnus, written by Claude): read by the DLL in CvPlot::updateCulture -->
+			<option id="CultureTakesTile" key="Culture Takes Tile"
+					type="boolean" default="True" and="Enabled"/>
 			<option id="CityFounded" key="City Founded" 
 					type="boolean" default="False" and="Enabled" 
 					get="isShowCityFoundedAlert" set="setShowCityFoundedAlert" 

@@ -36,6 +36,7 @@ class BugAlertsOptionsTab(BugOptionsTab.BugOptionsTab):
 		self.addCheckbox(screen, leftR, "Civ4lerts__CityOccupation")
 		
 		self.addCheckbox(screen, left, "MoreCiv4lerts__CityPendingBorderExpansion")
+		self.addCheckbox(screen, left, "MoreCiv4lerts__CultureTakesTile") # culture takes tile (written by Claude)
 		self.addCheckbox(screen, left, "Civ4lerts__CityCanHurryPop")
 		self.addCheckbox(screen, left, "Civ4lerts__CityCanHurryGold")
 		self.addCheckbox(screen, left, "MoreCiv4lerts__CityFounded")

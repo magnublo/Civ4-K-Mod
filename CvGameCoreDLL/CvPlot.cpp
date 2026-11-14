@@ -25,6 +25,7 @@
 #include "CyArgsList.h"
 #include "CvDLLPythonIFaceBase.h"
 #include "CvEventReporter.h"
+#include "CvBugOptions.h"
 /************************************************************************************************/
 /* BETTER_BTS_AI_MOD                      11/30/08                                jdog5000      */
 /*                                                                                              */
@@ -542,11 +543,37 @@ void CvPlot::doImprovementUpgrade()
 	}
 }
 
+// culture takes tile (written by Claude): a human whose culture took the tile from another player outside that
+// human's turn gets an alert, with the BUG option on (Alerts tab, under Enable Civ4lerts). Tiles that change hands
+// in the human's own turn (conquests, new cities, trades) get none.
+static void alertCultureTakesTile(const CvPlot& kPlot, PlayerTypes eOldOwner)
+{
+	PlayerTypes const eNewOwner = kPlot.getOwnerINLINE();
+	if (eOldOwner == NO_PLAYER || eNewOwner == NO_PLAYER || eNewOwner == eOldOwner)
+	{
+		return;
+	}
+	if (!GET_PLAYER(eNewOwner).isHuman() || GET_PLAYER(eNewOwner).isTurnActive() || !getBugOptionBOOL("MoreCiv4lerts__CultureTakesTile", true))
+	{
+		return;
+	}
+
+	CvCity* pNearestCity = GC.getMapINLINE().findCity(kPlot.getX_INLINE(), kPlot.getY_INLINE(), eNewOwner, NO_TEAM, false);
+	if (pNearestCity == NULL)
+	{
+		return;
+	}
+	CvWString szBuffer = gDLL->getText("TXT_KEY_CULTURE_TAKES_TILE", pNearestCity->getNameKey(), GET_PLAYER(eOldOwner).getCivilizationDescriptionKey());
+	gDLL->getInterfaceIFace()->addHumanMessage(eNewOwner, false, GC.getEVENT_MESSAGE_TIME(), szBuffer, NULL, MESSAGE_TYPE_INFO, GC.getCommerceInfo(COMMERCE_CULTURE).getButton(), (ColorTypes)GC.getInfoTypeForString("COLOR_GREEN"), kPlot.getX_INLINE(), kPlot.getY_INLINE(), true, true);
+}
+
 void CvPlot::updateCulture(bool bBumpUnits, bool bUpdatePlotGroups)
 {
 	if (!isCity())
 	{
+		PlayerTypes const eOldOwner = getOwnerINLINE(); // culture takes tile (written by Claude)
 		setOwner(calculateCulturalOwner(), bBumpUnits, bUpdatePlotGroups);
+		alertCultureTakesTile(*this, eOldOwner);
 	}
 }
 

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Texts for the alert when your culture takes a tile (K-Mod-Magnus, written by Claude): BUG options, Alerts tab; CvPlot::updateCulture -->
+<Civ4GameText xmlns="http://www.firaxis.com">
+	<TEXT>
+		<Tag>TXT_KEY_BUG_OPT_MORECIV4LERTS__CULTURETAKESTILE_TEXT</Tag>
+		<English>Tile Taken by Culture</English>
+		<French>Tile Taken by Culture</French>
+		<German>Tile Taken by Culture</German>
+		<Italian>Tile Taken by Culture</Italian>
+		<Spanish>Tile Taken by Culture</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_BUG_OPT_MORECIV4LERTS__CULTURETAKESTILE_HOVER</Tag>
+		<English>When checked, displays an alert for each tile your culture takes over from another civilization's culture between your turns. Tiles you gain in your own turn, by conquering or founding a city or in a trade, get no alert.</English>
+		<French>When checked, displays an alert for each tile your culture takes over from another civilization's culture between your turns. Tiles you gain in your own turn, by conquering or founding a city or in a trade, get no alert.</French>
+		<German>When checked, displays an alert for each tile your culture takes over from another civilization's culture between your turns. Tiles you gain in your own turn, by conquering or founding a city or in a trade, get no alert.</German>
+		<Italian>When checked, displays an alert for each tile your culture takes over from another civilization's culture between your turns. Tiles you gain in your own turn, by conquering or founding a city or in a trade, get no alert.</Italian>
+		<Spanish>When checked, displays an alert for each tile your culture takes over from another civilization's culture between your turns. Tiles you gain in your own turn, by conquering or founding a city or in a trade, get no alert.</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_CULTURE_TAKES_TILE</Tag>
+		<English>Your culture took over a tile near %s1 from the %s2.</English>
+		<French>Your culture took over a tile near %s1 from the %s2.</French>
+		<German>Your culture took over a tile near %s1 from the %s2.</German>
+		<Italian>Your culture took over a tile near %s1 from the %s2.</Italian>
+		<Spanish>Your culture took over a tile near %s1 from the %s2.</Spanish>
+	</TEXT>
+</Civ4GameText>
