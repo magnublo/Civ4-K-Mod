@@ -1603,7 +1603,28 @@ class PLE:
 				self.dPLEUnitInfo[ pUnit.getID() ] = lUnitInfo
 		# sort list
 		self.lPLEUnitList.sort()
-		
+		self.sortSpiesByDiscount()
+
+	# spy discount order (written by Claude): each run of the active player's spies, on the tile or in one
+	# transport, goes largest mission discount first. The discount grows with the spy's fortify turns.
+	def sortSpiesByDiscount(self):
+		iActivePlayer = gc.getGame().getActivePlayer()
+		lUnits = self.lPLEUnitList
+		iFirst = 0
+		while iFirst < len(lUnits):
+			iEnd = iFirst + 1
+			if self.isActiveSpy(lUnits[iFirst], iActivePlayer):
+				while iEnd < len(lUnits) and self.isActiveSpy(lUnits[iEnd], iActivePlayer) and lUnits[iEnd][self.IDX_TRANSPORTID] == lUnits[iFirst][self.IDX_TRANSPORTID]:
+					iEnd += 1
+				lRun = lUnits[iFirst:iEnd]
+				lRun.sort(key=lambda tInfo: -tInfo[self.IDX_UNIT].getFortifyTurns())
+				lUnits[iFirst:iEnd] = lRun
+			iFirst = iEnd
+
+	def isActiveSpy(self, tInfo, iActivePlayer):
+		pUnit = tInfo[self.IDX_UNIT]
+		return pUnit.getOwner() == iActivePlayer and gc.getUnitInfo(pUnit.getUnitType()).isSpy()
+
 	# replaces the buggy civ 4 version.
 	def getInterfacePlotUnit(self, i):
 		return self.lPLEUnitList[i][self.IDX_UNIT]

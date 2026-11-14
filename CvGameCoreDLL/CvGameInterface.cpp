@@ -532,76 +532,24 @@ void CvGame::updateTestEndTurn()
 	}
 }
 
+// spy discount order (written by Claude): a spy's mission discount grows with its fortify turns
+static bool isMoreSpyDiscount(const CvUnit* pFirstUnit, const CvUnit* pSecondUnit)
+{
+	return pFirstUnit->getFortifyTurns() > pSecondUnit->getFortifyTurns();
+}
+
 CvUnit* CvGame::getPlotUnit(const CvPlot* pPlot, int iIndex) const
 {
 	PROFILE_FUNC();
 
-	CLLNode<IDInfo>* pUnitNode1;
-	CLLNode<IDInfo>* pUnitNode2;
-	CvUnit* pLoopUnit1;
-	CvUnit* pLoopUnit2;
-	int iCount;
-	int iPass;
-	PlayerTypes activePlayer = getActivePlayer();
-	TeamTypes activeTeam = getActiveTeam();
+	// spy discount order (written by Claude): the list of getPlotUnits, so a click on the plot list
+	// picks the unit drawn there
+	std::vector<CvUnit*> plotUnits;
+	getPlotUnits(pPlot, plotUnits);
 
-	if (pPlot != NULL)
+	if (iIndex >= 0 && iIndex < (int)plotUnits.size())
 	{
-		iCount = 0;
-
-		for (iPass = 0; iPass < 2; iPass++)
-		{
-			pUnitNode1 = pPlot->headUnitNode();
-
-			while (pUnitNode1 != NULL)
-			{
-				pLoopUnit1 = ::getUnit(pUnitNode1->m_data);
-				pUnitNode1 = pPlot->nextUnitNode(pUnitNode1);
-
-				if (!(pLoopUnit1->isInvisible(activeTeam, true)))
-				{
-					if (!(pLoopUnit1->isCargo()))
-					{
-						if ((pLoopUnit1->getOwnerINLINE() == activePlayer) == (iPass == 0))
-						{
-							if (iCount == iIndex)
-							{
-								return pLoopUnit1;
-							}
-
-							iCount++;
-
-							//if ((pLoopUnit1->getTeam() == activeTeam) || isDebugMode())
-							{
-								if (pLoopUnit1->hasCargo())
-								{
-									pUnitNode2 = pPlot->headUnitNode();
-
-									while (pUnitNode2 != NULL)
-									{
-										pLoopUnit2 = ::getUnit(pUnitNode2->m_data);
-										pUnitNode2 = pPlot->nextUnitNode(pUnitNode2);
-
-										if (!(pLoopUnit2->isInvisible(activeTeam, true)))
-										{
-											if (pLoopUnit2->getTransportUnit() == pLoopUnit1)
-											{
-												if (iCount == iIndex)
-												{
-													return pLoopUnit2;
-												}
-
-												iCount++;
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
+		return plotUnits[iIndex];
 	}
 
 	return NULL;
@@ -664,6 +612,23 @@ void CvGame::getPlotUnits(const CvPlot *pPlot, std::vector<CvUnit *> &plotUnits)
 					}
 				}
 			}
+		}
+
+		// spy discount order (written by Claude): each run of the active player's spies, on the tile
+		// or in one transport, goes largest mission discount first
+		for (int iFirst = 0; iFirst < (int)plotUnits.size();)
+		{
+			int iEnd = iFirst + 1;
+			if (plotUnits[iFirst]->isSpy() && plotUnits[iFirst]->getOwnerINLINE() == activePlayer)
+			{
+				while (iEnd < (int)plotUnits.size() && plotUnits[iEnd]->isSpy() && plotUnits[iEnd]->getOwnerINLINE() == activePlayer &&
+					plotUnits[iEnd]->getTransportUnit() == plotUnits[iFirst]->getTransportUnit())
+				{
+					iEnd++;
+				}
+				std::stable_sort(plotUnits.begin() + iFirst, plotUnits.begin() + iEnd, isMoreSpyDiscount);
+			}
+			iFirst = iEnd;
 		}
 	}
 }
