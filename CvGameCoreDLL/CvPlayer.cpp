@@ -12989,6 +12989,17 @@ void CvPlayer::changeUnitClassCount(UnitClassTypes eIndex, int iChange)
 	FAssert(getUnitClassCount(eIndex) >= 0);
 }
 
+// repeat at the limit (written by Claude): a unit with a per-player limit is gone, so a city waiting for the slot
+// takes it now, in time for this turn's production. With several waiting, the first in the city list gets it.
+void CvPlayer::doResumeWaitingTrainOrders()
+{
+	int iLoop;
+	for (CvCity* pLoopCity = firstCity(&iLoop); pLoopCity != NULL; pLoopCity = nextCity(&iLoop))
+	{
+		pLoopCity->doResumeWaitingTrainOrders();
+	}
+}
+
 
 int CvPlayer::getUnitClassMaking(UnitClassTypes eIndex) const									 
 {

@@ -950,6 +950,16 @@ public:
 	bool isPrebuildOrder(int iIndex) const;																// Exposed to Python
 	int getPrebuildOrderIndex() const;																	// Exposed to Python
 	void setPrebuildOrder(int iIndex, bool bNewValue);
+	// repeat at the limit (written by Claude): a human's repeated order of a unit with a per-player limit waits in a
+	// list of the city's while the limit is full, and goes back to the front of the queue when a slot is free
+	bool isRepeatAtLimit(UnitTypes eUnit) const;
+	bool isTrainOrderWaitable(UnitTypes eUnit, bool bContinue) const;
+	void addWaitingTrainOrder(UnitTypes eUnit, UnitAITypes eUnitAI);
+	void removeWaitingTrainOrder(UnitTypes eUnit);
+	int getNumWaitingTrainOrders() const;																// Exposed to Python
+	UnitTypes getWaitingTrainUnit(int iIndex) const;													// Exposed to Python
+	bool doResumeWaitingTrainOrders();
+	bool pushProcessWhileWaiting();
 
 	// fill the kVisible array with buildings that you want shown in city, as well as the number of generics
 	// This function is called whenever CvCity::setLayoutDirty() is called
@@ -1258,6 +1268,7 @@ protected:
 	IDInfo* m_paTradeCities;
 
 	mutable CLinkList<OrderData> m_orderQueue;
+	std::vector<std::pair<UnitTypes, UnitAITypes> > m_aWaitingTrainOrders; // repeat at the limit (written by Claude)
 
 	std::vector< std::pair < float, float> > m_kWallOverridePoints;
 

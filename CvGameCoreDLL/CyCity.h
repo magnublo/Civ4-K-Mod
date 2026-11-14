@@ -460,6 +460,8 @@ public:
 	OrderData* getOrderFromQueue(int iIndex);
 	bool isPrebuildOrder(int iIndex); // pre-build
 	int getPrebuildOrderIndex(); // pre-build
+	int getNumWaitingTrainOrders(); // repeat at the limit (written by Claude)
+	int getWaitingTrainUnit(int iIndex); // repeat at the limit (written by Claude)
 
 	void setWallOverridePoints(const python::tuple& kPoints); /* points are given in world space ... i.e. PlotXToPointX, etc */
 	python::tuple getWallOverridePoints() const;

@@ -447,6 +447,8 @@ void CyCityPythonInterface1(python::class_<CyCity>& x)
 		.def("getOrderFromQueue", &CyCity::getOrderFromQueue, python::return_value_policy<python::manage_new_object>(), "OrderData* (int iIndex)")
 		.def("isPrebuildOrder", &CyCity::isPrebuildOrder, "bool (int iIndex) - pre-build: the order stops one turn before it is finished")
 		.def("getPrebuildOrderIndex", &CyCity::getPrebuildOrderIndex, "int () - pre-build: queue index of the first wonder or project, -1 if none")
+		.def("getNumWaitingTrainOrders", &CyCity::getNumWaitingTrainOrders, "int () - repeated units waiting for their per-player limit")
+		.def("getWaitingTrainUnit", &CyCity::getWaitingTrainUnit, "int (int iIndex) - UnitType of a waiting repeated unit")
 
 		.def("setWallOverridePoints", &CyCity::setWallOverridePoints, "setWallOverridePoints(const python::tuple& kPoints)")
 		.def("getWallOverridePoints", &CyCity::getWallOverridePoints, "python::tuple getWallOverridePoints()")

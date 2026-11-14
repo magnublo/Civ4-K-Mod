@@ -619,6 +619,7 @@ void CvUnit::kill(bool bDelay, PlayerTypes ePlayer)
 	GET_PLAYER(getOwnerINLINE()).AI_changeNumAIUnits(AI_getUnitAIType(), -1);
 
 	PlayerTypes eOwner = getOwnerINLINE();
+	UnitClassTypes eUnitClass = getUnitClassType(); // repeat at the limit (written by Claude)
 	PlayerTypes eCapturingPlayer = getCapturingPlayer();
 	UnitTypes eCaptureUnitType = ((eCapturingPlayer != NO_PLAYER) ? getCaptureUnitType(GET_PLAYER(eCapturingPlayer).getCivilizationType()) : NO_UNIT);
 
@@ -670,6 +671,12 @@ void CvUnit::kill(bool bDelay, PlayerTypes ePlayer)
 				}
 			}
 		}
+	}
+
+	// repeat at the limit (written by Claude): the unit is gone, so its slot is free for a city waiting for it
+	if (isNationalUnitClass(eUnitClass) && GET_PLAYER(eOwner).isHuman())
+	{
+		GET_PLAYER(eOwner).doResumeWaitingTrainOrders();
 	}
 }
 

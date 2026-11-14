@@ -5171,6 +5171,31 @@ void CvDLLWidgetData::parseSelectedHelp(CvWidgetDataStruct &widgetDataStruct, Cv
 				szBuffer.append(NEWLINE);
 				szBuffer.append(gDLL->getText("TXT_KEY_PREBUILD_QUEUE_HELP"));
 			}
+
+			// repeat at the limit (written by Claude)
+			if (pOrder->eOrderType == ORDER_TRAIN && pOrder->bSave && pHeadSelectedCity->isRepeatAtLimit((UnitTypes)pOrder->iData1))
+			{
+				UnitClassTypes eUnitClass = (UnitClassTypes)GC.getUnitInfo((UnitTypes)pOrder->iData1).getUnitClassType();
+				szBuffer.append(NEWLINE);
+				szBuffer.append(gDLL->getText("TXT_KEY_REPEAT_AT_LIMIT_QUEUE_HELP", GC.getUnitClassInfo(eUnitClass).getMaxPlayerInstances()));
+			}
+		}
+		// repeat at the limit (written by Claude): the rows after the queue are the orders waiting for their limit
+		else if (widgetDataStruct.m_iData1 >= pHeadSelectedCity->getOrderQueueLength())
+		{
+			UnitTypes eUnit = pHeadSelectedCity->getWaitingTrainUnit(widgetDataStruct.m_iData1 - pHeadSelectedCity->getOrderQueueLength());
+			if (eUnit != NO_UNIT)
+			{
+				UnitClassTypes eUnitClass = (UnitClassTypes)GC.getUnitInfo(eUnit).getUnitClassType();
+				GAMETEXT.setUnitHelp(szBuffer, eUnit, false, false, false, pHeadSelectedCity);
+				szBuffer.append(NEWLINE);
+				szBuffer.append(gDLL->getText("TXT_KEY_WAITING_TRAIN_HELP", GET_PLAYER(pHeadSelectedCity->getOwnerINLINE()).getUnitClassCountPlusMaking(eUnitClass), GC.getUnitClassInfo(eUnitClass).getMaxPlayerInstances()));
+				if (pHeadSelectedCity->isProductionAutomated())
+				{
+					szBuffer.append(NEWLINE);
+					szBuffer.append(gDLL->getText("TXT_KEY_WAITING_TRAIN_AUTOMATED"));
+				}
+			}
 		}
 	}
 }

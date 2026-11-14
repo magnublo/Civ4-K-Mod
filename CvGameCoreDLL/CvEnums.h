@@ -1087,6 +1087,7 @@ enum TaskTypes				// Exposed to Python
 	TASK_CLEAR_RALLY_PLOT,
 	TASK_LIBERATE,
 	TASK_PREBUILD, // pre-build: iData1 = queue index, bOption = on/off
+	TASK_CANCEL_WAITING_TRAIN, // repeat at the limit (written by Claude): iData1 = the waiting unit type
 
 #ifdef _USRDLL
 	NUM_TASK_TYPES

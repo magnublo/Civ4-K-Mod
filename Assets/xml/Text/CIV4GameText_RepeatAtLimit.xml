@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Texts for repeated units with a per-player limit (K-Mod-Magnus, written by Claude): the city screen's queue rows, CvDLLWidgetData::parseSelectedHelp -->
+<Civ4GameText xmlns="http://www.firaxis.com">
+	<TEXT>
+		<Tag>TXT_KEY_REPEAT_AT_LIMIT_QUEUE_HELP</Tag>
+		<English>[COLOR_HIGHLIGHT_TEXT]Repeat:[COLOR_REVERT] once all %d1 allowed exist, it waits below the queue and comes back to the front as soon as one is used up. It always stays ahead of Wealth, Research and Culture.</English>
+		<French>[COLOR_HIGHLIGHT_TEXT]Repeat:[COLOR_REVERT] once all %d1 allowed exist, it waits below the queue and comes back to the front as soon as one is used up. It always stays ahead of Wealth, Research and Culture.</French>
+		<German>[COLOR_HIGHLIGHT_TEXT]Repeat:[COLOR_REVERT] once all %d1 allowed exist, it waits below the queue and comes back to the front as soon as one is used up. It always stays ahead of Wealth, Research and Culture.</German>
+		<Italian>[COLOR_HIGHLIGHT_TEXT]Repeat:[COLOR_REVERT] once all %d1 allowed exist, it waits below the queue and comes back to the front as soon as one is used up. It always stays ahead of Wealth, Research and Culture.</Italian>
+		<Spanish>[COLOR_HIGHLIGHT_TEXT]Repeat:[COLOR_REVERT] once all %d1 allowed exist, it waits below the queue and comes back to the front as soon as one is used up. It always stays ahead of Wealth, Research and Culture.</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_WAITING_TRAIN_HELP</Tag>
+		<English>[COLOR_LIGHT_GREY]Waiting for a free slot:[COLOR_REVERT] %d1 of the %d2 allowed exist or are in production. Comes back to the front of the queue as soon as one is used up.[NEWLINE]Click to stop waiting.</English>
+		<French>[COLOR_LIGHT_GREY]Waiting for a free slot:[COLOR_REVERT] %d1 of the %d2 allowed exist or are in production. Comes back to the front of the queue as soon as one is used up.[NEWLINE]Click to stop waiting.</French>
+		<German>[COLOR_LIGHT_GREY]Waiting for a free slot:[COLOR_REVERT] %d1 of the %d2 allowed exist or are in production. Comes back to the front of the queue as soon as one is used up.[NEWLINE]Click to stop waiting.</German>
+		<Italian>[COLOR_LIGHT_GREY]Waiting for a free slot:[COLOR_REVERT] %d1 of the %d2 allowed exist or are in production. Comes back to the front of the queue as soon as one is used up.[NEWLINE]Click to stop waiting.</Italian>
+		<Spanish>[COLOR_LIGHT_GREY]Waiting for a free slot:[COLOR_REVERT] %d1 of the %d2 allowed exist or are in production. Comes back to the front of the queue as soon as one is used up.[NEWLINE]Click to stop waiting.</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_WAITING_TRAIN_AUTOMATED</Tag>
+		<English>Paused while the city's production is automated.</English>
+		<French>Paused while the city's production is automated.</French>
+		<German>Paused while the city's production is automated.</German>
+		<Italian>Paused while the city's production is automated.</Italian>
+		<Spanish>Paused while the city's production is automated.</Spanish>
+	</TEXT>
+</Civ4GameText>

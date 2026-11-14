@@ -2148,6 +2148,17 @@ int CyCity::getPrebuildOrderIndex()
 	return m_pCity ? m_pCity->getPrebuildOrderIndex() : -1;
 }
 
+// repeat at the limit (written by Claude)
+int CyCity::getNumWaitingTrainOrders()
+{
+	return m_pCity ? m_pCity->getNumWaitingTrainOrders() : 0;
+}
+
+int CyCity::getWaitingTrainUnit(int iIndex)
+{
+	return m_pCity ? m_pCity->getWaitingTrainUnit(iIndex) : NO_UNIT;
+}
+
 void CyCity::setWallOverridePoints(const python::tuple& kPoints)
 {
 	if (!m_pCity)

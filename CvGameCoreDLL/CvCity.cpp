@@ -358,6 +358,7 @@ void CvCity::uninit()
 	SAFE_DELETE_ARRAY(m_paTradeCities);
 
 	m_orderQueue.clear();
+	m_aWaitingTrainOrders.clear(); // repeat at the limit (written by Claude)
 }
 
 // FUNCTION: reset()
@@ -1252,6 +1253,10 @@ void CvCity::doTask(TaskTypes eTask, int iData1, int iData2, bool bOption, bool 
 		setPrebuildOrder(iData1, bOption);
 		break;
 
+	case TASK_CANCEL_WAITING_TRAIN:
+		removeWaitingTrainOrder((UnitTypes)iData1);
+		break;
+
 	default:
 		FAssertMsg(false, "eTask failed to match a valid option");
 		break;
@@ -1261,6 +1266,12 @@ void CvCity::doTask(TaskTypes eTask, int iData1, int iData2, bool bOption, bool 
 
 void CvCity::chooseProduction(UnitTypes eTrainUnit, BuildingTypes eConstructBuilding, ProjectTypes eCreateProject, bool bFinish, bool bFront)
 {
+	// repeat at the limit (written by Claude): a city with a waiting order makes Wealth, Research or Culture instead of asking
+	if (pushProcessWhileWaiting())
+	{
+		return;
+	}
+
 	// K-Mod. don't create the popup if the city is in disorder
 	FAssert(isHuman() && !isProductionAutomated());
 	if (isDisorder())
@@ -12292,6 +12303,14 @@ void CvCity::pushOrder(OrderTypes eOrder, int iData1, int iData2, bool bSave, bo
 	bool bBuildingUnit = false;
 	bool bBuildingBuilding = false;
 
+	// repeat at the limit (written by Claude): a repeated unit stopped by its per-player limit waits for a free slot,
+	// and the order at the front stays
+	if (eOrder == ORDER_TRAIN && bSave && !bForce && !canTrain((UnitTypes)iData1) && isTrainOrderWaitable((UnitTypes)iData1, false))
+	{
+		addWaitingTrainOrder((UnitTypes)iData1, (UnitAITypes)(iData2 == -1 ? GC.getUnitInfo((UnitTypes)iData1).getDefaultUnitAIType() : iData2));
+		return;
+	}
+
 	if (bPop)
 	{
 		popOrder(0);
@@ -12486,6 +12505,10 @@ void CvCity::popOrder(int iNum, bool bFinish, bool bChoose)
 	// automated production (written by Claude): a human's automated city builds a unit once, even a repeated one; then
 	// its queue is cleared, so the list decides what comes next
 	bool bClearQueue = bFinish && pOrderNode->m_data.eOrderType == ORDER_TRAIN && isHuman() && isProductionAutomated() && !GC.getAutomatedProductionOrder().empty();
+
+	// repeat at the limit (written by Claude): the order added again below goes to the back of the queue, and further
+	// down it moves in front of any process, which never finishes
+	bool bRepeatBeforeProcess = bFinish && pOrderNode->m_data.bSave && !bClearQueue && pOrderNode->m_data.eOrderType == ORDER_TRAIN && isRepeatAtLimit((UnitTypes)pOrderNode->m_data.iData1);
 
 	if (bFinish && pOrderNode->m_data.bSave && !bClearQueue)
 	{
@@ -12877,6 +12900,38 @@ void CvCity::popOrder(int iNum, bool bFinish, bool bChoose)
 		clearOrderQueue();
 	}
 
+	// repeat at the limit (written by Claude): the order added again at the back goes in front of the first process. With
+	// the limit full it is in the waiting list instead, and the last order is something else.
+	if (bRepeatBeforeProcess)
+	{
+		CLLNode<OrderData>* pTailNode = m_orderQueue.tail();
+		CLLNode<OrderData>* pProcessNode = headOrderQueueNode();
+		while (pProcessNode != NULL && pProcessNode->m_data.eOrderType != ORDER_MAINTAIN)
+		{
+			pProcessNode = nextOrderQueueNode(pProcessNode);
+		}
+		if (pTailNode != NULL && pProcessNode != NULL && pTailNode != pProcessNode && pTailNode->m_data.eOrderType == ORDER_TRAIN &&
+			pTailNode->m_data.iData1 == eTrainUnit && pTailNode->m_data.bSave)
+		{
+			OrderData kRepeat = pTailNode->m_data;
+			bool bNewHead = (pProcessNode == headOrderQueueNode());
+			if (bNewHead)
+			{
+				stopHeadOrder();
+			}
+			m_orderQueue.deleteNode(pTailNode);
+			m_orderQueue.insertBefore(kRepeat, pProcessNode);
+			if (bNewHead)
+			{
+				startHeadOrder();
+			}
+		}
+	}
+	if (bFinish)
+	{
+		doResumeWaitingTrainOrders();
+	}
+
 	if ((getTeam() == GC.getGameINLINE().getActiveTeam()) || GC.getGameINLINE().isDebugMode())
 	{
 		setInfoDirty(true);
@@ -12906,9 +12961,13 @@ void CvCity::popOrder(int iNum, bool bFinish, bool bChoose)
 					AI_assignWorkingPlots();
 				}
 
-				chooseProduction(eTrainUnit, eConstructBuilding, eCreateProject, bFinish);
+				// repeat at the limit (written by Claude): without the popup, the message below says what was finished
+				if (!pushProcessWhileWaiting())
+				{
+					chooseProduction(eTrainUnit, eConstructBuilding, eCreateProject, bFinish);
 
-				bMessage = true;
+					bMessage = true;
+				}
 			}
 		}
 	}
@@ -13104,6 +13163,128 @@ void CvCity::setPrebuildOrder(int iIndex, bool bNewValue)
 			gDLL->getInterfaceIFace()->setDirty(CityScreen_DIRTY_BIT, true);
 		}
 	}
+}
+
+// repeat at the limit (written by Claude): repeated orders of eUnit stay ahead of processes in this city's queue, and
+// wait for a free slot while the limit is full. A world limit counts every unit ever made, so it never has a slot again.
+bool CvCity::isRepeatAtLimit(UnitTypes eUnit) const
+{
+	if (eUnit == NO_UNIT || !isHuman() || isProductionAutomated())
+	{
+		return false;
+	}
+	UnitClassTypes eUnitClass = (UnitClassTypes)GC.getUnitInfo(eUnit).getUnitClassType();
+	return isNationalUnitClass(eUnitClass) && !isWorldUnitClass(eUnitClass);
+}
+
+// repeat at the limit (written by Claude): whether a repeated order of eUnit is stopped by the per-player limit alone,
+// with the same count CvPlayer::canTrain uses
+bool CvCity::isTrainOrderWaitable(UnitTypes eUnit, bool bContinue) const
+{
+	if (!isRepeatAtLimit(eUnit) || !canTrain(eUnit, bContinue, true))
+	{
+		return false;
+	}
+	const CvPlayer& kOwner = GET_PLAYER(getOwnerINLINE());
+	UnitClassTypes eUnitClass = (UnitClassTypes)GC.getUnitInfo(eUnit).getUnitClassType();
+	return kOwner.isUnitClassMaxedOut(eUnitClass, kOwner.getUnitClassMaking(eUnitClass) + (bContinue ? -1 : 0));
+}
+
+void CvCity::addWaitingTrainOrder(UnitTypes eUnit, UnitAITypes eUnitAI)
+{
+	for (size_t i = 0; i < m_aWaitingTrainOrders.size(); i++)
+	{
+		if (m_aWaitingTrainOrders[i].first == eUnit)
+		{
+			return;
+		}
+	}
+	m_aWaitingTrainOrders.push_back(std::make_pair(eUnit, eUnitAI));
+
+	if (getTeam() == GC.getGameINLINE().getActiveTeam() && isCitySelected())
+	{
+		gDLL->getInterfaceIFace()->setDirty(CityScreen_DIRTY_BIT, true);
+	}
+}
+
+void CvCity::removeWaitingTrainOrder(UnitTypes eUnit)
+{
+	for (size_t i = 0; i < m_aWaitingTrainOrders.size(); i++)
+	{
+		if (m_aWaitingTrainOrders[i].first == eUnit)
+		{
+			m_aWaitingTrainOrders.erase(m_aWaitingTrainOrders.begin() + i);
+
+			if (getTeam() == GC.getGameINLINE().getActiveTeam() && isCitySelected())
+			{
+				gDLL->getInterfaceIFace()->setDirty(CityScreen_DIRTY_BIT, true);
+			}
+			return;
+		}
+	}
+}
+
+int CvCity::getNumWaitingTrainOrders() const
+{
+	return (int)m_aWaitingTrainOrders.size();
+}
+
+UnitTypes CvCity::getWaitingTrainUnit(int iIndex) const
+{
+	if (iIndex < 0 || iIndex >= (int)m_aWaitingTrainOrders.size())
+	{
+		return NO_UNIT;
+	}
+	return m_aWaitingTrainOrders[iIndex].first;
+}
+
+// repeat at the limit (written by Claude): waiting orders that can be trained again go back to the front of the queue.
+// Production automation pauses them.
+bool CvCity::doResumeWaitingTrainOrders()
+{
+	if (m_aWaitingTrainOrders.empty() || !isHuman() || isProductionAutomated())
+	{
+		return false;
+	}
+	bool bResumed = false;
+	// from the last one, so that the first one ends up at the front
+	for (int i = (int)m_aWaitingTrainOrders.size() - 1; i >= 0; i--)
+	{
+		UnitTypes eUnit = m_aWaitingTrainOrders[i].first;
+		UnitAITypes eUnitAI = m_aWaitingTrainOrders[i].second;
+		if (canTrain(eUnit))
+		{
+			m_aWaitingTrainOrders.erase(m_aWaitingTrainOrders.begin() + i);
+			pushOrder(ORDER_TRAIN, eUnit, eUnitAI, true, false, 0);
+			bResumed = true;
+		}
+	}
+	return bResumed;
+}
+
+// repeat at the limit (written by Claude): with an order waiting and nothing in the queue, the city makes Wealth, else
+// Research, else Culture. False when it should ask the player as usual.
+bool CvCity::pushProcessWhileWaiting()
+{
+	if (isProduction() || m_aWaitingTrainOrders.empty() || !isHuman() || isProductionAutomated())
+	{
+		return false;
+	}
+	if (doResumeWaitingTrainOrders())
+	{
+		return true;
+	}
+	const char* aszProcesses[] = {"PROCESS_WEALTH", "PROCESS_RESEARCH", "PROCESS_CULTURE"};
+	for (int i = 0; i < 3; i++)
+	{
+		ProcessTypes eProcess = (ProcessTypes)GC.getInfoTypeForString(aszProcesses[i], true);
+		if (eProcess != NO_PROCESS && canMaintain(eProcess))
+		{
+			pushOrder(ORDER_MAINTAIN, eProcess);
+			return isProduction();
+		}
+	}
+	return false;
 }
 
 void CvCity::setWallOverridePoints(const std::vector< std::pair<float, float> >& kPoints)
@@ -13404,6 +13585,8 @@ bool CvCity::doCheckProduction()
 		}
 	}
 
+	doResumeWaitingTrainOrders(); // repeat at the limit (written by Claude)
+
 	if (!isProduction() && !isDisorder() && isHuman() && !isProductionAutomated())
 	{
 		chooseProduction();
@@ -13459,6 +13642,11 @@ bool CvCity::doCheckProduction()
 		{
 			if (!canContinueProduction(*pOrder))
 			{
+				// repeat at the limit (written by Claude): a repeated unit stopped by its per-player limit waits
+				if (pOrder->eOrderType == ORDER_TRAIN && pOrder->bSave && isTrainOrderWaitable((UnitTypes)pOrder->iData1, true))
+				{
+					addWaitingTrainOrder((UnitTypes)pOrder->iData1, (UnitAITypes)pOrder->iData2);
+				}
 				popOrder(iI, false, true);
 				bOK = false;
 			}
@@ -14140,6 +14328,21 @@ void CvCity::read(FDataStreamBase* pStream)
 		pStream->Read(&iChange);
 		m_aBuildingHealthChange.push_back(std::make_pair((BuildingClassTypes)iBuildingClass, iChange));
 	}
+
+	// repeat at the limit (written by Claude)
+	m_aWaitingTrainOrders.clear();
+	if (uiFlag >= 2)
+	{
+		pStream->Read(&iNumElts);
+		for (int i = 0; i < iNumElts; ++i)
+		{
+			int iUnit;
+			int iUnitAI;
+			pStream->Read(&iUnit);
+			pStream->Read(&iUnitAI);
+			m_aWaitingTrainOrders.push_back(std::make_pair((UnitTypes)iUnit, (UnitAITypes)iUnitAI));
+		}
+	}
 	m_iMaintenanceDistanceEpoch = 0; // perf
 	invalidateMaintenanceDistances(); // perf
 }
@@ -14148,7 +14351,7 @@ void CvCity::write(FDataStreamBase* pStream)
 {
 	int iI;
 
-	uint uiFlag=1;
+	uint uiFlag=2; // 2: the waiting train orders (written by Claude)
 	pStream->Write(uiFlag);		// flag for expansion
 
 	pStream->Write(m_iID);
@@ -14363,6 +14566,14 @@ void CvCity::write(FDataStreamBase* pStream)
 	{
 		pStream->Write((*it).first);
 		pStream->Write((*it).second);
+	}
+
+	// repeat at the limit (written by Claude), uiFlag >= 2
+	pStream->Write((int)m_aWaitingTrainOrders.size());
+	for (size_t i = 0; i < m_aWaitingTrainOrders.size(); i++)
+	{
+		pStream->Write((int)m_aWaitingTrainOrders[i].first);
+		pStream->Write((int)m_aWaitingTrainOrders[i].second);
 	}
 }
 

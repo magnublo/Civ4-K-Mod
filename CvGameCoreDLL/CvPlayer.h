@@ -838,6 +838,7 @@ public:
 	int getUnitClassCount(UnitClassTypes eIndex) const;																								// Exposed to Python
 	bool isUnitClassMaxedOut(UnitClassTypes eIndex, int iExtra = 0) const;														// Exposed to Python
 	void changeUnitClassCount(UnitClassTypes eIndex, int iChange);
+	void doResumeWaitingTrainOrders(); // repeat at the limit (written by Claude)
 	int getUnitClassMaking(UnitClassTypes eIndex) const;																							// Exposed to Python
 	void changeUnitClassMaking(UnitClassTypes eIndex, int iChange);
 	int getUnitClassCountPlusMaking(UnitClassTypes eIndex) const;																			// Exposed to Python

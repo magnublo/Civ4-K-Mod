@@ -1212,8 +1212,18 @@ void CvGame::selectedCitiesGameNetMessage(int eMessage, int iData2, int iData3, 
 					{
 						CvMessageControl::getInstance().sendPopOrder(pSelectedCity->getID(), iData2);
 					} */
+					// repeat at the limit (written by Claude): the rows after the queue are the orders waiting for their
+					// limit, and a click ends the wait
+					if (iData2 >= pSelectedCity->getOrderQueueLength())
+					{
+						UnitTypes eWaitingUnit = pSelectedCity->getWaitingTrainUnit(iData2 - pSelectedCity->getOrderQueueLength());
+						if (eWaitingUnit != NO_UNIT)
+						{
+							CvMessageControl::getInstance().sendDoTask(pSelectedCity->getID(), TASK_CANCEL_WAITING_TRAIN, eWaitingUnit, -1, false, false, false, false);
+						}
+					}
 					// K-Mod. Some additional controls
-					if (bAlt || (bShift != bCtrl))
+					else if (bAlt || (bShift != bCtrl))
 					{
 						// bCtrl moves the order up, bShift moves the order down.
 						// bAlt toggles bSave (ie. repeat)

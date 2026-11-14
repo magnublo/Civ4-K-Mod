@@ -4674,6 +4674,21 @@ class CvMainInterface:
 				screen.show( "SelectedUnitPanel" )
 				iRow += 1
 
+			# repeat at the limit (written by Claude): repeated units waiting for a free slot of their per-player limit,
+			# in grey below the queue, with how many exist or are in production; a click ends the wait
+			pOwner = gc.getPlayer(pHeadSelectedCity.getOwner())
+			for j in range(pHeadSelectedCity.getNumWaitingTrainOrders()):
+				eUnit = pHeadSelectedCity.getWaitingTrainUnit(j)
+				iUnitClass = gc.getUnitInfo(eUnit).getUnitClassType()
+				szLeftBuffer = BugUtil.colorText(u"*" + gc.getUnitInfo(eUnit).getDescription(), "COLOR_LIGHT_GREY")
+				szRightBuffer = BugUtil.colorText(u"%d/%d" % (pOwner.getUnitClassCountPlusMaking(iUnitClass), gc.getUnitClassInfo(iUnitClass).getMaxPlayerInstances()), "COLOR_LIGHT_GREY")
+				screen.appendTableRow( "SelectedCityText" )
+				screen.setTableText( "SelectedCityText", 0, iRow, szLeftBuffer, "", WidgetTypes.WIDGET_HELP_SELECTED, iOrders + j, -1, CvUtil.FONT_LEFT_JUSTIFY )
+				screen.setTableText( "SelectedCityText", 1, iRow, szRightBuffer, "", WidgetTypes.WIDGET_HELP_SELECTED, iOrders + j, -1, CvUtil.FONT_RIGHT_JUSTIFY )
+				screen.show( "SelectedCityText" )
+				screen.show( "SelectedUnitPanel" )
+				iRow += 1
+
 		elif (pHeadSelectedUnit and CyInterface().getShowInterface() == InterfaceVisibility.INTERFACE_SHOW):
 		
 			screen.setTableColumnHeader( "SelectedUnitText", 0, u"", 100 )
