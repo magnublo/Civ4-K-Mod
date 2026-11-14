@@ -475,22 +475,9 @@ def cityAdvise(pCity, iPlayer):
 			if (gc.getGame().getGameTurn() - pCity.getGameTurnFounded() > 10 and not pCity.getID() in g_listNoLiberateCities): # K-Mod
 				eLiberationPlayer = pCity.getLiberationPlayer(false)
 				if (eLiberationPlayer != -1):
-					# UNOFFICIAL_PATCH begin
-					if( gc.getTeam(gc.getPlayer(iPlayer).getTeam()).isHasMet(gc.getPlayer(eLiberationPlayer).getTeam()) ) :
-						if not gc.getTeam(gc.getPlayer(eLiberationPlayer).getTeam()).isAtWar(CyGame().getActiveTeam()) :
-							popupInfo = CyPopupInfo()
-							popupInfo.setButtonPopupType(ButtonPopupTypes.BUTTONPOPUP_PYTHON)
-							popupInfo.setData1(pCity.getID())
-							popupInfo.setText(localText.getText("TXT_KEY_POPUP_LIBERATION_DEMAND", (pCity.getNameKey(), gc.getPlayer(eLiberationPlayer).getCivilizationDescriptionKey(), gc.getPlayer(eLiberationPlayer).getNameKey())))
-							popupInfo.setOnClickedPythonCallback("liberateOnClickedCallback")
-							popupInfo.setOnFocusPythonCallback("cityWarningOnFocusCallback")
-							popupInfo.addPythonButton(localText.getText("TXT_KEY_POPUP_DEMAND_AGREE", ()), "")
-							popupInfo.addPythonButton(localText.getText("TXT_KEY_POPUP_DEMAND_REFUSE", ()), "")
-							popupInfo.addPythonButton(localText.getText("TXT_KEY_POPUP_DEMAND_EXAMINE", ()), "")
-							popupInfo.addPopup(iPlayer)
-							g_listNoLiberateCities.append(pCity.getID())
-							g_iAdvisorNags += 1
-					# UNOFFICIAL_PATCH end
+					# no liberation popup (written by Claude): the human is never asked to give this city to
+					# eLiberationPlayer; refusing did nothing. Such a city gets no colony popup either.
+					pass
 
 				elif (gc.getPlayer(iPlayer).canSplitEmpire() and gc.getPlayer(iPlayer).canSplitArea(pCity.area().getID()) and pCity.AI_cityValue() < 0):
 					popupInfo = CyPopupInfo()
