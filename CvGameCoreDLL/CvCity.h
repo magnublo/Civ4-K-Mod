@@ -288,6 +288,8 @@ public:
 
 	CvPlot* getRallyPlot() const;																// Exposed to Python
 	void setRallyPlot(CvPlot* pPlot);
+	CvPlot* getSpyRallyPlot() const; // spy rally point (written by Claude), exposed to Python
+	void setSpyRallyPlot(CvPlot* pPlot);
 
 	int getGameTurnFounded() const;																				// Exposed to Python
 	void setGameTurnFounded(int iNewValue);
@@ -1105,6 +1107,8 @@ protected:
 	int m_iY;
 	int m_iRallyX;
 	int m_iRallyY;
+	int m_iSpyRallyX; // spy rally point (written by Claude)
+	int m_iSpyRallyY;
 	int m_iGameTurnFounded;
 	int m_iGameTurnAcquired;
 	int m_iPopulation;

@@ -790,6 +790,8 @@ void CyEnumsPythonInterface()
 		.value("TASK_LIBERATE", TASK_LIBERATE)
 		.value("TASK_PREBUILD", TASK_PREBUILD) // pre-build
 		.value("TASK_CANCEL_WAITING_TRAIN", TASK_CANCEL_WAITING_TRAIN) // repeat at the limit (written by Claude)
+		.value("TASK_SPY_RALLY_PLOT", TASK_SPY_RALLY_PLOT) // spy rally point (written by Claude)
+		.value("TASK_CLEAR_SPY_RALLY_PLOT", TASK_CLEAR_SPY_RALLY_PLOT)
 		.value("NUM_TASK_TYPES", NUM_TASK_TYPES)
 		;
 

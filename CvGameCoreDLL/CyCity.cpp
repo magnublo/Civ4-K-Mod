@@ -727,6 +727,12 @@ CyPlot* CyCity::getRallyPlot()
 	return	m_pCity ? new CyPlot(m_pCity->getRallyPlot()) : NULL;
 }
 
+// spy rally point (written by Claude)
+CyPlot* CyCity::getSpyRallyPlot()
+{
+	return m_pCity ? new CyPlot(m_pCity->getSpyRallyPlot()) : NULL;
+}
+
 int CyCity::getGameTurnFounded()
 {
 	return m_pCity ? m_pCity->getGameTurnFounded() : -1;

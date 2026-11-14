@@ -165,6 +165,7 @@ void CyCityPythonInterface1(python::class_<CyCity>& x)
 		.def("area", &CyCity::area, python::return_value_policy<python::manage_new_object>(), "CyArea() () - returns CyArea instance for location of city")
 		.def("waterArea", &CyCity::waterArea, python::return_value_policy<python::manage_new_object>(), "CyArea* ()")
 		.def("getRallyPlot", &CyCity::getRallyPlot, python::return_value_policy<python::manage_new_object>(), "CyPlot () - returns city's rally plot instance")
+		.def("getSpyRallyPlot", &CyCity::getSpyRallyPlot, python::return_value_policy<python::manage_new_object>(), "CyPlot () - the city's spy rally plot") // spy rally point (written by Claude)
 		.def("getGameTurnFounded", &CyCity::getGameTurnFounded, "int () - GameTurn the city was founded")
 
 		.def("getGameTurnAcquired", &CyCity::getGameTurnAcquired, "int ()")

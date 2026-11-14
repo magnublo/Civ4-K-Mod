@@ -196,6 +196,13 @@ void CvGame::updateColoredPlots()
 					{
 						gDLL->getEngineIFace()->addColoredPlot(pRallyPlot->getX_INLINE(), pRallyPlot->getY_INLINE(), GC.getColorInfo((ColorTypes)GC.getInfoTypeForString("COLOR_YELLOW")).getColor(), PLOT_STYLE_CIRCLE, PLOT_LANDSCAPE_LAYER_BASE);
 					}
+
+					// spy rally point (written by Claude): the same circle in magenta
+					CvPlot* pSpyRallyPlot = pSelectedCity->getSpyRallyPlot();
+					if (pSpyRallyPlot != NULL)
+					{
+						gDLL->getEngineIFace()->addColoredPlot(pSpyRallyPlot->getX_INLINE(), pSpyRallyPlot->getY_INLINE(), GC.getColorInfo((ColorTypes)GC.getInfoTypeForString("COLOR_MAGENTA")).getColor(), PLOT_STYLE_CIRCLE, PLOT_LANDSCAPE_LAYER_BASE);
+					}
 				}
 			}
 		}
@@ -3063,15 +3070,18 @@ void CvGame::handleCityPlotRightPicked(CvCity* pCity, CvPlot* pPlot, bool bAlt, 
 {
 	if (pPlot != NULL)
 	{
+		// spy rally point (written by Claude): with Ctrl held these set and clear the spy rally point. The keys are also
+		// read directly, as K-Mod does for the plot list.
+		bool const bSpyRally = (bCtrl || GC.ctrlKey());
 		if ((pCity != NULL) && gDLL->getInterfaceIFace()->isCitySelected(pCity))
 		{
-			selectedCitiesGameNetMessage(GAMEMESSAGE_DO_TASK, TASK_CLEAR_RALLY_PLOT);
+			selectedCitiesGameNetMessage(GAMEMESSAGE_DO_TASK, bSpyRally ? TASK_CLEAR_SPY_RALLY_PLOT : TASK_CLEAR_RALLY_PLOT);
 		}
 		else
 		{
-			if (bShift)
+			if (bShift || GC.shiftKey())
 			{
-				selectedCitiesGameNetMessage(GAMEMESSAGE_DO_TASK, TASK_RALLY_PLOT, pPlot->getX(), pPlot->getY());
+				selectedCitiesGameNetMessage(GAMEMESSAGE_DO_TASK, bSpyRally ? TASK_SPY_RALLY_PLOT : TASK_RALLY_PLOT, pPlot->getX(), pPlot->getY());
 			}
 			else
 			{

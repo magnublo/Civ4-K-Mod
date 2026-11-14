@@ -376,6 +376,8 @@ void CvCity::reset(int iID, PlayerTypes eOwner, int iX, int iY, bool bConstructo
 	m_iY = iY;
 	m_iRallyX = INVALID_PLOT_COORD;
 	m_iRallyY = INVALID_PLOT_COORD;
+	m_iSpyRallyX = INVALID_PLOT_COORD; // spy rally point (written by Claude)
+	m_iSpyRallyY = INVALID_PLOT_COORD;
 	m_iGameTurnFounded = 0;
 	m_iGameTurnAcquired = 0;
 	m_iPopulation = 0;
@@ -1255,6 +1257,14 @@ void CvCity::doTask(TaskTypes eTask, int iData1, int iData2, bool bOption, bool 
 
 	case TASK_CANCEL_WAITING_TRAIN:
 		removeWaitingTrainOrder((UnitTypes)iData1);
+		break;
+
+	case TASK_SPY_RALLY_PLOT: // spy rally point (written by Claude)
+		setSpyRallyPlot(GC.getMapINLINE().plotINLINE(iData1, iData2));
+		break;
+
+	case TASK_CLEAR_SPY_RALLY_PLOT:
+		setSpyRallyPlot(NULL);
 		break;
 
 	default:
@@ -5551,6 +5561,28 @@ void CvCity::setRallyPlot(CvPlot* pPlot)
 			m_iRallyX = INVALID_PLOT_COORD;
 			m_iRallyY = INVALID_PLOT_COORD;
 		}
+
+		if (isCitySelected())
+		{
+			gDLL->getInterfaceIFace()->setDirty(ColoredPlots_DIRTY_BIT, true);
+		}
+	}
+}
+
+// spy rally point (written by Claude): where the spies the city trains go, drawn as a magenta circle while the city is
+// selected. Set with Ctrl+Shift+right-click on a tile, cleared with Ctrl+right-click on the city.
+CvPlot* CvCity::getSpyRallyPlot() const
+{
+	return GC.getMapINLINE().plotSorenINLINE(m_iSpyRallyX, m_iSpyRallyY);
+}
+
+
+void CvCity::setSpyRallyPlot(CvPlot* pPlot)
+{
+	if (getSpyRallyPlot() != pPlot)
+	{
+		m_iSpyRallyX = (pPlot != NULL ? pPlot->getX_INLINE() : INVALID_PLOT_COORD);
+		m_iSpyRallyY = (pPlot != NULL ? pPlot->getY_INLINE() : INVALID_PLOT_COORD);
 
 		if (isCitySelected())
 		{
@@ -12585,6 +12617,19 @@ void CvCity::popOrder(int iNum, bool bFinish, bool bChoose)
 					pUnit->getGroup()->pushMission(MISSION_MOVE_TO, pRallyPlot->getX_INLINE(), pRallyPlot->getY_INLINE());
 				}
 
+				// spy rally point (written by Claude): spies go to the spy rally point. On a tile with a city or an improvement
+				// they then sleep until the maximum discount; that order can't start where they can't spy, so a spy that
+				// found no path and is still at home, or one on a tile of its own team, waits for orders.
+				CvPlot* pSpyRallyPlot = getSpyRallyPlot();
+				if (pSpyRallyPlot != NULL && GC.getUnitInfo(eTrainUnit).isSpy())
+				{
+					pUnit->getGroup()->pushMission(MISSION_MOVE_TO, pSpyRallyPlot->getX_INLINE(), pSpyRallyPlot->getY_INLINE());
+					if (pSpyRallyPlot->isCity() || pSpyRallyPlot->getImprovementType() != NO_IMPROVEMENT)
+					{
+						pUnit->getGroup()->pushMission(MISSION_SLEEP_FOR_DISCOUNT, -1, -1, 0, true);
+					}
+				}
+
 				if (isHuman())
 				{
 					if (GET_PLAYER(getOwnerINLINE()).isOption(PLAYEROPTION_START_AUTOMATED))
@@ -14345,6 +14390,14 @@ void CvCity::read(FDataStreamBase* pStream)
 			m_aWaitingTrainOrders.push_back(std::make_pair((UnitTypes)iUnit, (UnitAITypes)iUnitAI));
 		}
 	}
+	// spy rally point (written by Claude)
+	m_iSpyRallyX = INVALID_PLOT_COORD;
+	m_iSpyRallyY = INVALID_PLOT_COORD;
+	if (uiFlag >= 3)
+	{
+		pStream->Read(&m_iSpyRallyX);
+		pStream->Read(&m_iSpyRallyY);
+	}
 	m_iMaintenanceDistanceEpoch = 0; // perf
 	invalidateMaintenanceDistances(); // perf
 }
@@ -14353,7 +14406,7 @@ void CvCity::write(FDataStreamBase* pStream)
 {
 	int iI;
 
-	uint uiFlag=2; // 2: the waiting train orders (written by Claude)
+	uint uiFlag=3; // 2: the waiting train orders, 3: the spy rally point (written by Claude)
 	pStream->Write(uiFlag);		// flag for expansion
 
 	pStream->Write(m_iID);
@@ -14577,6 +14630,10 @@ void CvCity::write(FDataStreamBase* pStream)
 		pStream->Write((int)m_aWaitingTrainOrders[i].first);
 		pStream->Write((int)m_aWaitingTrainOrders[i].second);
 	}
+
+	// spy rally point (written by Claude), uiFlag >= 3
+	pStream->Write(m_iSpyRallyX);
+	pStream->Write(m_iSpyRallyY);
 }
 
 

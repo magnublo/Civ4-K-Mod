@@ -173,6 +173,7 @@ public:
 	CyArea* area();
 	CyArea* waterArea();
 	CyPlot* getRallyPlot();
+	CyPlot* getSpyRallyPlot(); // spy rally point (written by Claude)
 
 	int getGameTurnFounded();
 	int getGameTurnAcquired();
