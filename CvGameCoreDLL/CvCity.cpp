@@ -12578,7 +12578,9 @@ void CvCity::popOrder(int iNum, bool bFinish, bool bChoose)
 
 				pRallyPlot = getRallyPlot();
 
-				if (pRallyPlot != NULL)
+				// rally points (written by Claude): only units that can fight go there, so settlers, workers, work boats,
+				// missionaries, executives, spies and nukes stay in the city
+				if (pRallyPlot != NULL && (GC.getUnitInfo(eTrainUnit).getCombat() > 0 || GC.getUnitInfo(eTrainUnit).getAirCombat() > 0))
 				{
 					pUnit->getGroup()->pushMission(MISSION_MOVE_TO, pRallyPlot->getX_INLINE(), pRallyPlot->getY_INLINE());
 				}
