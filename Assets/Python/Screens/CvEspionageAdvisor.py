@@ -462,22 +462,29 @@ class CvEspionageAdvisor:
 				# Loop through target's cities, see which are visible and add them to the list
 				apCityList = pyTargetPlayer.getCityList()
 
+				# cheapest for missions first (written by Claude), by the cost of Investigate City: its base cost is the
+				# same in all of a leader's cities, so its order is the one of the city's cost modifier
+				apRevealedCities = []
+				for pyCity in apCityList:
+					pCity = pyCity.GetCy()
+					if (pCity.isRevealed(pActivePlayer.getTeam(), false)):
+						apRevealedCities.append(pCity)
+				eInvestigateCity = gc.getInfoTypeForString("ESPIONAGEMISSION_INVESTIGATE_CITY")
+				if (eInvestigateCity != -1):
+					apRevealedCities.sort(key=lambda pCity: pActivePlayer.getEspionageMissionCost(eInvestigateCity, self.iTargetPlayer, pCity.plot(), -1))
+
 				iLoop = 0
 
-				for pyCity in apCityList:
+				for pCity in apRevealedCities:
+					screen.appendListBoxString( self.szCityListBox, pCity.getName(), WidgetTypes.WIDGET_GENERAL, pCity.getID(), 0, CvUtil.FONT_LEFT_JUSTIFY )
 
-					pCity = pyCity.GetCy()
+					if (self.iActiveCityID == -1 or pTargetPlayer.getCity(self.iActiveCityID).isNone()):
+						self.iActiveCityID = pCity.getID()
 
-					if (pCity.isRevealed(pActivePlayer.getTeam(), false)):
-						screen.appendListBoxString( self.szCityListBox, pCity.getName(), WidgetTypes.WIDGET_GENERAL, pCity.getID(), 0, CvUtil.FONT_LEFT_JUSTIFY )
+					if (self.iActiveCityID == pCity.getID()):
+						screen.setSelectedListBoxStringGFC(self.szCityListBox, iLoop)
 
-						if (self.iActiveCityID == -1 or pTargetPlayer.getCity(self.iActiveCityID).isNone()):
-							self.iActiveCityID = pCity.getID()
-
-						if (self.iActiveCityID == pCity.getID()):
-							screen.setSelectedListBoxStringGFC(self.szCityListBox, iLoop)
-
-						iLoop += 1
+					iLoop += 1
 
 				#screen.updateListBox(self.szCityListBox)
 
