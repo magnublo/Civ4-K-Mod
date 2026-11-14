@@ -3177,6 +3177,7 @@ bool CvSelectionGroup::groupAttack(int iX, int iY, int iFlags, bool& bFailedAlre
 	FAssertMsg(pDestPlot != NULL, "DestPlot is not assigned a valid value");
 
 	bool bStack = (isHuman() && ((getDomainType() == DOMAIN_AIR) || GET_PLAYER(getOwnerINLINE()).isOption(PLAYEROPTION_STACK_ATTACK)));
+	bool bKeepMoves = (iFlags & MOVE_KEEP_MOVES_ATTACK) != 0; // keep-moves attack (written by Claude)
     
 	bool bAttack = false;
 	bFailedAlreadyFighting = false;
@@ -3189,7 +3190,7 @@ bool CvSelectionGroup::groupAttack(int iX, int iY, int iFlags, bool& bFailedAlre
 			if (iFlags & (MOVE_THROUGH_ENEMY | MOVE_ATTACK_STACK | MOVE_DIRECT_ATTACK) || getDomainType() == DOMAIN_AIR || (final_path.GeneratePath(pDestPlot) && final_path.GetPathFirstPlot() == pDestPlot)) // K-Mod
 			{
 				int iAttackOdds;
-				CvUnit* pBestAttackUnit = AI_getBestGroupAttacker(pDestPlot, true, iAttackOdds);
+				CvUnit* pBestAttackUnit = AI_getBestGroupAttacker(pDestPlot, true, iAttackOdds, false, false, bKeepMoves);
 
 				if (pBestAttackUnit)
 				{
@@ -3222,15 +3223,21 @@ bool CvSelectionGroup::groupAttack(int iX, int iY, int iFlags, bool& bFailedAlre
 
 					while (true)
 					{
-						pBestAttackUnit = AI_getBestGroupAttacker(pDestPlot, false, iAttackOdds, false, bNoBlitz);
+						pBestAttackUnit = AI_getBestGroupAttacker(pDestPlot, false, iAttackOdds, false, bNoBlitz, bKeepMoves);
 						if (pBestAttackUnit == NULL)
+						{
+							break;
+						}
+						// keep-moves attack (written by Claude): nobody moves into the plot afterwards, so the attacks stop with
+						// the last defender instead of going on against units that can't defend
+						if (bKeepMoves && !pDestPlot->hasDefender(false, NO_PLAYER, getOwnerINLINE(), pBestAttackUnit, true))
 						{
 							break;
 						}
 
 						if (iAttackOdds < 68)
 						{
-						    CvUnit * pBestSacrifice = AI_getBestGroupSacrifice(pDestPlot, false, false, bNoBlitz);
+						    CvUnit * pBestSacrifice = AI_getBestGroupSacrifice(pDestPlot, false, false, bNoBlitz, bKeepMoves);
 						    if (pBestSacrifice != NULL)
 						    {
                                 pBestAttackUnit = pBestSacrifice;
@@ -3276,14 +3283,14 @@ bool CvSelectionGroup::groupAttack(int iX, int iY, int iFlags, bool& bFailedAlre
 							FAssert(!pBestAttackUnit->isCombat());
 							{
 								// we need to issue the attack order to start the attack
-								pBestAttackUnit->attack(pDestPlot, bStack);
+								pBestAttackUnit->attack(pDestPlot, bStack, bKeepMoves); // bKeepMoves written by Claude
 							}
 							// K-Mod end
 						}
 						else
 						{
 							// K-Mod note. We should do this even if the fight can't happen right away.
-							pBestAttackUnit->attack(pDestPlot, false);
+							pBestAttackUnit->attack(pDestPlot, false, bKeepMoves); // bKeepMoves written by Claude
 							break;
 						}
 

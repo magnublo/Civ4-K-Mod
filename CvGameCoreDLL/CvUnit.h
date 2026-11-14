@@ -108,7 +108,7 @@ public:
 	bool canMoveInto(const CvPlot* pPlot, bool bAttack = false, bool bDeclareWar = false, bool bIgnoreLoad = false, bool bAssumeVisible = true) const; // K-Mod added bAssumeVisible. Exposed to Python
 	bool canMoveOrAttackInto(const CvPlot* pPlot, bool bDeclareWar = false) const;								// Exposed to Python
 	// bool canMoveThrough(const CvPlot* pPlot, bool bDeclareWar = false) const; // disabled by K-Mod (was exposed to Python)
-	void attack(CvPlot* pPlot, bool bQuick);
+	void attack(CvPlot* pPlot, bool bQuick, bool bKeepMoves = false); // bKeepMoves written by Claude
 	void attackForDamage(CvUnit *pDefender, int attackerDamageChange, int defenderDamageChange);
 	void fightInterceptor(const CvPlot* pPlot, bool bQuick);
 	void move(CvPlot* pPlot, bool bShow);
@@ -295,6 +295,7 @@ public:
 	int baseMoves() const;																			// Exposed to Python
 	int maxMoves() const;																									// Exposed to Python
 	int movesLeft() const;																			// Exposed to Python			
+	bool hasMovesAfterAttack(const CvPlot* pPlot) const; // written by Claude
 	DllExport bool canMove() const;																				// Exposed to Python			
 	DllExport bool hasMoved() const;																			// Exposed to Python			
 																																				
@@ -860,6 +861,7 @@ protected:
 	bool m_bInfoBarDirty;
 	bool m_bBlockading;
 	bool m_bAirCombat;
+	bool m_bKeepMovesAttack; // keep-moves attack in progress (written by Claude), not saved
 
 	PlayerTypes m_eOwner;
 	PlayerTypes m_eCapturingPlayer;

@@ -939,6 +939,23 @@ bool CvGame::selectCity(CvCity* pSelectCity, bool bCtrl, bool bAlt, bool bShift)
 	return true;
 }
 
+// keep-moves attack (written by Claude): whether pPlot holds a visible unit that a move of pUnit there would fight, of a
+// team at war with it or of the team that move would declare war on
+static bool hasDefenderToFight(const CvUnit* pUnit, const CvPlot* pPlot)
+{
+	TeamTypes eWarTeam = pUnit->getDeclareWarMove(pPlot);
+	for (CLLNode<IDInfo>* pUnitNode = pPlot->headUnitNode(); pUnitNode != NULL; pUnitNode = pPlot->nextUnitNode(pUnitNode))
+	{
+		const CvUnit* pLoopUnit = ::getUnit(pUnitNode->m_data);
+		if (pLoopUnit->canDefend() && !pLoopUnit->isInvisible(pUnit->getTeam(), false) &&
+			(pLoopUnit->isEnemy(pUnit->getTeam(), pPlot) || pUnit->isEnemy(pLoopUnit->getTeam(), pPlot) || pLoopUnit->getTeam() == eWarTeam))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 void CvGame::selectionListMove(CvPlot* pPlot, bool bAlt, bool bShift, bool bCtrl) const
 {
 	//CLLNode<IDInfo>* pSelectedUnitNode;
@@ -972,7 +989,44 @@ void CvGame::selectionListMove(CvPlot* pPlot, bool bAlt, bool bShift, bool bCtrl
 		return;
 	}
 
-	if (bAlt)
+	// keep-moves attack (written by Claude): Ctrl+Alt+right-click on an adjacent tile with a defender to fight attacks only
+	// with the selected units that still have moves left after the attack. The other selected units leave the selection
+	// and stay where they are. On any other tile Ctrl+Alt+right-click is a plain right-click. The keys are also read with
+	// GetKeyState, which sees the keys xdotool holds in tests.
+	int iMoveFlags = 0;
+	if ((bCtrl || GC.ctrlKey()) && (bAlt || GC.altKey()))
+	{
+		if (pHeadSelectedUnit->getDomainType() != DOMAIN_AIR &&
+			stepDistance(pHeadSelectedUnit->getX_INLINE(), pHeadSelectedUnit->getY_INLINE(), pPlot->getX_INLINE(), pPlot->getY_INLINE()) == 1 &&
+			hasDefenderToFight(pHeadSelectedUnit, pPlot))
+		{
+			std::vector<CvUnit*> aStaying;
+			int iAttackers = 0;
+			for (CLLNode<IDInfo>* pSelectedUnitNode = gDLL->getInterfaceIFace()->headSelectionListNode(); pSelectedUnitNode != NULL; pSelectedUnitNode = gDLL->getInterfaceIFace()->nextSelectionListNode(pSelectedUnitNode))
+			{
+				CvUnit* pSelectedUnit = ::getUnit(pSelectedUnitNode->m_data);
+				if (pSelectedUnit->canAttack() && pSelectedUnit->canMoveInto(pPlot, true, true) && pSelectedUnit->hasMovesAfterAttack(pPlot))
+				{
+					iAttackers++;
+				}
+				else
+				{
+					aStaying.push_back(pSelectedUnit);
+				}
+			}
+			if (iAttackers == 0)
+			{
+				gDLL->getInterfaceIFace()->addHumanMessage(getActivePlayer(), true, GC.getEVENT_MESSAGE_TIME(), gDLL->getText("TXT_KEY_KEEP_MOVES_ATTACK_NONE"), NULL, MESSAGE_TYPE_DISPLAY_ONLY);
+				return;
+			}
+			for (int iI = 0; iI < (int)aStaying.size(); iI++)
+			{
+				gDLL->getInterfaceIFace()->removeFromSelectionList(aStaying[iI]);
+			}
+			iMoveFlags = MOVE_KEEP_MOVES_ATTACK;
+		}
+	}
+	else if (bAlt)
 	{
 		//gDLL->getInterfaceIFace()->selectGroup(pHeadSelectedUnit, false, false, true);
 		gDLL->getInterfaceIFace()->selectGroup(pHeadSelectedUnit, false, true, true); // K-Mod
@@ -1009,7 +1063,7 @@ void CvGame::selectionListMove(CvPlot* pPlot, bool bAlt, bool bShift, bool bCtrl
 		pSelectedUnitNode = gDLL->getInterfaceIFace()->nextSelectionListNode(pSelectedUnitNode);
 	} */ // K-Mod has moved this to selectionListGameNetMessage.
 
-	selectionListGameNetMessage(GAMEMESSAGE_PUSH_MISSION, MISSION_MOVE_TO, pPlot->getX(), pPlot->getY(), 0, false, bShift);
+	selectionListGameNetMessage(GAMEMESSAGE_PUSH_MISSION, MISSION_MOVE_TO, pPlot->getX(), pPlot->getY(), iMoveFlags, false, bShift); // iMoveFlags written by Claude
 }
 
 

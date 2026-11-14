@@ -365,7 +365,7 @@ int CvSelectionGroupAI::AI_attackOdds(const CvPlot* pPlot, bool bPotentialEnemy)
 }
 
 
-CvUnit* CvSelectionGroupAI::AI_getBestGroupAttacker(const CvPlot* pPlot, bool bPotentialEnemy, int& iUnitOdds, bool bForce, bool bNoBlitz) const
+CvUnit* CvSelectionGroupAI::AI_getBestGroupAttacker(const CvPlot* pPlot, bool bPotentialEnemy, int& iUnitOdds, bool bForce, bool bNoBlitz, bool bKeepMoves) const
 {
 	PROFILE_FUNC();
 
@@ -394,6 +394,11 @@ CvUnit* CvSelectionGroupAI::AI_getBestGroupAttacker(const CvPlot* pPlot, bool bP
 				bCanAttack = pLoopUnit->canAttack();
 
 				if (bCanAttack && bNoBlitz && pLoopUnit->isBlitz() && pLoopUnit->isMadeAttack())
+				{
+					bCanAttack = false;
+				}
+				// keep-moves attack (written by Claude)
+				if (bCanAttack && bKeepMoves && !pLoopUnit->hasMovesAfterAttack(pPlot))
 				{
 					bCanAttack = false;
 				}
@@ -455,7 +460,7 @@ CvUnit* CvSelectionGroupAI::AI_getBestGroupAttacker(const CvPlot* pPlot, bool bP
 	return pBestUnit;
 }
 
-CvUnit* CvSelectionGroupAI::AI_getBestGroupSacrifice(const CvPlot* pPlot, bool bPotentialEnemy, bool bForce, bool bNoBlitz) const
+CvUnit* CvSelectionGroupAI::AI_getBestGroupSacrifice(const CvPlot* pPlot, bool bPotentialEnemy, bool bForce, bool bNoBlitz, bool bKeepMoves) const
 {
 	int iBestValue = 0;
 	CvUnit* pBestUnit = NULL;
@@ -478,6 +483,11 @@ CvUnit* CvSelectionGroupAI::AI_getBestGroupSacrifice(const CvPlot* pPlot, bool b
 				bCanAttack = pLoopUnit->canAttack();
 
 				if (bCanAttack && bNoBlitz && pLoopUnit->isBlitz() && pLoopUnit->isMadeAttack())
+				{
+					bCanAttack = false;
+				}
+				// keep-moves attack (written by Claude)
+				if (bCanAttack && bKeepMoves && !pLoopUnit->hasMovesAfterAttack(pPlot))
 				{
 					bCanAttack = false;
 				}

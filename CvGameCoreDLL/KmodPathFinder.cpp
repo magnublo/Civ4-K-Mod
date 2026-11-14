@@ -255,7 +255,7 @@ void KmodPathFinder::SetSettings(const CvPathSettings& new_settings)
 	}
 
 	// some flags are not relevant to pathfinder. We should try to strip those out to avoid unnecessary resets.
-	int relevant_flags = ~(MOVE_DIRECT_ATTACK | MOVE_SINGLE_ATTACK | MOVE_NO_ATTACK); // any bar these
+	int relevant_flags = ~(MOVE_DIRECT_ATTACK | MOVE_SINGLE_ATTACK | MOVE_NO_ATTACK | MOVE_KEEP_MOVES_ATTACK); // any bar these (MOVE_KEEP_MOVES_ATTACK added by Claude)
 
 	if (settings.pGroup != new_settings.pGroup)
 	{

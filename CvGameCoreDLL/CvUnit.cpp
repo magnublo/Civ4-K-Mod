@@ -351,6 +351,7 @@ void CvUnit::reset(int iID, UnitTypes eUnit, PlayerTypes eOwner, bool bConstruct
 	m_bInfoBarDirty = false;
 	m_bBlockading = false;
 	m_bAirCombat = false;
+	m_bKeepMovesAttack = false; // written by Claude
 
 	m_eOwner = eOwner;
 	m_eCapturingPlayer = NO_PLAYER;
@@ -1390,9 +1391,10 @@ void CvUnit::updateCombat(bool bQuick)
 			FAssertMsg(false, "Cannot 'finish' combat with NULL defender");
 			return;
 		}
-		else
+		else if (!m_bKeepMovesAttack) // keep-moves attack (written by Claude): nobody moves in
 			getGroup()->groupMove(pPlot, true, canAdvance(pPlot, 0) ? this : NULL, true);
 		// K-Mod end
+		m_bKeepMovesAttack = false; // written by Claude
 
 		getGroup()->clearMissionQueue();
 
@@ -1530,6 +1532,9 @@ void CvUnit::updateCombat(bool bQuick)
 		setAttackPlot(NULL, false);
 		setCombatUnit(NULL);
 		pDefender->setCombatUnit(NULL);
+		// keep-moves attack (written by Claude): the winner doesn't advance and the group doesn't move in
+		bool bKeepMovesAttack = m_bKeepMovesAttack;
+		m_bKeepMovesAttack = false;
 		NotifyEntity(MISSION_DAMAGE);
 		pDefender->NotifyEntity(MISSION_DAMAGE);
 
@@ -1595,7 +1600,7 @@ void CvUnit::updateCombat(bool bQuick)
 			}
 			else
 			{
-				bAdvance = canAdvance(pPlot, ((pDefender->canDefend()) ? 1 : 0));
+				bAdvance = !bKeepMovesAttack && canAdvance(pPlot, ((pDefender->canDefend()) ? 1 : 0)); // bKeepMovesAttack written by Claude
 
 				if (bAdvance)
 				{
@@ -1616,7 +1621,7 @@ void CvUnit::updateCombat(bool bQuick)
 				}
 			}
 
-			if (pPlot->getNumVisibleEnemyDefenders(this) == 0)
+			if (pPlot->getNumVisibleEnemyDefenders(this) == 0 && !bKeepMovesAttack) // bKeepMovesAttack written by Claude
 			{
 				//getGroup()->groupMove(pPlot, true, ((bAdvance) ? this : NULL));
 				getGroup()->groupMove(pPlot, true, bAdvance ? this : NULL, true); // K-Mod
@@ -2822,7 +2827,7 @@ bool CvUnit::canMoveOrAttackInto(const CvPlot* pPlot, bool bDeclareWar) const
 }*/
 
 
-void CvUnit::attack(CvPlot* pPlot, bool bQuick)
+void CvUnit::attack(CvPlot* pPlot, bool bQuick, bool bKeepMoves)
 {
 	/**
 	*** Note: this assertion could fail in certain situations involving sea-patrol - Karadoc
@@ -2831,6 +2836,7 @@ void CvUnit::attack(CvPlot* pPlot, bool bQuick)
 	FAssert(getCombatTimer() == 0);
 
 	setAttackPlot(pPlot, false);
+	m_bKeepMovesAttack = bKeepMoves; // written by Claude
 
 	updateCombat(bQuick);
 }
@@ -7839,6 +7845,13 @@ int CvUnit::maxMoves() const
 int CvUnit::movesLeft() const
 {
 	return std::max(0, (maxMoves() - getMoves()));
+}
+
+// Whether the unit still has moves left after attacking the adjacent pPlot (written by Claude): updateCombat charges an
+// attack one move, or what entering pPlot costs if that is more.
+bool CvUnit::hasMovesAfterAttack(const CvPlot* pPlot) const
+{
+	return movesLeft() > std::max(GC.getMOVE_DENOMINATOR(), pPlot->movementCost(this, plot()));
 }
 
 

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Texts for the keep-moves attack, Ctrl+Alt+right-click on an enemy tile (K-Mod-Magnus, written by Claude): CvGame::selectionListMove -->
+<Civ4GameText xmlns="http://www.firaxis.com">
+	<TEXT>
+		<Tag>TXT_KEY_KEEP_MOVES_ATTACK_NONE</Tag>
+		<English>None of the selected units can attack this tile and still have moves left after it</English>
+		<French>None of the selected units can attack this tile and still have moves left after it</French>
+		<German>None of the selected units can attack this tile and still have moves left after it</German>
+		<Italian>None of the selected units can attack this tile and still have moves left after it</Italian>
+		<Spanish>None of the selected units can attack this tile and still have moves left after it</Spanish>
+	</TEXT>
+</Civ4GameText>
