@@ -39,6 +39,7 @@ class BugScoreOptionsTab(BugOptionsTab.BugOptionsTab):
 		self.addColorDropdown(screen, col1L, col1R, "Scores__PowerHighColor", True, "LAYOUT_LEFT")
 		self.addFloatDropdown(screen, col1L, col1R, "Scores__PowerLowRatio", True, "LAYOUT_LEFT")
 		self.addColorDropdown(screen, col1L, col1R, "Scores__PowerLowColor", True, "LAYOUT_LEFT")
+		self.addCheckboxTextDropdown(screen, col1L, col1R, "Scores__EspionagePoints", "Scores__EspionagePointsUnit", "LAYOUT_LEFT") # espionage points (written by Claude)
 		
 		self.addSpacer(screen, col2, "Scores_New_Columns", 3)
 		

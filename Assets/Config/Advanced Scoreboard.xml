@@ -69,7 +69,7 @@
 					type="boolean" default="True" 
 					get="isAlignIcons" set="setAlignIcons" dirtyBit="Score"/>
 			<option id="DisplayOrder" key="Display Order" 
-					type="string" default="!?2WMSZVC6EPTUNBDRAHQ*LO"
+					type="string" default="!?2WMSZVC6XEPTUNBDRAHQ*LO"
 					get="getDisplayOrder" set="setDisplayOrder" dirtyBit="Score"/>
 			<list   id="DefaultSpacing" key="Default Column Spacing" 
 					type="int" default="0" values="0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10" 
@@ -126,6 +126,18 @@
 			<option id="PowerLowColor" key="Power Low Color" 
 					type="color" default="COLOR_GREEN" 
 					get="getLowPowerColor" set="setLowPowerColor" dirtyBit="Score"/>
+
+			<!-- Espionage points (written by Claude): your points against each civ, column X -->
+			<option id="EspionagePoints" key="Espionage Points"
+					type="boolean" default="False"
+					get="isShowEspionagePoints" set="setShowEspionagePoints" dirtyBit="Score"/>
+			<list   id="EspionagePointsUnit" key="Espionage Points Unit"
+					type="int" default="1" listType="string"
+					get="getEspionagePointsUnit" set="setEspionagePointsUnit" dirtyBit="Score">
+				<choice id="Points"/>
+				<choice id="Thousands"/>
+				<choice id="Millions"/>
+			</list>
 		</section>
 	</options>
 	

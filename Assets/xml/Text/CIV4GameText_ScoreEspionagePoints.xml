@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Texts for the scoreboard's espionage points (K-Mod-Magnus, written by Claude): BUG options, Scores tab -->
+<Civ4GameText xmlns="http://www.firaxis.com">
+	<TEXT>
+		<Tag>TXT_KEY_BUG_OPT_SCORES__ESPIONAGEPOINTS_TEXT</Tag>
+		<English>Espionage Points</English>
+		<French>Espionage Points</French>
+		<German>Espionage Points</German>
+		<Italian>Espionage Points</Italian>
+		<Spanish>Espionage Points</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_BUG_OPT_SCORES__ESPIONAGEPOINTS_HOVER</Tag>
+		<English>When checked, shows how many espionage points you have against each civilization you have met (column X of the Display Order, in front of the espionage icon if the Display Order has no X).</English>
+		<French>When checked, shows how many espionage points you have against each civilization you have met (column X of the Display Order, in front of the espionage icon if the Display Order has no X).</French>
+		<German>When checked, shows how many espionage points you have against each civilization you have met (column X of the Display Order, in front of the espionage icon if the Display Order has no X).</German>
+		<Italian>When checked, shows how many espionage points you have against each civilization you have met (column X of the Display Order, in front of the espionage icon if the Display Order has no X).</Italian>
+		<Spanish>When checked, shows how many espionage points you have against each civilization you have met (column X of the Display Order, in front of the espionage icon if the Display Order has no X).</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_BUG_OPT_SCORES__ESPIONAGEPOINTSUNIT_TEXT</Tag>
+		<English>Espionage Points Unit</English>
+		<French>Espionage Points Unit</French>
+		<German>Espionage Points Unit</German>
+		<Italian>Espionage Points Unit</Italian>
+		<Spanish>Espionage Points Unit</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_BUG_OPT_SCORES__ESPIONAGEPOINTSUNIT_HOVER</Tag>
+		<English>How the espionage points are shown: as a whole number (55,000), in thousands (55k) or in millions (1.2M). Below 10k or 10M they get one decimal (5.5k).</English>
+		<French>How the espionage points are shown: as a whole number (55,000), in thousands (55k) or in millions (1.2M). Below 10k or 10M they get one decimal (5.5k).</French>
+		<German>How the espionage points are shown: as a whole number (55,000), in thousands (55k) or in millions (1.2M). Below 10k or 10M they get one decimal (5.5k).</German>
+		<Italian>How the espionage points are shown: as a whole number (55,000), in thousands (55k) or in millions (1.2M). Below 10k or 10M they get one decimal (5.5k).</Italian>
+		<Spanish>How the espionage points are shown: as a whole number (55,000), in thousands (55k) or in millions (1.2M). Below 10k or 10M they get one decimal (5.5k).</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_BUG_OPT_SCORES__ESPIONAGEPOINTSUNIT_LIST</Tag>
+		<English>Whole (55,000)|Thousands (55k)|Millions (1.2M)</English>
+		<French>Whole (55,000)|Thousands (55k)|Millions (1.2M)</French>
+		<German>Whole (55,000)|Thousands (55k)|Millions (1.2M)</German>
+		<Italian>Whole (55,000)|Thousands (55k)|Millions (1.2M)</Italian>
+		<Spanish>Whole (55,000)|Thousands (55k)|Millions (1.2M)</Spanish>
+	</TEXT>
+</Civ4GameText>

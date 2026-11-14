@@ -28,7 +28,7 @@ gc = CyGlobalContext()
 Z_DEPTH = -0.3
 
 # Columns IDs
-NUM_PARTS = 25
+NUM_PARTS = 26
 (
 	ALIVE,
 	WAR,
@@ -54,7 +54,8 @@ NUM_PARTS = 25
 	CITIES,
 	WAITING,
 	NET_STATS,
-	OOS
+	OOS,
+	ESPIONAGE_POINTS
 ) = range(NUM_PARTS)
 
 # Types
@@ -90,8 +91,8 @@ def init():
 	global columns
 	
 	# Used keys:
-	# ABCDEFHIKLMNOPQRSTUVWZ*?
-	# GJXY
+	# ABCDEFHIKLMNOPQRSTUVWXZ*?
+	# GJY
 	columns.append(Column('', ALIVE))
 	columns.append(Column('S', SCORE, DYNAMIC))
 	columns.append(Column('Z', SCORE_DELTA, DYNAMIC))
@@ -117,6 +118,7 @@ def init():
 	columns.append(Column('*', WAITING, FIXED, smallText("*")))
 	columns.append(Column('L', NET_STATS, DYNAMIC))
 	columns.append(Column('O', OOS, DYNAMIC))
+	columns.append(Column('X', ESPIONAGE_POINTS, DYNAMIC)) # espionage points (written by Claude)
 	
 	global WAR_ICON, PEACE_ICON
 	WAR_ICON = smallSymbol(FontSymbols.WAR_CHAR)
@@ -135,6 +137,28 @@ def smallText(text):
 
 def smallSymbol(symbol):
 	return smallText(FontUtil.getChar(symbol))
+
+# espionage points (written by Claude): in the unit chosen on the Scores tab, "55,000", "55k" or "1.2M", with one
+# decimal below 10k or 10M
+def formatEspionagePoints(iPoints):
+	iUnit = ScoreOpt.getEspionagePointsUnit()
+	if iUnit == 1:
+		return formatScaled(iPoints, 1000, u"k")
+	if iUnit == 2:
+		return formatScaled(iPoints, 1000000, u"M")
+	szDigits = str(iPoints)
+	groups = []
+	while len(szDigits) > 3:
+		groups.insert(0, szDigits[-3:])
+		szDigits = szDigits[:-3]
+	groups.insert(0, szDigits)
+	return u",".join(groups)
+
+def formatScaled(iPoints, iUnit, szSuffix):
+	fValue = float(iPoints) / iUnit
+	if fValue < 10:
+		return u"%.1f%s" % (fValue, szSuffix)
+	return u"%d%s" % (int(fValue + 0.5), szSuffix)
 
 def onDealCanceled(argsList):
 	"""Sets the scoreboard dirty bit so it will redraw."""
@@ -287,6 +311,9 @@ class Scoreboard:
 	def setOOS(self, value):
 		self._set(OOS, smallText(value))
 		
+	def setEspionagePoints(self, value):
+		self._set(ESPIONAGE_POINTS, smallText(value))
+		
 		
 	def _getContactWidget(self):
 		return (WidgetTypes.WIDGET_CONTACT_CIV, self._currPlayerScore.getID(), -1)
@@ -365,7 +392,15 @@ class Scoreboard:
 		
 		defaultSpacing = ScoreOpt.getDefaultSpacing()
 		spacing = defaultSpacing
-		format = re.findall('(-?[0-9]+|[^0-9])', ScoreOpt.getDisplayOrder().replace(' ', '').upper())
+		order = ScoreOpt.getDisplayOrder().replace(' ', '').upper()
+		# espionage points (written by Claude): with the option on, a Display Order without X (an older ini) gets it in
+		# front of the espionage icon E, or at the end
+		if ScoreOpt.isShowEspionagePoints() and 'X' not in order:
+			if 'E' in order:
+				order = order.replace('E', 'XE', 1)
+			else:
+				order += 'X'
+		format = re.findall('(-?[0-9]+|[^0-9])', order)
 		format.reverse()
 		for k in format:
 			if k == '-':

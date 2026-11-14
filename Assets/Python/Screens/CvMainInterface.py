@@ -5142,6 +5142,12 @@ class CvMainInterface:
 														szBuffer = szBuffer + szTempBuffer
 														if (bAlignIcons):
 															scores.setEspionage()
+													# espionage points (written by Claude): your points against the civ's team
+													if (bEspionage and ScoreOpt.isShowEspionagePoints() and eTeam != gc.getGame().getActiveTeam()):
+														szTempBuffer = Scoreboard.formatEspionagePoints(gc.getTeam(gc.getGame().getActiveTeam()).getEspionagePointsAgainstTeam(eTeam))
+														szBuffer = szBuffer + u" " + szTempBuffer
+														if (bAlignIcons):
+															scores.setEspionagePoints(szTempBuffer)
 												
 												# K-Mod (original code deleted)
 												if gc.getGame().isDebugMode() or (gc.getActivePlayer().canSeeResearch(ePlayer) and
