@@ -68,15 +68,20 @@ class CvEspionageAdvisor:
 		self.iActiveCityID = -1
 		self.iSelectedMission = -1
 
+		# remembered selection (written by Claude): the leader last clicked and, per leader, the city last clicked, for
+		# each active player until the game is restarted
+		self.dLastTargetPlayer = {}
+		self.dLastCityID = {}
+
 	def getScreen(self):
 		return CyGInterfaceScreen(self.SCREEN_NAME, CvScreenEnums.ESPIONAGE_ADVISOR)
 
 	def interfaceScreen (self):
 
-		self.iTargetPlayer = -1
-		self.iActiveCityID = -1
-		self.iSelectedMission = -1
 		self.iActivePlayer = CyGame().getActivePlayer()
+		self.iTargetPlayer = self.dLastTargetPlayer.get(self.iActivePlayer, -1)
+		self.iActiveCityID = self.dLastCityID.get((self.iActivePlayer, self.iTargetPlayer), -1)
+		self.iSelectedMission = -1
 
 		screen = self.getScreen()
 		if screen.isActive():
@@ -154,6 +159,13 @@ class CvEspionageAdvisor:
 
 						if (self.iTargetPlayer == -1):
 							self.iTargetPlayer = iLoop
+
+		# a remembered leader no longer met or alive gives way to the first (written by Claude)
+		if (self.iTargetPlayer not in self.aiKnownPlayers):
+			self.iTargetPlayer = -1
+			self.iActiveCityID = -1
+			if (len(self.aiKnownPlayers) > 0):
+				self.iTargetPlayer = self.aiKnownPlayers[0]
 
 		while(self.iNumEntries < 17):
 			self.iNumEntries = self.iNumEntries + 1
@@ -604,6 +616,7 @@ class CvEspionageAdvisor:
 			if (inputClass.getData1() == self.iLeaderImagesID):
 
 				self.iTargetPlayer = inputClass.getData2()
+				self.dLastTargetPlayer[self.iActivePlayer] = self.iTargetPlayer # written by Claude
 
 				# Loop through all images
 				for iPlayerID in self.aiKnownPlayers:
@@ -613,7 +626,8 @@ class CvEspionageAdvisor:
 					else:
 						screen.setState(szName, false)
 
-					self.iActiveCityID = -1
+				# the city last clicked for this leader, else the first in the list (written by Claude)
+				self.iActiveCityID = self.dLastCityID.get((self.iActivePlayer, self.iTargetPlayer), -1)
 
 				CyInterface().setDirty(InterfaceDirtyBits.Espionage_Advisor_DIRTY_BIT, True)
 
@@ -622,6 +636,7 @@ class CvEspionageAdvisor:
 			if ("%s%d" %(inputClass.getFunctionName(), inputClass.getID()) == self.szCityListBox):
 				iCityID = inputClass.getData1()
 				self.iActiveCityID = iCityID#gc.getPlayer(self.iTargetPlayer).getCity(iCityID)
+				self.dLastCityID[(self.iActivePlayer, self.iTargetPlayer)] = iCityID # written by Claude
 				CyInterface().setDirty(InterfaceDirtyBits.Espionage_Advisor_DIRTY_BIT, True)
 
 			# Is there any other players which have been met?
