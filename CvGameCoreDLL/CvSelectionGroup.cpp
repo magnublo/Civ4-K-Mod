@@ -27,6 +27,12 @@
 
 KmodPathFinder CvSelectionGroup::path_finder; // K-Mod
 
+// spy mission repeat (written by Claude): a spy's mission discount grows with its fortify turns on the tile
+static bool isMoreSpyDiscount(const CvUnit* pFirstUnit, const CvUnit* pSecondUnit)
+{
+	return pFirstUnit->getFortifyTurns() > pSecondUnit->getFortifyTurns();
+}
+
 // Public Functions...
 
 CvSelectionGroup::CvSelectionGroup()
@@ -1190,12 +1196,50 @@ void CvSelectionGroup::startMission()
 					break;
 
 				case MISSION_ESPIONAGE:
-					if (pLoopUnit->espionage((EspionageMissionTypes)headMissionQueueNode()->m_data.iData1, headMissionQueueNode()->m_data.iData2))
+				{
+					EspionageMissionTypes eMission = (EspionageMissionTypes)headMissionQueueNode()->m_data.iData1;
+					int iData = headMissionQueueNode()->m_data.iData2;
+					// spy mission repeat (written by Claude): in a human's group, a chosen mission goes to one spy after the
+					// other, largest discount first, as long as each is caught before the mission, until one carries it out
+					// or no spy is left that can try
+					if (isHuman() && eMission != NO_ESPIONAGEMISSION && (iData != -1 || !GC.getEspionageMissionInfo(eMission).isTwoPhases()))
+					{
+						std::vector<CvUnit*> aSpies;
+						for (CLLNode<IDInfo>* pSpyNode = headUnitNode(); pSpyNode != NULL; pSpyNode = nextUnitNode(pSpyNode))
+						{
+							CvUnit* pSpy = ::getUnit(pSpyNode->m_data);
+							if (pSpy->isSpy() && pSpy->canMove())
+							{
+								aSpies.push_back(pSpy);
+							}
+						}
+						std::stable_sort(aSpies.begin(), aSpies.end(), isMoreSpyDiscount);
+						for (int iI = 0; iI < (int)aSpies.size(); iI++)
+						{
+							CvUnit* pSpy = aSpies[iI];
+							if (!pSpy->canEspionage(plot()) || !GET_PLAYER(getOwnerINLINE()).canDoEspionageMission(eMission, plot()->getOwnerINLINE(), plot(), iData, pSpy))
+							{
+								continue;
+							}
+							if (pSpy->espionage(eMission, iData))
+							{
+								bAction = true;
+								break;
+							}
+							// a spy that wasn't caught failed for a reason the others share
+							if (!pSpy->isDelayedDeath())
+							{
+								break;
+							}
+						}
+					}
+					else if (pLoopUnit->espionage(eMission, iData))
 					{
 						bAction = true;
 					}
 					pUnitNode = NULL; // allow one unit at a time to do espionage
 					break;
+				}
 
 				case MISSION_DIE_ANIMATION:
 					bAction = true;
