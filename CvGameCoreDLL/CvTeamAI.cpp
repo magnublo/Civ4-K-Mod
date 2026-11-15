@@ -1886,7 +1886,8 @@ int CvTeamAI::AI_endWarVal(TeamTypes eTeam) const
 
 	const CvTeam& kWarTeam = GET_TEAM(eTeam); // K-Mod
 
-	int iValue = 100;
+	// war value overflow (written by Claude): 64-bit, since this value times late-game power passes the 32-bit range
+	__int64 iValue = 100;
 
 	iValue += (getNumCities() * 3);
 	iValue += (kWarTeam.getNumCities() * 3);
@@ -2057,13 +2058,15 @@ int CvTeamAI::AI_endWarVal(TeamTypes eTeam) const
 
 	iValue -= (iValue % GC.getDefineINT("DIPLOMACY_VALUE_REMAINDER"));
 
+	int iResult = (int)std::min(iValue, (__int64)MAX_INT); // war value overflow (written by Claude)
+
 	if (isHuman())
 	{
-		return std::max(iValue, GC.getDefineINT("DIPLOMACY_VALUE_REMAINDER"));
+		return std::max(iResult, GC.getDefineINT("DIPLOMACY_VALUE_REMAINDER"));
 	}
 	else
 	{
-		return iValue;
+		return iResult;
 	}
 }
 
@@ -2680,7 +2683,8 @@ DenialTypes CvTeamAI::AI_surrenderTrade(TeamTypes eTeam, int iPowerMultiplier) c
 				iOurSuccess += iOthersBestSuccess - iTheirSuccess;
 			}
 
-			iMasterPower = (2 * iMasterPower * iTheirSuccess) / (iTheirSuccess + iOurSuccess);
+			// war value overflow (written by Claude): this product and the two power products below in 64-bit
+			iMasterPower = (int)(((__int64)2 * iMasterPower * iTheirSuccess) / (iTheirSuccess + iOurSuccess));
 
 			if (AI_getWorstEnemy() == eTeam)
 			{
@@ -2722,7 +2726,7 @@ DenialTypes CvTeamAI::AI_surrenderTrade(TeamTypes eTeam, int iPowerMultiplier) c
 									return DENIAL_POWER_YOUR_ENEMIES;
 								}
 
-								iAveragePower = (2 * iAveragePower * iLoopPower) / std::max(1, iLoopPower + iOurPower);
+								iAveragePower = (int)(((__int64)2 * iAveragePower * iLoopPower) / std::max(1, iLoopPower + iOurPower));
 
 								//iAttitudeModifier += (3 * kLoopTeam.getPower(true)) / std::max(1, getPower(true)) - 2;
 								iAttitudeModifier += (6 * iLoopPower / std::max(1, iOurPower) - 5)/2; // K-Mod. (effectively -2.5 instead of 2)
@@ -2731,7 +2735,7 @@ DenialTypes CvTeamAI::AI_surrenderTrade(TeamTypes eTeam, int iPowerMultiplier) c
 							if (!kLoopTeam.isAtWar(eTeam) && kLoopTeam.isAtWar(getID()))
 							{
 								//iAveragePower = (iAveragePower * (getPower(true) + GET_TEAM(eTeam).getPower(false))) / std::max(1, getPower(true));
-								iAveragePower = iAveragePower * (iOurPower + iMasterPower) / std::max(1, iOurPower + std::max(iOurPower, iLoopPower)); // K-Mod
+								iAveragePower = (int)((__int64)iAveragePower * (iOurPower + iMasterPower) / std::max(1, iOurPower + std::max(iOurPower, iLoopPower))); // K-Mod
 							}
 						}
 					}
@@ -2992,7 +2996,8 @@ int CvTeamAI::AI_getWarSuccessRating() const
 	int iSuccessScale = iMilitaryUnits * GC.getDefineINT("WAR_SUCCESS_ATTACKING") / 5;
 
 	int iThisTeamPower = getPower(true);
-	int iScore = 0;
+	// war value overflow (written by Claude): 64-bit, since war success times late-game power passes the 32-bit range
+	__int64 iScore = 0;
 
 	for (int iI = 0; iI < MAX_CIV_TEAMS; iI++)
 	{
@@ -3004,12 +3009,12 @@ int CvTeamAI::AI_getWarSuccessRating() const
 
 			int iOtherTeamPower = kLoopTeam.getPower(true);
 
-			iScore += (iThisTeamSuccess+iSuccessScale) * iThisTeamPower;
-			iScore -= (iOtherTeamSuccess+iSuccessScale) * iOtherTeamPower;
+			iScore += (__int64)(iThisTeamSuccess+iSuccessScale) * iThisTeamPower;
+			iScore -= (__int64)(iOtherTeamSuccess+iSuccessScale) * iOtherTeamPower;
 		}
 	}
-	iScore = range((100*iScore)/std::max(1, iThisTeamPower*iSuccessScale*5), -99, 99);
-	return iScore;
+	iScore = (100*iScore)/std::max((__int64)1, (__int64)iThisTeamPower*iSuccessScale*5);
+	return (int)std::max((__int64)-99, std::min((__int64)99, iScore));
 }
 // K-Mod end
 
