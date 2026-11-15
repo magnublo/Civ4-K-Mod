@@ -44,26 +44,26 @@
 	</TEXT>
 	<TEXT>
 		<Tag>TXT_KEY_SELECT_HEAL_TURNS_NONE</Tag>
-		<English>No unit here with moves left and a promotion ready needs %d1 [NUM1:turn:turns] to heal</English>
-		<French>No unit here with moves left and a promotion ready needs %d1 [NUM1:turn:turns] to heal</French>
-		<German>No unit here with moves left and a promotion ready needs %d1 [NUM1:turn:turns] to heal</German>
-		<Italian>No unit here with moves left and a promotion ready needs %d1 [NUM1:turn:turns] to heal</Italian>
-		<Spanish>No unit here with moves left and a promotion ready needs %d1 [NUM1:turn:turns] to heal</Spanish>
+		<English>No unit here with a promotion ready needs %d1 [NUM1:turn:turns] to heal</English>
+		<French>No unit here with a promotion ready needs %d1 [NUM1:turn:turns] to heal</French>
+		<German>No unit here with a promotion ready needs %d1 [NUM1:turn:turns] to heal</German>
+		<Italian>No unit here with a promotion ready needs %d1 [NUM1:turn:turns] to heal</Italian>
+		<Spanish>No unit here with a promotion ready needs %d1 [NUM1:turn:turns] to heal</Spanish>
 	</TEXT>
 	<TEXT>
 		<Tag>TXT_KEY_SELECT_HEAL_TURNS_NONE_10</Tag>
-		<English>No unit here with moves left and a promotion ready needs 10 or more turns to heal</English>
-		<French>No unit here with moves left and a promotion ready needs 10 or more turns to heal</French>
-		<German>No unit here with moves left and a promotion ready needs 10 or more turns to heal</German>
-		<Italian>No unit here with moves left and a promotion ready needs 10 or more turns to heal</Italian>
-		<Spanish>No unit here with moves left and a promotion ready needs 10 or more turns to heal</Spanish>
+		<English>No unit here with a promotion ready needs 10 or more turns to heal</English>
+		<French>No unit here with a promotion ready needs 10 or more turns to heal</French>
+		<German>No unit here with a promotion ready needs 10 or more turns to heal</German>
+		<Italian>No unit here with a promotion ready needs 10 or more turns to heal</Italian>
+		<Spanish>No unit here with a promotion ready needs 10 or more turns to heal</Spanish>
 	</TEXT>
 	<TEXT>
 		<Tag>TXT_KEY_SELECT_HEAL_TURNS_NONE_ANY</Tag>
-		<English>No unit here with moves left and a promotion ready needs that many turns to heal</English>
-		<French>No unit here with moves left and a promotion ready needs that many turns to heal</French>
-		<German>No unit here with moves left and a promotion ready needs that many turns to heal</German>
-		<Italian>No unit here with moves left and a promotion ready needs that many turns to heal</Italian>
-		<Spanish>No unit here with moves left and a promotion ready needs that many turns to heal</Spanish>
+		<English>No unit here with a promotion ready needs that many turns to heal</English>
+		<French>No unit here with a promotion ready needs that many turns to heal</French>
+		<German>No unit here with a promotion ready needs that many turns to heal</German>
+		<Italian>No unit here with a promotion ready needs that many turns to heal</Italian>
+		<Spanish>No unit here with a promotion ready needs that many turns to heal</Spanish>
 	</TEXT>
 </Civ4GameText>

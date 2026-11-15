@@ -1838,7 +1838,8 @@ void CvGame::doControl(ControlTypes eControl)
 	// selection by health and domain (written by Claude): Ctrl+H selects the hurt units of the plot, Ctrl+J those at full
 	// health, both only the ones with moves left and of one domain, as a group can't mix them: land units, else sea units,
 	// else air units. With Alt they select sea units only, with Alt and Shift air units only. A number key held down with H
-	// narrows it to the units with a promotion ready that need that many turns to heal on the plot, 0 for 10 or more.
+	// selects instead the hurt units with a promotion ready that need that many turns to heal on the plot, 0 for 10 or more,
+	// with or without moves left.
 	case CONTROL_SELECT_HEALTHY:
 	case CONTROL_SELECT_FULL_HEALTH:
 	case CONTROL_SELECT_HURT_SEA:
@@ -1871,8 +1872,9 @@ void CvGame::doControl(ControlTypes eControl)
 				{
 					pUnit = plotUnits[iI];
 					//if (!isMPOption(MPOPTION_SIMULTANEOUS_TURNS) || getTurnSlice() - pUnit->getLastMoveTurn() > GC.getDefineINT("MIN_TIMER_UNIT_DOUBLE_MOVES")) // disabled by K-Mod
-					if (pUnit->getOwnerINLINE() == getActivePlayer() && pUnit->isHurt() == bHurt && pUnit->canMove() // selection by health
-						&& (iHealTurnKeys == 0 || (pUnit->isPromotionReady() && needsHealTurns(pUnit, pPlot, iHealTurnKeys)))) // selection by heal turns
+					if (pUnit->getOwnerINLINE() == getActivePlayer() && pUnit->isHurt() == bHurt
+						&& (iHealTurnKeys == 0 ? pUnit->canMove() // selection by health
+						: pUnit->isPromotionReady() && needsHealTurns(pUnit, pPlot, iHealTurnKeys))) // selection by heal turns
 					{
 						aMatching.push_back(pUnit);
 					}
