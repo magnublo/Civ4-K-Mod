@@ -1067,6 +1067,56 @@ void CvGame::selectionListMove(CvPlot* pPlot, bool bAlt, bool bShift, bool bCtrl
 }
 
 
+// selection by heal turns (written by Claude): the number keys of the top row that are down, one bit per digit. The
+// numpad doesn't count, its keys move units.
+static int heldNumberKeys()
+{
+	int iKeys = 0;
+	for (int iDigit = 0; iDigit <= 9; iDigit++)
+	{
+		if (GetKeyState('0' + iDigit) & 0x8000)
+		{
+			iKeys |= 1 << iDigit;
+		}
+	}
+	return iKeys;
+}
+
+// Ctrl+<number> binds the selected group to that number key (COMMAND_HOTKEY). The binding waits while Ctrl and the
+// number key are down, so that Ctrl+<number>+H selects by turns to heal without binding anything.
+static int s_iPendingHotKey = -1;
+static int s_iPendingHotKeyData = -1;
+static bool s_bPendingHotKeyAlt = false;
+static std::vector<int> s_aiPendingHotKeyUnits;
+
+static bool isPendingHotKeyHeld(int iNumberKeys)
+{
+	return s_iPendingHotKey >= 0 && (iNumberKeys & (1 << (s_iPendingHotKey % 10))) != 0;
+}
+
+static void dropPendingHotKey()
+{
+	s_iPendingHotKey = -1;
+	s_aiPendingHotKeyUnits.clear();
+}
+
+static void sendPendingHotKey()
+{
+	for (int iI = 0; iI < (int)s_aiPendingHotKeyUnits.size(); iI++)
+	{
+		CvMessageControl::getInstance().sendDoCommand(s_aiPendingHotKeyUnits[iI], COMMAND_HOTKEY, s_iPendingHotKey, s_iPendingHotKeyData, s_bPendingHotKeyAlt);
+	}
+	dropPendingHotKey();
+}
+
+void CvGame::updatePendingHotKey() const
+{
+	if (s_iPendingHotKey >= 0 && !(GC.ctrlKey() && isPendingHotKeyHeld(heldNumberKeys())))
+	{
+		sendPendingHotKey();
+	}
+}
+
 void CvGame::selectionListGameNetMessage(int eMessage, int iData2, int iData3, int iData4, int iFlags, bool bAlt, bool bShift) const
 {
 	CLLNode<IDInfo>* pSelectedUnitNode;
@@ -1125,6 +1175,32 @@ void CvGame::selectionListGameNetMessage(int eMessage, int iData2, int iData3, i
 			}
 			else if (eMessage == GAMEMESSAGE_DO_COMMAND)
 			{
+				// selection by heal turns (written by Claude): Ctrl+<number> with that number key still down
+				if (iData2 == COMMAND_HOTKEY && iData3 >= 0 && (heldNumberKeys() & (1 << (iData3 % 10))))
+				{
+					if (GetKeyState('H') & 0x8000)
+					{
+						// H went down before the number key: select as Ctrl+<number>+H does
+						GC.getGameINLINE().doControl(!GC.altKey() ? CONTROL_SELECT_HEALTHY : (GC.shiftKey() ? CONTROL_SELECT_HURT_AIR : CONTROL_SELECT_HURT_SEA));
+						return;
+					}
+					// a held key repeats, so the same number again leaves the waiting binding as it is
+					if (s_iPendingHotKey != iData3)
+					{
+						if (s_iPendingHotKey >= 0)
+						{
+							sendPendingHotKey();
+						}
+						s_iPendingHotKey = iData3;
+						s_iPendingHotKeyData = iData4;
+						s_bPendingHotKeyAlt = bAlt;
+						for (pSelectedUnitNode = gDLL->getInterfaceIFace()->headSelectionListNode(); pSelectedUnitNode != NULL; pSelectedUnitNode = gDLL->getInterfaceIFace()->nextSelectionListNode(pSelectedUnitNode))
+						{
+							s_aiPendingHotKeyUnits.push_back(pSelectedUnitNode->m_data.iID);
+						}
+					}
+					return;
+				}
 				// K-Mod. When setting a unit to automate, we must be careful not to keep it grouped
 				if (iData2 == COMMAND_AUTOMATE && !gDLL->getInterfaceIFace()->mirrorsSelectionGroup())
 				{
@@ -1642,6 +1718,36 @@ bool CvGame::canDoControl(ControlTypes eControl) const
 }
 
 
+// selection by heal turns (written by Claude): whether the unit needs one of the numbers of turns to heal on pPlot whose
+// keys are down, the 0 key standing for 10 or more
+static bool needsHealTurns(const CvUnit* pUnit, const CvPlot* pPlot, int iNumberKeys)
+{
+	int iTurns = pUnit->healTurns(pPlot);
+	return (iNumberKeys & (1 << (iTurns >= 10 ? 0 : iTurns))) != 0;
+}
+
+static void showNoHealTurnsMessage(int iNumberKeys)
+{
+	// a held key repeats the control, so the message shows at most once a second
+	static DWORD iLastShown = 0;
+	DWORD iNow = GetTickCount();
+	if (iNow - iLastShown < 1000)
+	{
+		return;
+	}
+	iLastShown = iNow;
+
+	CvWString szText = gDLL->getText("TXT_KEY_SELECT_HEAL_TURNS_NONE_ANY");
+	for (int iDigit = 0; iDigit <= 9; iDigit++)
+	{
+		if (iNumberKeys == (1 << iDigit))
+		{
+			szText = (iDigit == 0) ? gDLL->getText("TXT_KEY_SELECT_HEAL_TURNS_NONE_10") : gDLL->getText("TXT_KEY_SELECT_HEAL_TURNS_NONE", iDigit);
+		}
+	}
+	gDLL->getInterfaceIFace()->addHumanMessage(GC.getGameINLINE().getActivePlayer(), true, GC.getEVENT_MESSAGE_TIME(), szText, NULL, MESSAGE_TYPE_DISPLAY_ONLY);
+}
+
 void CvGame::doControl(ControlTypes eControl)
 {
 	CvPopupInfo* pInfo;
@@ -1680,7 +1786,8 @@ void CvGame::doControl(ControlTypes eControl)
 
 	// selection by health and domain (written by Claude): Ctrl+H selects the hurt units of the plot, Ctrl+J those at full
 	// health, both only the ones with moves left and of one domain, as a group can't mix them: land units, else sea units,
-	// else air units. With Alt they select sea units only, with Alt and Shift air units only.
+	// else air units. With Alt they select sea units only, with Alt and Shift air units only. A number key held down with H
+	// narrows it to the units that need that many turns to heal on the plot, 0 for 10 or more.
 	case CONTROL_SELECT_HEALTHY:
 	case CONTROL_SELECT_FULL_HEALTH:
 	case CONTROL_SELECT_HURT_SEA:
@@ -1698,6 +1805,12 @@ void CvGame::doControl(ControlTypes eControl)
 			{
 				eDomain = DOMAIN_AIR;
 			}
+			int iHealTurnKeys = bHurt ? heldNumberKeys() : 0; // selection by heal turns
+			if (isPendingHotKeyHeld(iHealTurnKeys))
+			{
+				// that Ctrl+<number> was the start of this key combination, not a binding
+				dropPendingHotKey();
+			}
 			CvUnit* pGroupHead = NULL;
 			pHeadSelectedUnit = gDLL->getInterfaceIFace()->getHeadSelectedUnit();
 			if (pHeadSelectedUnit != NULL)
@@ -1710,10 +1823,15 @@ void CvGame::doControl(ControlTypes eControl)
 				{
 					pUnit = plotUnits[iI];
 					//if (!isMPOption(MPOPTION_SIMULTANEOUS_TURNS) || getTurnSlice() - pUnit->getLastMoveTurn() > GC.getDefineINT("MIN_TIMER_UNIT_DOUBLE_MOVES")) // disabled by K-Mod
-					if (pUnit->getOwnerINLINE() == getActivePlayer() && pUnit->isHurt() == bHurt && pUnit->canMove()) // selection by health
+					if (pUnit->getOwnerINLINE() == getActivePlayer() && pUnit->isHurt() == bHurt && pUnit->canMove() // selection by health
+						&& (iHealTurnKeys == 0 || needsHealTurns(pUnit, pPlot, iHealTurnKeys))) // selection by heal turns
 					{
 						aMatching.push_back(pUnit);
 					}
+				}
+				if (aMatching.empty() && iHealTurnKeys != 0)
+				{
+					showNoHealTurnsMessage(iHealTurnKeys);
 				}
 				const DomainTypes aeDefaultOrder[] = {DOMAIN_LAND, DOMAIN_SEA, DOMAIN_AIR};
 				for (int iD = 0; iD < 3 && eDomain == NO_DOMAIN; iD++)

@@ -2181,6 +2181,8 @@ void CvGame::update()
 	g_iUpdateCount++; // perf
 	g_bInUpdate = true; // perf
 
+	updatePendingHotKey(); // selection by heal turns
+
 	if (!gDLL->GetWorldBuilderMode() || isInAdvancedStart())
 	{
 		sendPlayerOptions();
