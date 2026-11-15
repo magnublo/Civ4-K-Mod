@@ -1111,6 +1111,16 @@ static bool isPendingHotKey(int iNumber)
 	return false;
 }
 
+// Ctrl+H, with Alt the ships' Ctrl+Alt+H, with Alt and Shift the aircraft's Ctrl+Alt+Shift+H
+static ControlTypes hurtSelectionControl()
+{
+	if (!GC.altKey())
+	{
+		return CONTROL_SELECT_HEALTHY;
+	}
+	return GC.shiftKey() ? CONTROL_SELECT_HURT_AIR : CONTROL_SELECT_HURT_SEA;
+}
+
 static void dropPendingHotKeys(int iNumberKeys)
 {
 	std::vector<PendingHotKey> aKept;
@@ -1131,6 +1141,18 @@ void CvGame::updatePendingHotKey() const
 		return;
 	}
 	int iHeldKeys = GC.ctrlKey() ? heldNumberKeys() : 0;
+	int iPendingKeys = 0;
+	for (int iI = 0; iI < (int)s_aPendingHotKeys.size(); iI++)
+	{
+		iPendingKeys |= numberKeyBit(s_aPendingHotKeys[iI].iNumber);
+	}
+	// H down as well: with the cheat code on, the exe keeps Ctrl+Alt+H for itself, so the selection starts here
+	if ((GetKeyState('H') & 0x8000) && (iHeldKeys & iPendingKeys))
+	{
+		GC.getGameINLINE().doControl(hurtSelectionControl());
+		dropPendingHotKeys(iHeldKeys);
+		return;
+	}
 	std::vector<PendingHotKey> aKept;
 	for (int iI = 0; iI < (int)s_aPendingHotKeys.size(); iI++)
 	{
@@ -1212,7 +1234,7 @@ void CvGame::selectionListGameNetMessage(int eMessage, int iData2, int iData3, i
 					if (GetKeyState('H') & 0x8000)
 					{
 						// H went down before the number key: select as Ctrl+<number>+H does
-						GC.getGameINLINE().doControl(!GC.altKey() ? CONTROL_SELECT_HEALTHY : (GC.shiftKey() ? CONTROL_SELECT_HURT_AIR : CONTROL_SELECT_HURT_SEA));
+						GC.getGameINLINE().doControl(hurtSelectionControl());
 						return;
 					}
 					// a held key repeats, so the same number again leaves its waiting binding as it is
