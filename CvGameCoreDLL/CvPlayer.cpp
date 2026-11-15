@@ -752,6 +752,7 @@ void CvPlayer::reset(PlayerTypes eID, bool bConstructorCall)
 	m_bTurnActive = false;
 	m_bAutoMoves = false;
 	m_aiAutomatedWorkers.clear(); // automated workers
+	m_iAirliftUse = AIRLIFT_USE_AUTOMATED | AIRLIFT_USE_RALLY; // automated airlifts: the options' defaults
 	m_bEndTurn = false;
 	m_bPbemNewTurn = false;
 	m_bExtendedGame = false;
@@ -4392,6 +4393,26 @@ void CvPlayer::setAutomatedWorkers(int iFirstImprovement, int iNeverBuildMask, i
 			pLoopCity->AI_updateBestBuild();
 		}
 	}
+}
+
+// automated airlifts (written by Claude): whether a human's own units take airlifts: the automated ones
+// (AIRLIFT_USE_AUTOMATED) and those on their way to their city's rally point (AIRLIFT_USE_RALLY). The player sets
+// both on the Options screen; Python (Contrib/AutomatedAirlifts.py) sends them as a ModNetMessage, so every computer
+// in a network game has them. They are not saved, but sent again when a game starts or is loaded. AI players and AI
+// autoplay are not affected (isHuman() is false then).
+bool CvPlayer::isAirliftUse(int iUse) const
+{
+	return isHuman() && (m_iAirliftUse & iUse) != 0;
+}
+
+int CvPlayer::getAirliftUse() const
+{
+	return m_iAirliftUse;
+}
+
+void CvPlayer::setAirliftUse(int iUse)
+{
+	m_iAirliftUse = iUse;
 }
 
 

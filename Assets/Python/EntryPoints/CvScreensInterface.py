@@ -57,6 +57,12 @@ import BugOptionsScreen
 def showBugOptionsScreen(argsList=None):
 	BugOptionsScreen.showOptionsScreen()
 # K-Mod end
+
+# K-Mod-Magnus, automated airlifts (written by Claude): the airlift checkboxes of the Options screen. The game finds
+# callbacks of that screen only in modules like this one.
+def onAirliftOptionClicked(argsList):
+	import AutomatedAirlifts
+	return AutomatedAirlifts.onCheckBoxClicked(argsList)
 # BUG - Options - end
 
 g_bIsScreenActive = -1

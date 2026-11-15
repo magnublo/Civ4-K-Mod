@@ -12611,10 +12611,11 @@ void CvCity::popOrder(int iNum, bool bFinish, bool bChoose)
 				pRallyPlot = getRallyPlot();
 
 				// rally points (written by Claude): only units that can fight go there, so settlers, workers, work boats,
-				// missionaries, executives, spies and nukes stay in the city
+				// missionaries, executives, spies and nukes stay in the city. automated airlifts (written by Claude): the
+				// move may start with an airlift (CvSelectionGroup::airliftToRally), as may the spies' below.
 				if (pRallyPlot != NULL && (GC.getUnitInfo(eTrainUnit).getCombat() > 0 || GC.getUnitInfo(eTrainUnit).getAirCombat() > 0))
 				{
-					pUnit->getGroup()->pushMission(MISSION_MOVE_TO, pRallyPlot->getX_INLINE(), pRallyPlot->getY_INLINE());
+					pUnit->getGroup()->pushMission(MISSION_MOVE_TO, pRallyPlot->getX_INLINE(), pRallyPlot->getY_INLINE(), MOVE_RALLY_AIRLIFT);
 				}
 
 				// spy rally point (written by Claude): spies go to the spy rally point. On a tile with a city or an improvement
@@ -12623,7 +12624,7 @@ void CvCity::popOrder(int iNum, bool bFinish, bool bChoose)
 				CvPlot* pSpyRallyPlot = getSpyRallyPlot();
 				if (pSpyRallyPlot != NULL && GC.getUnitInfo(eTrainUnit).isSpy())
 				{
-					pUnit->getGroup()->pushMission(MISSION_MOVE_TO, pSpyRallyPlot->getX_INLINE(), pSpyRallyPlot->getY_INLINE());
+					pUnit->getGroup()->pushMission(MISSION_MOVE_TO, pSpyRallyPlot->getX_INLINE(), pSpyRallyPlot->getY_INLINE(), MOVE_RALLY_AIRLIFT);
 					if (pSpyRallyPlot->isCity() || pSpyRallyPlot->getImprovementType() != NO_IMPROVEMENT)
 					{
 						pUnit->getGroup()->pushMission(MISSION_SLEEP_FOR_DISCOUNT, -1, -1, 0, true);

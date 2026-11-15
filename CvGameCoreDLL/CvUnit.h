@@ -159,6 +159,11 @@ public:
 	bool canAirlift(const CvPlot* pPlot) const;																										// Exposed to Python
 	bool canAirliftAt(const CvPlot* pPlot, int iX, int iY) const;																	// Exposed to Python
 	bool airlift(int iX, int iY);
+	// automated airlifts (written by Claude)
+	bool canFollowAirliftRoute() const;
+	int airliftDepartureTurn(int iFlags, CvCity*& pFrom) const;
+	int airliftLandingTurns(const CvPlot* pDest, int iFlags, const CvCity* pFrom, bool bNow, CvCity*& pTo, int iMaxCities = 3) const;
+	int airliftRouteTurns(const CvPlot* pDest, int iFlags, CvCity*& pFrom, CvCity*& pTo) const;
 
 	bool isNukeVictim(const CvPlot* pPlot, TeamTypes eTeam) const;																// Exposed to Python
 	bool canNuke(const CvPlot* pPlot) const;																											// Exposed to Python

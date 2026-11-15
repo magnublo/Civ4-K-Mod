@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!--
+	Automated airlifts (K-Mod-Magnus, written by Claude)
+
+	Two settings on the Game tab of the Options screen: whether your automated units take airlifts on their own, and
+	whether units on their way to their city's rally point do. Settings of this computer, stored in
+	"Automated Airlifts.ini". Python/Contrib/AutomatedAirlifts.py draws the checkboxes and sends the settings to the
+	DLL (CvPlayer::getAirliftUse), which does the work.
+-->
+<mod id="AutomatedAirlifts"
+	 module="AutomatedAirlifts"
+	 name="Automated airlifts"
+	 author="K-Mod-Magnus"
+	 version="1.0"
+	 date="11/16/2026">
+
+	<options id="AutomatedAirlifts" file="Automated Airlifts.ini">
+		<section id="AutomatedAirlifts">
+			<option id="Automated" key="Automated"
+					type="boolean" default="True">
+				<change function="onOptionChanged"/>
+			</option>
+			<option id="Rally" key="Rally"
+					type="boolean" default="True">
+				<change function="onOptionChanged"/>
+			</option>
+		</section>
+	</options>
+
+	<event type="BeginActivePlayerTurn" function="sendChoices"/>
+	<event type="ModNetMessage" function="onModNetMessage"/>
+</mod>

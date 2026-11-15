@@ -1705,6 +1705,18 @@ void CyPlayer::setAutomatedWorkers(int iFirstImprovement, int iNeverBuildMask, i
 		m_pPlayer->setAutomatedWorkers(iFirstImprovement, iNeverBuildMask, iReplaceMask);
 }
 
+// automated airlifts (written by Claude)
+int CyPlayer::getAirliftUse()
+{
+	return m_pPlayer ? m_pPlayer->getAirliftUse() : -1;
+}
+
+void CyPlayer::setAirliftUse(int iUse)
+{
+	if (m_pPlayer)
+		m_pPlayer->setAirliftUse(iUse);
+}
+
 bool CyPlayer::isLoyalMember(int /*VoteSourceTypes*/ eIndex)	
 {
 	return m_pPlayer ? m_pPlayer->isLoyalMember((VoteSourceTypes)eIndex) : false;

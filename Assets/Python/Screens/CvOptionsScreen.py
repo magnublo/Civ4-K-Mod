@@ -302,6 +302,14 @@ class CvOptionsScreen:
 				tab.setToolTip(szWidgetName, szHelp)
 				i += 1
 				
+		# K-Mod-Magnus, automated airlifts (written by Claude): the two airlift options, one at the end of each column so that
+		# both show without scrolling, the one for automated units under the other options of automated units. They are BUG
+		# options, which exist only during a game.
+		if CyGame().isFinalInitialized():
+			import AutomatedAirlifts
+			AutomatedAirlifts.addCheckbox(tab, "GameVBox1", "Rally")
+			AutomatedAirlifts.addCheckbox(tab, "GameVBox2", "Automated")
+
 		tab.attachSpacer("GamePanelCenter")
 
 		tab.attachHBox("GamePanelCenter", "LangHBox")

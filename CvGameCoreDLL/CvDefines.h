@@ -32,6 +32,7 @@
 #define MOVE_HAS_STEPPED									(0x00001000) // K-Mod. used to signal that at least one step has been taken for this move command
 #define MOVE_ASSUME_VISIBLE									(0x00002000) // K-Mod. With this flag, the pathfinder will plan around enemy units even if they are not visible. (Note: AI units do this regardless of the flag.)
 #define MOVE_KEEP_MOVES_ATTACK								(0x00004000) // only units that keep moves after the attack attack (written by Claude)
+#define MOVE_RALLY_AIRLIFT									(0x00008000) // a move to a city's rally point, which may start with an airlift (written by Claude)
 
 /*
 ** K-Mod, 18/dec/10, karadoc
@@ -163,6 +164,9 @@
 #define AUTOMATED_WORKERS_BUILD				(0)
 #define AUTOMATED_WORKERS_NEVER_BUILD		(1)
 #define AUTOMATED_WORKERS_REPLACE			(2) // never build it, and replace it where it is
+// automated airlifts: which of a human's units take airlifts on their own (CvPlayer::isAirliftUse)
+#define AIRLIFT_USE_AUTOMATED				(1) // automated workers, missionaries, executives and garrison units
+#define AIRLIFT_USE_RALLY					(2) // units on their way to their city's rally point or spy rally point
 // happiness garrison: BtS's spare player option 1, "Military Units Start Automated" on the Options screen
 // (USE_MODDERS_PLAYEROPTION_1 in GlobalDefinesAlt.xml shows it)
 #define PLAYEROPTION_MILITARY_AUTOMATED		PLAYEROPTION_MODDER_1

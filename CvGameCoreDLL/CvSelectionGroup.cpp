@@ -1333,8 +1333,20 @@ void CvSelectionGroup::continueMission()
 	}
 }
 
+// automated airlifts (written by Claude): how deep continueMission_bulk is nested (a finished mission starts the next
+// one from inside it); airliftToRally puts a walk in front of a rally move only at the first level
+static int s_iContinueMissionDepth = 0;
+
 // return true if we are ready to take another step
 bool CvSelectionGroup::continueMission_bulk(int iSteps)
+{
+	s_iContinueMissionDepth++;
+	bool bResult = continueMission_step(iSteps);
+	s_iContinueMissionDepth--;
+	return bResult;
+}
+
+bool CvSelectionGroup::continueMission_step(int iSteps)
 {
 	FAssert(!isBusy());
 	FAssert(headMissionQueueNode() != NULL);
@@ -1397,6 +1409,13 @@ bool CvSelectionGroup::continueMission_bulk(int iSteps)
 			//if (canAllMove())
 			if (readyForMission()) // K-Mod
 			{
+				// automated airlifts (written by Claude): a unit on its way to a rally point may take an airlift first.
+				// It may also have put a move to the city it flies from in front of the rally point.
+				if (airliftToRally())
+				{
+					return false;
+				}
+
 				switch (headMissionQueueNode()->m_data.eMissionType)
 				{
 				case MISSION_MOVE_TO:
@@ -3540,6 +3559,78 @@ bool CvSelectionGroup::groupPathTo(int iX, int iY, int iFlags)
 	}
 	// K-Mod end
 
+	return true;
+}
+
+// automated airlifts (written by Claude): a unit on its way to its city's rally point or spy rally point (a MOVE_TO with
+// MOVE_RALLY_AIRLIFT from CvCity::popOrder) takes an airlift route (CvUnit::airliftRouteTurns) when that gets it there
+// sooner than walking and its owner's option "Rally Point Units Use Airlifts" is on. It flies from its city
+// if it can; otherwise it waits there for the next turn's airlift, or first walks to the city it flies from (a move put
+// in front of this one). Such a unit moves only with the moves at the end of its owner's turn, so it takes airlifts the
+// player left unused. The airlift gives the unit a group of its own, which gets the rest of the orders.
+// True if the group is done for now.
+bool CvSelectionGroup::airliftToRally()
+{
+	CLLNode<MissionData>* pHeadNode = headMissionQueueNode();
+	if (pHeadNode == NULL || pHeadNode->m_data.eMissionType != MISSION_MOVE_TO || !(pHeadNode->m_data.iFlags & MOVE_RALLY_AIRLIFT) ||
+		!GET_PLAYER(getOwnerINLINE()).isAirliftUse(AIRLIFT_USE_RALLY))
+	{
+		return false;
+	}
+	CvUnit* pUnit = getHeadUnit();
+	CvPlot* pDest = GC.getMapINLINE().plotINLINE(pHeadNode->m_data.iData1, pHeadNode->m_data.iData2);
+	if (pUnit == NULL || pDest == NULL || atPlot(pDest) || !pUnit->canFollowAirliftRoute())
+	{
+		return false;
+	}
+	if (!GET_PLAYER(getOwnerINLINE()).isEndTurn())
+	{
+		return true;
+	}
+
+	int iFlags = pHeadNode->m_data.iFlags & ~(MOVE_RALLY_AIRLIFT | MOVE_HAS_STEPPED | MOVE_DECLARE_WAR);
+	KmodPathFinder kPathFinder;
+	kPathFinder.SetSettings(this, iFlags);
+	int iWalkTurns = kPathFinder.GeneratePath(pDest) ? kPathFinder.GetPathTurns() : MAX_INT;
+	CvCity* pFrom;
+	CvCity* pTo;
+	if (pUnit->airliftRouteTurns(pDest, iFlags, pFrom, pTo) >= iWalkTurns)
+	{
+		return false;
+	}
+
+	if (!atPlot(pFrom->plot()))
+	{
+		if (s_iContinueMissionDepth > 1)
+		{
+			return false;
+		}
+		MissionData kWalk = pHeadNode->m_data;
+		kWalk.iData1 = pFrom->getX_INLINE();
+		kWalk.iData2 = pFrom->getY_INLINE();
+		kWalk.iFlags = iFlags;
+		m_missionQueue.insertAtBeginning(kWalk);
+		return false;
+	}
+	if (!pUnit->canAirliftAt(plot(), pTo->getX_INLINE(), pTo->getY_INLINE()))
+	{
+		return true;
+	}
+
+	std::vector<MissionData> aMissions;
+	for (CLLNode<MissionData>* pNode = headMissionQueueNode(); pNode != NULL; pNode = nextMissionQueueNode(pNode))
+	{
+		aMissions.push_back(pNode->m_data);
+	}
+	if (!pUnit->airlift(pTo->getX_INLINE(), pTo->getY_INLINE()))
+	{
+		return false;
+	}
+	CvSelectionGroup* pNewGroup = pUnit->getGroup();
+	for (size_t i = 0; i < aMissions.size(); i++)
+	{
+		pNewGroup->insertAtEndMissionQueue(aMissions[i], false);
+	}
 	return true;
 }
 

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!-- Texts for the airlift options of K-Mod-Magnus on the Options screen (English text in every language). -->
+<Civ4GameText xmlns="http://www.firaxis.com">
+	<TEXT>
+		<Tag>TXT_KEY_BUG_OPT_AUTOMATEDAIRLIFTS__AUTOMATED_TEXT</Tag>
+		<English>Automated Units Use Airlifts</English>
+		<French>Automated Units Use Airlifts</French>
+		<German>Automated Units Use Airlifts</German>
+		<Italian>Automated Units Use Airlifts</Italian>
+		<Spanish>Automated Units Use Airlifts</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_BUG_OPT_AUTOMATEDAIRLIFTS__AUTOMATED_HOVER</Tag>
+		<English>Your automated workers (also when pre-chopping), missionaries, executives and units with Auto-garrison for Happiness take airlifts on their own where that gets them to their next job sooner than walking, also on another landmass. A unit flies from its city if it has an Airport, or first walks to the nearest Airport city. Units in a group don't fly. They act when you automate them and at the end of your turn, after your own orders. A setting of this computer.</English>
+		<French>Your automated workers (also when pre-chopping), missionaries, executives and units with Auto-garrison for Happiness take airlifts on their own where that gets them to their next job sooner than walking, also on another landmass. A unit flies from its city if it has an Airport, or first walks to the nearest Airport city. Units in a group don't fly. They act when you automate them and at the end of your turn, after your own orders. A setting of this computer.</French>
+		<German>Your automated workers (also when pre-chopping), missionaries, executives and units with Auto-garrison for Happiness take airlifts on their own where that gets them to their next job sooner than walking, also on another landmass. A unit flies from its city if it has an Airport, or first walks to the nearest Airport city. Units in a group don't fly. They act when you automate them and at the end of your turn, after your own orders. A setting of this computer.</German>
+		<Italian>Your automated workers (also when pre-chopping), missionaries, executives and units with Auto-garrison for Happiness take airlifts on their own where that gets them to their next job sooner than walking, also on another landmass. A unit flies from its city if it has an Airport, or first walks to the nearest Airport city. Units in a group don't fly. They act when you automate them and at the end of your turn, after your own orders. A setting of this computer.</Italian>
+		<Spanish>Your automated workers (also when pre-chopping), missionaries, executives and units with Auto-garrison for Happiness take airlifts on their own where that gets them to their next job sooner than walking, also on another landmass. A unit flies from its city if it has an Airport, or first walks to the nearest Airport city. Units in a group don't fly. They act when you automate them and at the end of your turn, after your own orders. A setting of this computer.</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_BUG_OPT_AUTOMATEDAIRLIFTS__RALLY_TEXT</Tag>
+		<English>Rally Point Units Use Airlifts</English>
+		<French>Rally Point Units Use Airlifts</French>
+		<German>Rally Point Units Use Airlifts</German>
+		<Italian>Rally Point Units Use Airlifts</Italian>
+		<Spanish>Rally Point Units Use Airlifts</Spanish>
+	</TEXT>
+	<TEXT>
+		<Tag>TXT_KEY_BUG_OPT_AUTOMATEDAIRLIFTS__RALLY_HOVER</Tag>
+		<English>New units on their way to their city's rally point or spy rally point take airlifts where that gets them there sooner than walking, also on another landmass: they fly from their city if it has an Airport, or first walk to the nearest Airport city, land in the city nearest to the rally point and walk on. Such units move at the end of your turn, so they only use the airlifts you left unused. A setting of this computer.</English>
+		<French>New units on their way to their city's rally point or spy rally point take airlifts where that gets them there sooner than walking, also on another landmass: they fly from their city if it has an Airport, or first walk to the nearest Airport city, land in the city nearest to the rally point and walk on. Such units move at the end of your turn, so they only use the airlifts you left unused. A setting of this computer.</French>
+		<German>New units on their way to their city's rally point or spy rally point take airlifts where that gets them there sooner than walking, also on another landmass: they fly from their city if it has an Airport, or first walk to the nearest Airport city, land in the city nearest to the rally point and walk on. Such units move at the end of your turn, so they only use the airlifts you left unused. A setting of this computer.</German>
+		<Italian>New units on their way to their city's rally point or spy rally point take airlifts where that gets them there sooner than walking, also on another landmass: they fly from their city if it has an Airport, or first walk to the nearest Airport city, land in the city nearest to the rally point and walk on. Such units move at the end of your turn, so they only use the airlifts you left unused. A setting of this computer.</Italian>
+		<Spanish>New units on their way to their city's rally point or spy rally point take airlifts where that gets them there sooner than walking, also on another landmass: they fly from their city if it has an Airport, or first walk to the nearest Airport city, land in the city nearest to the rally point and walk on. Such units move at the end of your turn, so they only use the airlifts you left unused. A setting of this computer.</Spanish>
+	</TEXT>
+</Civ4GameText>

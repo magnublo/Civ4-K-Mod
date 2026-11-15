@@ -1942,7 +1942,9 @@ void CvUnitAI::AI_workerMove()
 
 	if (!isHuman() || (isAutomated() && GET_TEAM(getTeam()).getAtWarCount(true) == 0))
 	{
-		if (!isHuman() || (getGameTurnCreated() < GC.getGame().getGameTurn()))
+		// automated airlifts (written by Claude): a human's automated workers take airlifts only as AI_nextCityToImprove
+		// plans them, with their owner's option
+		if (!isHuman())
 		{
 			if (AI_nextCityToImproveAirlift())
 			{
@@ -4836,7 +4838,9 @@ void CvUnitAI::AI_missionaryMove()
 
 	if (!isHuman() || (isAutomated() && GET_TEAM(getTeam()).getAtWarCount(true) == 0))
 	{
-		if (!isHuman() || (getGameTurnCreated() < GC.getGame().getGameTurn()))
+		// automated airlifts (written by Claude): a human's automated missionaries and executives take airlifts only as
+		// AI_spreadReligion and AI_spreadCorporation plan them, with their owner's option
+		if (!isHuman())
 		{
 			if (AI_spreadReligionAirlift())
 			{
@@ -9935,6 +9939,64 @@ void CvUnitAI::AI_cityAutomated()
 	return;
 }
 
+// automated airlifts (written by Claude): with the option "Automated Units Use Airlifts" (CvPlayer::isAirliftUse), a
+// human's automated unit alone in its group takes airlifts where an airlift route (CvUnit::airliftRouteTurns) gets it
+// to its target sooner than walking, also on another landmass: workers to their next city to improve
+// (AI_nextCityToImprove) and to forests to pre-chop (AI_prechopForest), missionaries and executives (AI_spreadReligion,
+// AI_spreadCorporation), and units of Auto-garrison for Happiness (AI_happyGarrisonMove). Automated units act when the
+// player automates them and at the end of the player's turn, after the player's own orders. K-Mod's own airlifts for
+// automated workers and missionaries (AI_nextCityToImproveAirlift, AI_spreadReligionAirlift,
+// AI_spreadCorporationAirlift) are left to the AI.
+bool CvUnitAI::AI_isAutomatedAirliftUse() const
+{
+	return isHuman() && getGroup()->isAutomated() && GET_PLAYER(getOwnerINLINE()).isAirliftUse(AIRLIFT_USE_AUTOMATED) && canFollowAirliftRoute();
+}
+
+// automated airlifts (written by Claude): the next step on an airlift route from pFrom to pTo: the airlift when the
+// unit can fly from its city now, otherwise a wait there until the next turn, or the walk to pFrom. The group heads for
+// eMissionAI at pMissionAIPlot all the way, also after the airlift, which gives the unit a group of its own, so that
+// other units leave that target to it.
+void CvUnitAI::AI_airliftRouteMove(CvCity* pFrom, CvCity* pTo, int iFlags, MissionAITypes eMissionAI, CvPlot* pMissionAIPlot)
+{
+	if (!atPlot(pFrom->plot()))
+	{
+		getGroup()->pushMission(MISSION_MOVE_TO, pFrom->getX_INLINE(), pFrom->getY_INLINE(), iFlags, false, false, eMissionAI, pMissionAIPlot);
+		return;
+	}
+	if (!canAirliftAt(plot(), pTo->getX_INLINE(), pTo->getY_INLINE()))
+	{
+		getGroup()->pushMission(MISSION_SKIP, -1, -1, 0, false, false, eMissionAI, pMissionAIPlot);
+		return;
+	}
+	getGroup()->pushMission(MISSION_AIRLIFT, pTo->getX_INLINE(), pTo->getY_INLINE(), 0, false, false, eMissionAI, pMissionAIPlot);
+	if (atPlot(pTo->plot()))
+	{
+		getGroup()->AI_setMissionAI(eMissionAI, pMissionAIPlot, NULL);
+	}
+}
+
+// automated airlifts (written by Claude): the turn this unit can act in pTarget (a city) on an airlift route that
+// leaves from pFrom in iDepartTurn (airliftDepartureTurn), and the city it lands in. A city of its team or of a vassal
+// takes the unit itself; it lands with no moves left, so it acts there the turn after. A city of another player is
+// reached on foot from the city of the unit's team nearest to it. MAX_INT when there is no such route.
+int CvUnitAI::AI_airliftActTurn(const CvPlot* pTarget, int iFlags, int iDepartTurn, CvCity* pFrom, CvCity*& pTo) const
+{
+	pTo = NULL;
+	if (iDepartTurn == MAX_INT)
+	{
+		return MAX_INT;
+	}
+	CvCity* pTargetCity = pTarget->getPlotCity();
+	if (pTargetCity != NULL && pTargetCity != pFrom && (pTargetCity->getTeam() == getTeam() || GET_TEAM(pTargetCity->getTeam()).isVassal(getTeam())) &&
+		(iDepartTurn == 1 ? canAirliftAt(plot(), pTargetCity->getX_INLINE(), pTargetCity->getY_INLINE()) : canMoveInto(pTargetCity->plot())))
+	{
+		pTo = pTargetCity;
+		return iDepartTurn + 1;
+	}
+	int iWalkTurns = airliftLandingTurns(pTarget, iFlags, pFrom, iDepartTurn == 1, pTo, 1);
+	return iWalkTurns == MAX_INT ? MAX_INT : iDepartTurn + std::max(1, iWalkTurns);
+}
+
 // pre-chop automation (written by Claude): AUTOMATE_PRECHOP, the workers' "Automate Pre-chop" action. The group
 // pre-chops forests (AI_prechopForest) until none is left; then the automation ends and the worker waits for orders,
 // with a message.
@@ -9985,15 +10047,24 @@ bool CvUnitAI::AI_prechopForest()
 		}
 	}
 
+	// automated airlifts (written by Claude): a worker that may take airlifts also reaches forests by air, flying into
+	// the city that gets the chop's hammers and walking on the next turn. Forests on other landmasses come only when it
+	// can reach none on this one.
+	bool bAirlift = AI_isAutomatedAirliftUse();
+	int iAirliftTurn = 0; // the turn it would fly (airliftDepartureTurn), 0 until a forest needs it
+	CvCity* pAirliftFrom = NULL;
+	CvCity* pBestAirliftTo = NULL;
+
 	CvPlot* pBestPlot = NULL;
 	BuildTypes eBestBuild = NO_BUILD;
 	// ((-priority, step distance), (plot index, chop build)) of the forests left, so that sorting puts the best first.
 	// Priority (written by Claude, the user's order): in a city's work area, then the chop's hammers, then no improvement.
 	std::vector<std::pair<std::pair<int, int>, std::pair<int, BuildTypes> > > candidates;
+	std::vector<std::pair<std::pair<int, int>, std::pair<int, BuildTypes> > > otherCandidates; // other landmasses
 	for (int iI = 0; iI < GC.getMapINLINE().numPlotsINLINE() && iMinWorkRate < MAX_INT; iI++)
 	{
 		CvPlot* pLoopPlot = GC.getMapINLINE().plotByIndexINLINE(iI);
-		if (pLoopPlot->getOwnerINLINE() != getOwnerINLINE() || pLoopPlot->getFeatureType() == NO_FEATURE || pLoopPlot->area() != area())
+		if (pLoopPlot->getOwnerINLINE() != getOwnerINLINE() || pLoopPlot->getFeatureType() == NO_FEATURE || (pLoopPlot->area() != area() && !bAirlift))
 		{
 			continue;
 		}
@@ -10020,42 +10091,73 @@ bool CvUnitAI::AI_prechopForest()
 		int iPriority = (pLoopPlot->getWorkingCity() != NULL ? 1 : 0); // a city's work area
 		iPriority = iPriority * 100000 + std::min(iHammers, 99999);
 		iPriority = iPriority * 2 + (pLoopPlot->getImprovementType() == NO_IMPROVEMENT ? 1 : 0);
-		candidates.push_back(std::make_pair(std::make_pair(-iPriority, stepDistance(getX_INLINE(), getY_INLINE(), pLoopPlot->getX_INLINE(), pLoopPlot->getY_INLINE())), std::make_pair(iI, eChop)));
+		(pLoopPlot->area() == area() ? candidates : otherCandidates).push_back(std::make_pair(std::make_pair(-iPriority, stepDistance(getX_INLINE(), getY_INLINE(), pLoopPlot->getX_INLINE(), pLoopPlot->getY_INLINE())), std::make_pair(iI, eChop)));
 	}
 	std::sort(candidates.begin(), candidates.end());
+	std::sort(otherCandidates.begin(), otherCandidates.end());
 
 	// the forests of the best priority that can be reached without entering the territory of a civ at war with us (the
 	// pathfinder keeps automated workers off plots in danger); of the nearest few of them, the one reached soonest
-	size_t iCandidate = 0;
-	while (iCandidate < candidates.size() && pBestPlot == NULL)
+	for (int iPass = 0; iPass < 2 && pBestPlot == NULL; iPass++)
 	{
-		const int iPriority = candidates[iCandidate].first.first;
-		int iBestTurns = MAX_INT;
-		int iReachable = 0;
-		for (; iCandidate < candidates.size() && candidates[iCandidate].first.first == iPriority; iCandidate++)
+		const std::vector<std::pair<std::pair<int, int>, std::pair<int, BuildTypes> > >& kCandidates = (iPass == 0) ? candidates : otherCandidates;
+		size_t iCandidate = 0;
+		while (iCandidate < kCandidates.size() && pBestPlot == NULL)
 		{
-			if (iReachable >= 8)
+			const int iPriority = kCandidates[iCandidate].first.first;
+			int iBestTurns = MAX_INT;
+			int iReachable = 0;
+			for (; iCandidate < kCandidates.size() && kCandidates[iCandidate].first.first == iPriority; iCandidate++)
 			{
-				continue;
-			}
-			CvPlot* pLoopPlot = GC.getMapINLINE().plotByIndexINLINE(candidates[iCandidate].second.first);
-			int iPathTurns = 0;
-			if (!atPlot(pLoopPlot) && !generatePath(pLoopPlot, MOVE_NO_ENEMY_TERRITORY, true, &iPathTurns))
-			{
-				continue;
-			}
-			iReachable++;
-			if (iPathTurns < iBestTurns)
-			{
-				iBestTurns = iPathTurns;
-				pBestPlot = pLoopPlot;
-				eBestBuild = candidates[iCandidate].second.second;
+				if (iReachable >= 8)
+				{
+					continue;
+				}
+				CvPlot* pLoopPlot = GC.getMapINLINE().plotByIndexINLINE(kCandidates[iCandidate].second.first);
+				int iPathTurns = 0;
+				bool bPath = atPlot(pLoopPlot) || (iPass == 0 && generatePath(pLoopPlot, MOVE_NO_ENEMY_TERRITORY, true, &iPathTurns));
+				// automated airlifts (written by Claude): flying beats walking from three turns on
+				CvCity* pAirliftTo = NULL;
+				if (bAirlift && (!bPath || iPathTurns > 2))
+				{
+					if (iAirliftTurn == 0)
+					{
+						iAirliftTurn = airliftDepartureTurn(MOVE_NO_ENEMY_TERRITORY, pAirliftFrom);
+					}
+					CvCity* pChopCity = NULL;
+					pLoopPlot->getFeatureProduction(kCandidates[iCandidate].second.second, getTeam(), &pChopCity);
+					if (iAirliftTurn != MAX_INT && pChopCity != NULL && pChopCity != pAirliftFrom && (!bPath || iAirliftTurn + 1 < iPathTurns) &&
+						(iAirliftTurn == 1 ? canAirliftAt(plot(), pChopCity->getX_INLINE(), pChopCity->getY_INLINE()) : canMoveInto(pChopCity->plot())))
+					{
+						iPathTurns = iAirliftTurn + 1;
+						bPath = true;
+						pAirliftTo = pChopCity;
+					}
+				}
+				if (!bPath)
+				{
+					continue;
+				}
+				iReachable++;
+				if (iPathTurns < iBestTurns)
+				{
+					iBestTurns = iPathTurns;
+					pBestPlot = pLoopPlot;
+					eBestBuild = kCandidates[iCandidate].second.second;
+					pBestAirliftTo = pAirliftTo; // automated airlifts
+				}
 			}
 		}
 	}
 
 	if (pBestPlot != NULL)
 	{
+		// automated airlifts (written by Claude): the worker plans the pre-chop again where it lands
+		if (pBestAirliftTo != NULL)
+		{
+			AI_airliftRouteMove(pAirliftFrom, pBestAirliftTo, MOVE_NO_ENEMY_TERRITORY, MISSIONAI_BUILD, pBestPlot);
+			return true;
+		}
 		if (!atPlot(pBestPlot))
 		{
 			getGroup()->pushMission(MISSION_MOVE_TO, pBestPlot->getX_INLINE(), pBestPlot->getY_INLINE(), MOVE_NO_ENEMY_TERRITORY, false, false, MISSIONAI_BUILD, pBestPlot);
@@ -10090,6 +10192,12 @@ void CvUnitAI::AI_happyGarrisonMove()
 		return;
 	}
 
+	// automated airlifts (written by Claude): a unit that may take airlifts goes by air where that is sooner, also to
+	// cities on other landmasses
+	bool bAirlift = AI_isAutomatedAirliftUse();
+	int iAirliftTurn = 0; // the turn it would fly (airliftDepartureTurn), 0 until a city needs it
+	CvCity* pAirliftFrom = NULL;
+
 	// on its way: the city was chosen when it set out
 	CvPlot* pTarget = pGroup->AI_getMissionAIPlot();
 	if (pGroup->AI_getMissionAIType() == MISSIONAI_GUARD_CITY && pTarget != NULL && pTarget->isCity() && pTarget->getOwnerINLINE() == getOwnerINLINE())
@@ -10100,9 +10208,8 @@ void CvUnitAI::AI_happyGarrisonMove()
 			pGroup->pushMission(canFortify(plot()) ? MISSION_FORTIFY : MISSION_SLEEP);
 			return;
 		}
-		if (generatePath(pTarget, 0, true))
+		if (AI_happyGarrisonGoTo(pTarget, bAirlift, iAirliftTurn, pAirliftFrom))
 		{
-			pGroup->pushMission(MISSION_MOVE_TO, pTarget->getX_INLINE(), pTarget->getY_INLINE(), 0, false, false, MISSIONAI_GUARD_CITY, pTarget);
 			return;
 		}
 	}
@@ -10144,7 +10251,7 @@ void CvUnitAI::AI_happyGarrisonMove()
 	std::vector<std::pair<std::pair<int, int>, std::pair<int, int> > > aCities;
 	for (CvCity* pLoopCity = kOwner.firstCity(&iLoop); pLoopCity != NULL; pLoopCity = kOwner.nextCity(&iLoop))
 	{
-		if (getDomainType() == DOMAIN_LAND && pLoopCity->area() != area())
+		if (getDomainType() == DOMAIN_LAND && pLoopCity->area() != area() && !bAirlift)
 		{
 			continue;
 		}
@@ -10168,9 +10275,8 @@ void CvUnitAI::AI_happyGarrisonMove()
 			pGroup->pushMission(canFortify(plot()) ? MISSION_FORTIFY : MISSION_SLEEP);
 			return;
 		}
-		if (generatePath(pCityPlot, 0, true))
+		if (AI_happyGarrisonGoTo(pCityPlot, bAirlift, iAirliftTurn, pAirliftFrom))
 		{
-			pGroup->pushMission(MISSION_MOVE_TO, pCityPlot->getX_INLINE(), pCityPlot->getY_INLINE(), 0, false, false, MISSIONAI_GUARD_CITY, pCityPlot);
 			return;
 		}
 	}
@@ -10178,6 +10284,40 @@ void CvUnitAI::AI_happyGarrisonMove()
 	// no city it can reach: the unit waits for orders
 	pGroup->setAutomateType(NO_AUTOMATE);
 	gDLL->getInterfaceIFace()->addHumanMessage(getOwnerINLINE(), false, GC.getEVENT_MESSAGE_TIME(), gDLL->getText("TXT_KEY_AUTOMATE_HAPPY_GARRISON_NONE", getNameKey()), NULL, MESSAGE_TYPE_INFO, getButton(), (ColorTypes)GC.getInfoTypeForString("COLOR_WHITE"), getX_INLINE(), getY_INLINE(), true, true);
+}
+
+
+// happiness garrison (written by Claude): sends the group to the city on pCityPlot, with MISSIONAI_GUARD_CITY; false
+// when it has no way there. automated airlifts (written by Claude): with bAirlift, the unit takes an airlift route where
+// that gets it there sooner than walking; iAirliftTurn and pAirliftFrom are its airliftDepartureTurn, worked out the
+// first time a city needs them (iAirliftTurn is 0 until then).
+bool CvUnitAI::AI_happyGarrisonGoTo(CvPlot* pCityPlot, bool bAirlift, int& iAirliftTurn, CvCity*& pAirliftFrom)
+{
+	int iPathTurns;
+	bool bPath = generatePath(pCityPlot, 0, true, &iPathTurns);
+	if (bAirlift && (!bPath || iPathTurns > 1))
+	{
+		if (iAirliftTurn == 0)
+		{
+			iAirliftTurn = airliftDepartureTurn(0, pAirliftFrom);
+		}
+		if (iAirliftTurn != MAX_INT)
+		{
+			CvCity* pAirliftTo = NULL;
+			int iLandingTurns = airliftLandingTurns(pCityPlot, 0, pAirliftFrom, iAirliftTurn == 1, pAirliftTo);
+			if (iLandingTurns != MAX_INT && (!bPath || iAirliftTurn + iLandingTurns < iPathTurns))
+			{
+				AI_airliftRouteMove(pAirliftFrom, pAirliftTo, 0, MISSIONAI_GUARD_CITY, pCityPlot);
+				return true;
+			}
+		}
+	}
+	if (bPath)
+	{
+		getGroup()->pushMission(MISSION_MOVE_TO, pCityPlot->getX_INLINE(), pCityPlot->getY_INLINE(), 0, false, false, MISSIONAI_GUARD_CITY, pCityPlot);
+		return true;
+	}
+	return false;
 }
 
 
@@ -13110,6 +13250,13 @@ bool CvUnitAI::AI_spreadReligion()
 	CvPlot* pBestPlot = NULL;
 	CvPlot* pBestSpreadPlot = NULL;
 
+	// automated airlifts (written by Claude): a missionary that may take airlifts also weighs the cities it reaches by
+	// air, on any landmass, by the turn it could spread there
+	bool bAirlift = AI_isAutomatedAirliftUse();
+	int iAirliftTurn = 0; // the turn it would fly (airliftDepartureTurn), 0 until a city needs it
+	CvCity* pAirliftFrom = NULL;
+	CvCity* pBestAirliftTo = NULL;
+
 	// BBAI TODO: Could also use CvPlayerAI::AI_missionaryValue to determine which player to target ...
 	for (int iI = 0; iI < MAX_PLAYERS; iI++)
 	{
@@ -13178,7 +13325,7 @@ bool CvUnitAI::AI_spreadReligion()
 				int iLoop;
 				for (CvCity* pLoopCity = kLoopPlayer.firstCity(&iLoop); pLoopCity != NULL; pLoopCity = kLoopPlayer.nextCity(&iLoop))
 				{
-					if (AI_plotValid(pLoopCity->plot()) && pLoopCity->area() == area())
+					if (AI_plotValid(pLoopCity->plot()) && (pLoopCity->area() == area() || bAirlift))
 					{
 						//if (canSpread(pLoopCity->plot(), eReligion))
 						if (kOwner.AI_deduceCitySite(pLoopCity) && canSpread(pLoopCity->plot(), eReligion))
@@ -13188,7 +13335,27 @@ bool CvUnitAI::AI_spreadReligion()
 								if (kOwner.AI_plotTargetMissionAIs(pLoopCity->plot(), MISSIONAI_SPREAD, getGroup()) == 0)
 								{
 									int iPathTurns;
-									if (generatePath(pLoopCity->plot(), MOVE_NO_ENEMY_TERRITORY, true, &iPathTurns))
+									bool bPath = pLoopCity->area() == area() && generatePath(pLoopCity->plot(), MOVE_NO_ENEMY_TERRITORY, true, &iPathTurns);
+									// automated airlifts (written by Claude): flying beats walking from three turns on
+									CvCity* pAirliftTo = NULL;
+									if (bAirlift && (!bPath || iPathTurns > 2))
+									{
+										if (iAirliftTurn == 0)
+										{
+											iAirliftTurn = airliftDepartureTurn(MOVE_NO_ENEMY_TERRITORY, pAirliftFrom);
+										}
+										int iAirliftActTurn = AI_airliftActTurn(pLoopCity->plot(), MOVE_NO_ENEMY_TERRITORY, iAirliftTurn, pAirliftFrom, pAirliftTo);
+										if (iAirliftActTurn < (bPath ? iPathTurns : MAX_INT))
+										{
+											iPathTurns = iAirliftActTurn;
+											bPath = true;
+										}
+										else
+										{
+											pAirliftTo = NULL;
+										}
+									}
+									if (bPath)
 									{
 										int iValue = 16 + pLoopCity->getPopulation() * 4; // was 7 +
 
@@ -13249,8 +13416,9 @@ bool CvUnitAI::AI_spreadReligion()
 										if (iValue > iBestValue)
 										{
 											iBestValue = iValue;
-											pBestPlot = bForceMove ? pLoopCity->plot() : getPathEndTurnPlot();
+											pBestPlot = bForceMove || pAirliftTo != NULL ? pLoopCity->plot() : getPathEndTurnPlot();
 											pBestSpreadPlot = pLoopCity->plot();
+											pBestAirliftTo = pAirliftTo; // automated airlifts
 										}
 									}
 								}
@@ -13264,6 +13432,12 @@ bool CvUnitAI::AI_spreadReligion()
 
 	if ((pBestPlot != NULL) && (pBestSpreadPlot != NULL))
 	{
+		// automated airlifts (written by Claude)
+		if (pBestAirliftTo != NULL)
+		{
+			AI_airliftRouteMove(pAirliftFrom, pBestAirliftTo, MOVE_NO_ENEMY_TERRITORY, MISSIONAI_SPREAD, pBestSpreadPlot);
+			return true;
+		}
 		if (atPlot(pBestSpreadPlot))
 		{
 			getGroup()->pushMission(MISSION_SPREAD, eReligion);
@@ -13319,12 +13493,47 @@ bool CvUnitAI::AI_spreadCorporation()
 	CvPlot* pBestPlot = NULL;
 	CvPlot* pBestSpreadPlot = NULL;
 
+	// automated airlifts (written by Claude): an executive that may take airlifts also weighs the cities it reaches by
+	// air, on any landmass, by the turn it could spread there
+	bool bAirlift = AI_isAutomatedAirliftUse();
+	int iAirliftTurn = 0; // the turn it would fly (airliftDepartureTurn), 0 until a city needs it
+	CvCity* pAirliftFrom = NULL;
+	CvCity* pBestAirliftTo = NULL;
+
 	// K-Mod
 	// first, if we are already doing a spread mission, continue that.
 	if (getGroup()->AI_getMissionAIType() == MISSIONAI_SPREAD_CORPORATION)
 	{
 		CvPlot* pMissionPlot = getGroup()->AI_getMissionAIPlot();
-		if (pMissionPlot != NULL &&
+		if (bAirlift) // automated airlifts (written by Claude): on foot or by air, whichever is sooner
+		{
+			if (pMissionPlot != NULL &&
+				pMissionPlot->getPlotCity() != NULL &&
+				(!bHomeOnly || pMissionPlot->getOwnerINLINE() == getOwnerINLINE()) &&
+				canSpreadCorporation(pMissionPlot, eCorporation, true) &&
+				!pMissionPlot->isVisibleEnemyUnit(this))
+			{
+				int iPathTurns;
+				bool bPath = generatePath(pMissionPlot, MOVE_NO_ENEMY_TERRITORY, true, &iPathTurns);
+				if (bPath)
+				{
+					pBestPlot = getPathEndTurnPlot();
+					pBestSpreadPlot = pMissionPlot;
+				}
+				if (!bPath || iPathTurns > 2)
+				{
+					iAirliftTurn = airliftDepartureTurn(MOVE_NO_ENEMY_TERRITORY, pAirliftFrom);
+					CvCity* pAirliftTo = NULL;
+					if (AI_airliftActTurn(pMissionPlot, MOVE_NO_ENEMY_TERRITORY, iAirliftTurn, pAirliftFrom, pAirliftTo) < (bPath ? iPathTurns : MAX_INT))
+					{
+						pBestPlot = pMissionPlot;
+						pBestSpreadPlot = pMissionPlot;
+						pBestAirliftTo = pAirliftTo;
+					}
+				}
+			}
+		}
+		else if (pMissionPlot != NULL &&
 			pMissionPlot->getPlotCity() != NULL &&
 			(!bHomeOnly || pMissionPlot->getOwnerINLINE() == getOwnerINLINE()) && // executive automation
 			canSpreadCorporation(pMissionPlot, eCorporation, true) && // don't check gold here
@@ -13345,19 +13554,21 @@ bool CvUnitAI::AI_spreadCorporation()
 		else if (isHuman())
 			eTargetPlayer = plot()->isOwned() ? plot()->getOwnerINLINE() : getOwnerINLINE();
 
+		// automated airlifts (written by Claude): with airlifts, the region is the whole map
+		CvArea* pTargetArea = bAirlift ? NULL : area();
 		if (!bHomeOnly && // executive automation: the owner stays the target
 			(eTargetPlayer == NO_PLAYER ||
 			GET_PLAYER(eTargetPlayer).isNoCorporations() || GET_PLAYER(eTargetPlayer).isNoForeignCorporations() ||
-			GET_PLAYER(eTargetPlayer).countCorporations(eCorporation, area()) >= area()->getCitiesPerPlayer(eTargetPlayer)))
+			GET_PLAYER(eTargetPlayer).countCorporations(eCorporation, pTargetArea) >= (pTargetArea != NULL ? pTargetArea->getCitiesPerPlayer(eTargetPlayer) : GET_PLAYER(eTargetPlayer).getNumCities())))
 		{
-			if (kOwner.AI_executiveValue(area(), eCorporation, &eTargetPlayer, true) <= 0)
+			if (kOwner.AI_executiveValue(pTargetArea, eCorporation, &eTargetPlayer, true) <= 0)
 				return false; // corp is not worth spreading in this region.
 		}
 
 		for (int iI = 0; iI < MAX_CIV_PLAYERS; iI++)
 		{
 			const CvPlayerAI& kLoopPlayer = GET_PLAYER((PlayerTypes)iI);
-			if (kLoopPlayer.isAlive() && canEnterTerritory(kLoopPlayer.getTeam()) && area()->getCitiesPerPlayer((PlayerTypes)iI) > 0)
+			if (kLoopPlayer.isAlive() && canEnterTerritory(kLoopPlayer.getTeam()) && (bAirlift ? kLoopPlayer.getNumCities() : area()->getCitiesPerPlayer((PlayerTypes)iI)) > 0)
 			{
 				AttitudeTypes eAttitude = GET_TEAM(getTeam()).AI_getAttitude(kLoopPlayer.getTeam());
 				if (iI == eTargetPlayer || (!bHomeOnly && getTeam() == kLoopPlayer.getTeam())) // executive automation: teammates are abroad
@@ -13366,14 +13577,34 @@ bool CvUnitAI::AI_spreadCorporation()
 					for (CvCity* pLoopCity = kLoopPlayer.firstCity(&iLoop); pLoopCity; pLoopCity = kLoopPlayer.nextCity(&iLoop))
 					{
 						if (AI_plotValid(pLoopCity->plot()) &&
-							pLoopCity->getArea() == getArea() &&
+							(pLoopCity->getArea() == getArea() || bAirlift) &&
 							kOwner.AI_deduceCitySite(pLoopCity) &&
 							canSpreadCorporation(pLoopCity->plot(), eCorporation) &&
 							!pLoopCity->plot()->isVisibleEnemyUnit(this) &&
 							kOwner.AI_plotTargetMissionAIs(pLoopCity->plot(), MISSIONAI_SPREAD_CORPORATION, getGroup()) == 0)
 						{
 							int iPathTurns;
-							if (generatePath(pLoopCity->plot(), MOVE_NO_ENEMY_TERRITORY, true, &iPathTurns))
+							bool bPath = pLoopCity->getArea() == getArea() && generatePath(pLoopCity->plot(), MOVE_NO_ENEMY_TERRITORY, true, &iPathTurns);
+							// automated airlifts (written by Claude): flying beats walking from three turns on
+							CvCity* pAirliftTo = NULL;
+							if (bAirlift && (!bPath || iPathTurns > 2))
+							{
+								if (iAirliftTurn == 0)
+								{
+									iAirliftTurn = airliftDepartureTurn(MOVE_NO_ENEMY_TERRITORY, pAirliftFrom);
+								}
+								int iAirliftActTurn = AI_airliftActTurn(pLoopCity->plot(), MOVE_NO_ENEMY_TERRITORY, iAirliftTurn, pAirliftFrom, pAirliftTo);
+								if (iAirliftActTurn < (bPath ? iPathTurns : MAX_INT))
+								{
+									iPathTurns = iAirliftActTurn;
+									bPath = true;
+								}
+								else
+								{
+									pAirliftTo = NULL;
+								}
+							}
+							if (bPath)
 							{
 								int iValue = 0;
 								iValue += bHasHQ ? 1000 : 0; // we should probably calculate the true HqValue, but I couldn't be bothered right now.
@@ -13408,6 +13639,7 @@ bool CvUnitAI::AI_spreadCorporation()
 									iBestValue = iValue;
 									pBestPlot = isHuman() ? pLoopCity->plot() : getPathEndTurnPlot();
 									pBestSpreadPlot = pLoopCity->plot();
+									pBestAirliftTo = pAirliftTo; // automated airlifts
 								}
 							}
 						}
@@ -13422,6 +13654,12 @@ bool CvUnitAI::AI_spreadCorporation()
 
 	if (pBestPlot != NULL && pBestSpreadPlot != NULL)
 	{
+		// automated airlifts (written by Claude)
+		if (pBestAirliftTo != NULL)
+		{
+			AI_airliftRouteMove(pAirliftFrom, pBestAirliftTo, MOVE_NO_ENEMY_TERRITORY, MISSIONAI_SPREAD_CORPORATION, pBestSpreadPlot);
+			return true;
+		}
 		if (atPlot(pBestSpreadPlot))
 		{
 			if (canSpreadCorporation(pBestSpreadPlot, eCorporation))
@@ -19554,6 +19792,13 @@ bool CvUnitAI::AI_nextCityToImprove(CvCity* pCity)
 	eBestBuild = NO_BUILD;
 	pBestPlot = NULL;
 
+	// automated airlifts (written by Claude): a worker that may take airlifts also weighs the cities it reaches by air,
+	// on any landmass, flying into the city and walking to the plot the next turn
+	bool bAirlift = AI_isAutomatedAirliftUse();
+	int iAirliftTurn = 0; // the turn it would fly (airliftDepartureTurn), 0 until a city needs it
+	CvCity* pAirliftFrom = NULL;
+	CvCity* pBestAirliftTo = NULL;
+
 	for (pLoopCity = GET_PLAYER(getOwnerINLINE()).firstCity(&iLoop); pLoopCity != NULL; pLoopCity = GET_PLAYER(getOwnerINLINE()).nextCity(&iLoop))
 	{
 		if (pLoopCity != pCity)
@@ -19564,7 +19809,8 @@ bool CvUnitAI::AI_nextCityToImprove(CvCity* pCity)
 /* Worker AI, Efficiency                                                                        */
 /************************************************************************************************/
 			// BBAI efficiency: check area for land units before path generation
-			if( (getDomainType() == DOMAIN_LAND) && (pLoopCity->area() != area()) && !(getGroup()->canMoveAllTerrain()) )
+			bool bOtherArea = (getDomainType() == DOMAIN_LAND) && (pLoopCity->area() != area()) && !(getGroup()->canMoveAllTerrain());
+			if (bOtherArea && !bAirlift)
 			{
 				continue;
 			}
@@ -19596,7 +19842,24 @@ bool CvUnitAI::AI_nextCityToImprove(CvCity* pCity)
 
 						if( iValue > iBestValue )
 						{
-							if( generatePath(pPlot, 0, true, &iPathTurns) )
+							bool bPath = !bOtherArea && generatePath(pPlot, 0, true, &iPathTurns);
+							// automated airlifts (written by Claude): flying beats walking from three turns on
+							bool bByAir = false;
+							if (bAirlift && (!bPath || iPathTurns > 2))
+							{
+								if (iAirliftTurn == 0)
+								{
+									iAirliftTurn = airliftDepartureTurn(0, pAirliftFrom);
+								}
+								if (iAirliftTurn != MAX_INT && pLoopCity != pAirliftFrom && (!bPath || iAirliftTurn + 1 < iPathTurns) &&
+									(iAirliftTurn == 1 ? canAirliftAt(plot(), pLoopCity->getX_INLINE(), pLoopCity->getY_INLINE()) : canMoveInto(pLoopCity->plot())))
+								{
+									iPathTurns = iAirliftTurn + 1;
+									bPath = true;
+									bByAir = true;
+								}
+							}
+							if( bPath )
 							{
 								iValue /= (iPathTurns + 1);
 
@@ -19605,6 +19868,7 @@ bool CvUnitAI::AI_nextCityToImprove(CvCity* pCity)
 									iBestValue = iValue;
 									eBestBuild = eBuild;
 									pBestPlot = pPlot;
+									pBestAirliftTo = bByAir ? pLoopCity : NULL; // automated airlifts
 									//FAssert(!atPlot(pBestPlot) || NULL == pCity || pCity->AI_getWorkersNeeded() == 0 || pCity->AI_getWorkersHave() > pCity->AI_getWorkersNeeded() + 1);
 								}
 							}
@@ -19633,6 +19897,13 @@ bool CvUnitAI::AI_nextCityToImprove(CvCity* pCity)
 			pBestPlot->getWorkingCity()->AI_changeWorkersHave(+1);
 		}
 		
+		// automated airlifts (written by Claude): the worker plans the build again where it lands
+		if (pBestAirliftTo != NULL)
+		{
+			AI_airliftRouteMove(pAirliftFrom, pBestAirliftTo, 0, MISSIONAI_BUILD, pBestPlot);
+			return true;
+		}
+
 		eBestBuild = AI_betterPlotBuild(pBestPlot, eBestBuild);
 
 		getGroup()->pushMission(MISSION_ROUTE_TO, pBestPlot->getX_INLINE(), pBestPlot->getY_INLINE(), 0, false, false, MISSIONAI_BUILD, pBestPlot);

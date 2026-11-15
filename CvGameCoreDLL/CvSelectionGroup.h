@@ -49,6 +49,7 @@ public:
 	void continueMission();
 protected:
 	bool continueMission_bulk(int iSteps);
+	bool continueMission_step(int iSteps); // automated airlifts: the body of continueMission_bulk
 public:
 	// K-Mod end
 
@@ -124,6 +125,7 @@ public:
 	bool groupAttack(int iX, int iY, int iFlags, bool& bFailedAlreadyFighting);
 	void groupMove(CvPlot* pPlot, bool bCombat, CvUnit* pCombatUnit = NULL, bool bEndMove = false);
 	bool groupPathTo(int iX, int iY, int iFlags);
+	bool airliftToRally(); // automated airlifts (written by Claude)
 	bool groupRoadTo(int iX, int iY, int iFlags);
 	bool groupBuild(BuildTypes eBuild, bool bStopShort = false); // pre-chop: bStopShort
 

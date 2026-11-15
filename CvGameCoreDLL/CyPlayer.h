@@ -397,6 +397,8 @@ public:
 	void setOption(int /*PlayerOptionTypes*/ eIndex, bool bNewValue);
 	int getAutomatedWorkers(int /*ImprovementTypes*/ eImprovement); // automated workers
 	void setAutomatedWorkers(int iFirstImprovement, int iNeverBuildMask, int iReplaceMask); // automated workers
+	int getAirliftUse(); // automated airlifts
+	void setAirliftUse(int iUse); // automated airlifts
 	bool isLoyalMember(int /*VoteSourceTypes*/ eIndex);	
 	void setLoyalMember(int /*VoteSourceTypes*/ eIndex, bool bNewValue);
 	int getVotes(int /*VoteTypes*/ eVote, int /*VoteSourceTypes*/ eVoteSource);

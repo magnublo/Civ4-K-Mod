@@ -196,6 +196,10 @@ public:
 	bool isAutomatedReplace(const CvPlot* pPlot) const;
 	int getAutomatedWorkers(ImprovementTypes eImprovement) const;																	// Exposed to Python
 	void setAutomatedWorkers(int iFirstImprovement, int iNeverBuildMask, int iReplaceMask);											// Exposed to Python
+	// automated airlifts (written by Claude): the player's two airlift options on the Options screen, AIRLIFT_USE_* bits
+	bool isAirliftUse(int iUse) const;
+	int getAirliftUse() const;																														// Exposed to Python
+	void setAirliftUse(int iUse);																													// Exposed to Python
 
 	DllExport bool canContact(PlayerTypes ePlayer) const;																									// Exposed to Python
 	bool canContactAndTalk(PlayerTypes ePlayer) const; // K-Mod. this checks willingness to talk on both sides
@@ -1259,6 +1263,7 @@ protected:
 	bool m_bTurnActive;
 	bool m_bAutoMoves;
 	std::vector<int> m_aiAutomatedWorkers; // automated workers: AUTOMATED_WORKERS_* by improvement type; not saved
+	int m_iAirliftUse; // automated airlifts: AIRLIFT_USE_* bits; not saved
 	bool m_bEndTurn;
 	bool m_bPbemNewTurn;
 	bool m_bExtendedGame;

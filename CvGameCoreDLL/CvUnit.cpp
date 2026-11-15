@@ -4148,6 +4148,168 @@ bool CvUnit::airlift(int iX, int iY)
 	return true;
 }
 
+// automated airlifts (written by Claude): an airlift moves units one by one and an airport city lets one unit fly per
+// turn, so only a land unit alone in its group follows an airlift route. A unit on a ship stays with the ship.
+bool CvUnit::canFollowAirliftRoute() const
+{
+	return getDomainType() == DOMAIN_LAND && !isCargo() && getGroup()->getNumUnits() == 1;
+}
+
+// The airport city this unit flies from on an airlift route, and the turn it flies (counted like path turns, 1 is this
+// turn). That is its own city if it can fly from there now. Otherwise it is whichever of the nearest airport cities of
+// its team on its landmass it reaches soonest, and it flies the turn after it gets there, since a unit that has moved
+// can't fly; that is also when it flies from its own city after moving, or when the city's airlift is used up.
+// MAX_INT when there is none.
+int CvUnit::airliftDepartureTurn(int iFlags, CvCity*& pFrom) const
+{
+	pFrom = NULL;
+	if (canAirlift(plot()))
+	{
+		pFrom = plot()->getPlotCity();
+		return 1;
+	}
+
+	std::vector<std::pair<int, int> > aCities; // (plot distance, plot index), nearest first
+	for (int iI = 0; iI < MAX_CIV_PLAYERS; iI++)
+	{
+		const CvPlayer& kLoopPlayer = GET_PLAYER((PlayerTypes)iI);
+		if (!kLoopPlayer.isAlive() || kLoopPlayer.getTeam() != getTeam() || area()->getCitiesPerPlayer((PlayerTypes)iI) == 0)
+		{
+			continue;
+		}
+		int iLoop;
+		for (CvCity* pLoopCity = kLoopPlayer.firstCity(&iLoop); pLoopCity != NULL; pLoopCity = kLoopPlayer.nextCity(&iLoop))
+		{
+			if (pLoopCity->getMaxAirlift() > 0 && pLoopCity->area() == area())
+			{
+				aCities.push_back(std::make_pair(plotDistance(getX_INLINE(), getY_INLINE(), pLoopCity->getX_INLINE(), pLoopCity->getY_INLINE()),
+					GC.getMapINLINE().plotNumINLINE(pLoopCity->getX_INLINE(), pLoopCity->getY_INLINE())));
+			}
+		}
+	}
+	std::sort(aCities.begin(), aCities.end());
+
+	KmodPathFinder kPathFinder;
+	kPathFinder.SetSettings(getGroup(), iFlags);
+	int iBestTurn = MAX_INT;
+	int iReached = 0;
+	for (size_t i = 0; i < aCities.size() && i < 6 && iReached < 3; i++)
+	{
+		CvPlot* pCityPlot = GC.getMapINLINE().plotByIndexINLINE(aCities[i].second);
+		int iTurn;
+		if (atPlot(pCityPlot))
+		{
+			iTurn = 2;
+		}
+		else if (kPathFinder.GeneratePath(pCityPlot))
+		{
+			iTurn = kPathFinder.GetPathTurns() + 1;
+		}
+		else
+		{
+			continue;
+		}
+		iReached++;
+		if (iTurn < iBestTurn)
+		{
+			iBestTurn = iTurn;
+			pFrom = pCityPlot->getPlotCity();
+		}
+	}
+	return iBestTurn;
+}
+
+// The city of this unit's team, or of a vassal, on pDest's landmass where it lands on an airlift route from pFrom, and
+// the turns it then walks to pDest with full moves (0 when it lands on pDest): of the iMaxCities cities nearest to
+// pDest that can take it, the one it walks from soonest. bNow: it flies this turn, so the city must take an airlift now
+// (one without an airport takes one per turn). MAX_INT when there is none.
+int CvUnit::airliftLandingTurns(const CvPlot* pDest, int iFlags, const CvCity* pFrom, bool bNow, CvCity*& pTo, int iMaxCities) const
+{
+	pTo = NULL;
+	if (pDest->isWater())
+	{
+		return MAX_INT;
+	}
+
+	CvArea* pDestArea = pDest->area();
+	std::vector<std::pair<int, int> > aCities; // (plot distance to pDest, plot index), nearest first
+	for (int iI = 0; iI < MAX_CIV_PLAYERS; iI++)
+	{
+		const CvPlayer& kLoopPlayer = GET_PLAYER((PlayerTypes)iI);
+		if (!kLoopPlayer.isAlive() || pDestArea->getCitiesPerPlayer((PlayerTypes)iI) == 0 ||
+			(kLoopPlayer.getTeam() != getTeam() && !GET_TEAM(kLoopPlayer.getTeam()).isVassal(getTeam())))
+		{
+			continue;
+		}
+		int iLoop;
+		for (CvCity* pLoopCity = kLoopPlayer.firstCity(&iLoop); pLoopCity != NULL; pLoopCity = kLoopPlayer.nextCity(&iLoop))
+		{
+			if (pLoopCity != pFrom && pLoopCity->area() == pDestArea)
+			{
+				aCities.push_back(std::make_pair(plotDistance(pDest->getX_INLINE(), pDest->getY_INLINE(), pLoopCity->getX_INLINE(), pLoopCity->getY_INLINE()),
+					GC.getMapINLINE().plotNumINLINE(pLoopCity->getX_INLINE(), pLoopCity->getY_INLINE())));
+			}
+		}
+	}
+	std::sort(aCities.begin(), aCities.end());
+
+	KmodPathFinder kPathFinder;
+	kPathFinder.SetSettings(getGroup(), iFlags | MOVE_MAX_MOVES);
+	int iBestTurns = MAX_INT;
+	int iTried = 0;
+	for (size_t i = 0; i < aCities.size() && iTried < iMaxCities && iBestTurns > 0; i++)
+	{
+		CvPlot* pCityPlot = GC.getMapINLINE().plotByIndexINLINE(aCities[i].second);
+		if (bNow ? !canAirliftAt(plot(), pCityPlot->getX_INLINE(), pCityPlot->getY_INLINE()) : !canMoveInto(pCityPlot))
+		{
+			continue;
+		}
+		iTried++;
+		int iTurns;
+		if (pCityPlot == pDest)
+		{
+			iTurns = 0;
+		}
+		else if (kPathFinder.GeneratePath(pCityPlot->getX_INLINE(), pCityPlot->getY_INLINE(), pDest->getX_INLINE(), pDest->getY_INLINE()))
+		{
+			iTurns = kPathFinder.GetPathTurns();
+		}
+		else
+		{
+			continue;
+		}
+		if (iTurns < iBestTurns)
+		{
+			iBestTurns = iTurns;
+			pTo = pCityPlot->getPlotCity();
+		}
+	}
+	return iBestTurns;
+}
+
+// The turn this unit reaches pDest on its quickest airlift route (counted like path turns, 1 is this turn), with the
+// city it flies from and the one it lands in. MAX_INT when it has none.
+int CvUnit::airliftRouteTurns(const CvPlot* pDest, int iFlags, CvCity*& pFrom, CvCity*& pTo) const
+{
+	pFrom = NULL;
+	pTo = NULL;
+	if (pDest == NULL || !canFollowAirliftRoute())
+	{
+		return MAX_INT;
+	}
+	int iDepartTurn = airliftDepartureTurn(iFlags, pFrom);
+	if (iDepartTurn == MAX_INT)
+	{
+		return MAX_INT;
+	}
+	int iLandingTurns = airliftLandingTurns(pDest, iFlags, pFrom, iDepartTurn == 1, pTo);
+	if (iLandingTurns == MAX_INT)
+	{
+		return MAX_INT;
+	}
+	return iDepartTurn + iLandingTurns;
+}
+
 
 bool CvUnit::isNukeVictim(const CvPlot* pPlot, TeamTypes eTeam) const
 {
