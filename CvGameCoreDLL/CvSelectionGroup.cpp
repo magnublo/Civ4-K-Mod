@@ -3564,11 +3564,12 @@ bool CvSelectionGroup::groupPathTo(int iX, int iY, int iFlags)
 
 // automated airlifts (written by Claude): a unit on its way to its city's rally point or spy rally point (a MOVE_TO with
 // MOVE_RALLY_AIRLIFT from CvCity::popOrder) takes an airlift route (CvUnit::airliftRouteTurns) when that gets it there
-// sooner than walking and its owner's option "Rally Point Units Use Airlifts" is on. It flies from its city
-// if it can; otherwise it waits there for the next turn's airlift, or first walks to the city it flies from (a move put
-// in front of this one). Such a unit moves only with the moves at the end of its owner's turn, so it takes airlifts the
-// player left unused. The airlift gives the unit a group of its own, which gets the rest of the orders.
-// True if the group is done for now.
+// sooner than walking and its owner's option "Rally Point Units Use Airlifts" is on. It flies from its city if it can;
+// otherwise it waits there for the next turn's airlift, or first walks to the city it flies from (a move put in front
+// of this one), and counts on that airlift (CvPlayer::setAirliftClaim). One that waited a turn and then didn't get the
+// airlift walks the rest of the way, if it can. Such a unit moves only with the moves at the end of its owner's turn, so
+// it takes airlifts the player left unused. The airlift gives the unit a group of its own, which gets the rest of the
+// orders. True if the group is done for now.
 bool CvSelectionGroup::airliftToRally()
 {
 	CLLNode<MissionData>* pHeadNode = headMissionQueueNode();
@@ -3583,38 +3584,52 @@ bool CvSelectionGroup::airliftToRally()
 	{
 		return false;
 	}
-	if (!GET_PLAYER(getOwnerINLINE()).isEndTurn())
+	CvPlayer& kOwner = GET_PLAYER(getOwnerINLINE());
+	if (!kOwner.isEndTurn())
 	{
 		return true;
 	}
+	kOwner.setAirliftClaim(pUnit, NULL, 0);
 
 	int iFlags = pHeadNode->m_data.iFlags & ~(MOVE_RALLY_AIRLIFT | MOVE_HAS_STEPPED | MOVE_DECLARE_WAR);
 	KmodPathFinder kPathFinder;
 	kPathFinder.SetSettings(this, iFlags);
 	int iWalkTurns = kPathFinder.GeneratePath(pDest) ? kPathFinder.GetPathTurns() : MAX_INT;
+	if (pUnit->hasMissedAirlift())
+	{
+		if (iWalkTurns == MAX_INT)
+		{
+			return true;
+		}
+		pHeadNode->m_data.iFlags &= ~MOVE_RALLY_AIRLIFT;
+		return false;
+	}
 	CvCity* pFrom;
 	CvCity* pTo;
-	if (pUnit->airliftRouteTurns(pDest, iFlags, pFrom, pTo) >= iWalkTurns)
+	int iDepartTurn;
+	if (pUnit->airliftRouteTurns(pDest, iFlags, pFrom, pTo, &iDepartTurn) >= iWalkTurns)
 	{
 		return false;
 	}
 
-	if (!atPlot(pFrom->plot()))
+	if (iDepartTurn > 1 || !pUnit->canAirliftAt(plot(), pTo->getX_INLINE(), pTo->getY_INLINE()))
 	{
+		if (atPlot(pFrom->plot()))
+		{
+			kOwner.setAirliftClaim(pUnit, pFrom, iDepartTurn);
+			return true;
+		}
 		if (s_iContinueMissionDepth > 1)
 		{
 			return false;
 		}
+		kOwner.setAirliftClaim(pUnit, pFrom, iDepartTurn);
 		MissionData kWalk = pHeadNode->m_data;
 		kWalk.iData1 = pFrom->getX_INLINE();
 		kWalk.iData2 = pFrom->getY_INLINE();
 		kWalk.iFlags = iFlags;
 		m_missionQueue.insertAtBeginning(kWalk);
 		return false;
-	}
-	if (!pUnit->canAirliftAt(plot(), pTo->getX_INLINE(), pTo->getY_INLINE()))
-	{
-		return true;
 	}
 
 	std::vector<MissionData> aMissions;

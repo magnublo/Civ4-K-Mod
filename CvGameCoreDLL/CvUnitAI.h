@@ -117,7 +117,7 @@ protected:
 	void AI_happyGarrisonMove(); // happiness garrison
 	bool AI_happyGarrisonGoTo(CvPlot* pCityPlot, bool bAirlift, int& iAirliftTurn, CvCity*& pAirliftFrom); // happiness garrison
 	bool AI_isAutomatedAirliftUse() const; // automated airlifts
-	void AI_airliftRouteMove(CvCity* pFrom, CvCity* pTo, int iFlags, MissionAITypes eMissionAI, CvPlot* pMissionAIPlot); // automated airlifts
+	void AI_airliftRouteMove(CvCity* pFrom, CvCity* pTo, int iDepartTurn, int iFlags, MissionAITypes eMissionAI, CvPlot* pMissionAIPlot); // automated airlifts
 	int AI_airliftActTurn(const CvPlot* pTarget, int iFlags, int iDepartTurn, CvCity* pFrom, CvCity*& pTo) const; // automated airlifts
 	void AI_flyToCarrierMove(); // fly to carrier
 

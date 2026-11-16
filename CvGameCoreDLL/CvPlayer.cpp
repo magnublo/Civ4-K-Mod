@@ -753,6 +753,8 @@ void CvPlayer::reset(PlayerTypes eID, bool bConstructorCall)
 	m_bAutoMoves = false;
 	m_aiAutomatedWorkers.clear(); // automated workers
 	m_iAirliftUse = AIRLIFT_USE_AUTOMATED | AIRLIFT_USE_RALLY; // automated airlifts: the options' defaults
+	m_airliftClaims.clear(); // automated airlifts
+	m_iAirliftClaimsTurn = -1;
 	m_bEndTurn = false;
 	m_bPbemNewTurn = false;
 	m_bExtendedGame = false;
@@ -4413,6 +4415,48 @@ int CvPlayer::getAirliftUse() const
 void CvPlayer::setAirliftUse(int iUse)
 {
 	m_iAirliftUse = iUse;
+}
+
+// automated airlifts (written by Claude): how many of the player's units other than pExcept count on an airlift from
+// pCity in iTurn of their route (1 is this turn). A unit counts on one when it waits for it or walks to its city
+// (CvUnitAI::AI_airliftRouteMove, CvSelectionGroup::airliftToRally), and only for the game turn it planned that in.
+// Every computer of a network game makes the same claims. They aren't saved, so a game loaded during a turn has none of
+// that turn's claims.
+int CvPlayer::getAirliftClaims(const CvCity* pCity, int iTurn, const CvUnit* pExcept) const
+{
+	if (m_iAirliftClaimsTurn != GC.getGameINLINE().getGameTurn())
+	{
+		return 0;
+	}
+	int iPlot = GC.getMapINLINE().plotNumINLINE(pCity->getX_INLINE(), pCity->getY_INLINE());
+	int iCount = 0;
+	for (std::map<int, std::pair<int, int> >::const_iterator it = m_airliftClaims.begin(); it != m_airliftClaims.end(); ++it)
+	{
+		if (it->second.first == iPlot && it->second.second == iTurn && (pExcept == NULL || it->first != pExcept->getID()))
+		{
+			iCount++;
+		}
+	}
+	return iCount;
+}
+
+// automated airlifts (written by Claude): pUnit counts on an airlift from pCity in iTurn of its route; with pCity NULL,
+// on none.
+void CvPlayer::setAirliftClaim(const CvUnit* pUnit, const CvCity* pCity, int iTurn)
+{
+	if (m_iAirliftClaimsTurn != GC.getGameINLINE().getGameTurn())
+	{
+		m_airliftClaims.clear();
+		m_iAirliftClaimsTurn = GC.getGameINLINE().getGameTurn();
+	}
+	if (pCity == NULL)
+	{
+		m_airliftClaims.erase(pUnit->getID());
+	}
+	else
+	{
+		m_airliftClaims[pUnit->getID()] = std::make_pair(GC.getMapINLINE().plotNumINLINE(pCity->getX_INLINE(), pCity->getY_INLINE()), iTurn);
+	}
 }
 
 

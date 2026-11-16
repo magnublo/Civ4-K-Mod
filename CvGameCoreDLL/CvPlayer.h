@@ -200,6 +200,8 @@ public:
 	bool isAirliftUse(int iUse) const;
 	int getAirliftUse() const;																														// Exposed to Python
 	void setAirliftUse(int iUse);																													// Exposed to Python
+	int getAirliftClaims(const CvCity* pCity, int iTurn, const CvUnit* pExcept) const;
+	void setAirliftClaim(const CvUnit* pUnit, const CvCity* pCity, int iTurn);
 
 	DllExport bool canContact(PlayerTypes ePlayer) const;																									// Exposed to Python
 	bool canContactAndTalk(PlayerTypes ePlayer) const; // K-Mod. this checks willingness to talk on both sides
@@ -1264,6 +1266,8 @@ protected:
 	bool m_bAutoMoves;
 	std::vector<int> m_aiAutomatedWorkers; // automated workers: AUTOMATED_WORKERS_* by improvement type; not saved
 	int m_iAirliftUse; // automated airlifts: AIRLIFT_USE_* bits; not saved
+	std::map<int, std::pair<int, int> > m_airliftClaims; // automated airlifts: unit ID to (plot index of the city, turn); not saved
+	int m_iAirliftClaimsTurn; // automated airlifts: the game turn m_airliftClaims belong to
 	bool m_bEndTurn;
 	bool m_bPbemNewTurn;
 	bool m_bExtendedGame;

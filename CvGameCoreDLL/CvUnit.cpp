@@ -4155,19 +4155,85 @@ bool CvUnit::canFollowAirliftRoute() const
 	return getDomainType() == DOMAIN_LAND && !isCargo() && getGroup()->getNumUnits() == 1;
 }
 
+// This unit has stood in an airport city of its team since an earlier turn, waiting for an airlift, and hasn't moved
+// this turn: an automated unit with a target elsewhere (CvUnitAI::AI_airliftRouteMove waits with MISSION_SKIP), or a
+// unit on its way to a rally point (CvSelectionGroup::airliftToRally). A unit gets a fortify turn for every turn start
+// it stands through, and one more if it was built in the turn change before and hasn't moved since.
+bool CvUnit::isAirliftWaiting() const
+{
+	if (hasMoved() || getFortifyTurns() <= (getLastMoveTurn() == 0 ? 1 : 0) || !canFollowAirliftRoute())
+	{
+		return false;
+	}
+	const CvCity* pCity = plot()->getPlotCity();
+	if (pCity == NULL || pCity->getMaxAirlift() == 0 || pCity->getTeam() != getTeam())
+	{
+		return false;
+	}
+	const CvPlayer& kOwner = GET_PLAYER(getOwnerINLINE());
+	CvSelectionGroup* pGroup = getGroup();
+	const CLLNode<MissionData>* pHeadNode = pGroup->headMissionQueueNode();
+	if (pHeadNode != NULL)
+	{
+		return pHeadNode->m_data.eMissionType == MISSION_MOVE_TO && (pHeadNode->m_data.iFlags & MOVE_RALLY_AIRLIFT) && kOwner.isAirliftUse(AIRLIFT_USE_RALLY);
+	}
+	AutomateTypes eAutomate = pGroup->getAutomateType();
+	const CvPlot* pTarget = pGroup->AI_getMissionAIPlot();
+	return (eAutomate == AUTOMATE_BUILD || eAutomate == AUTOMATE_PRECHOP || eAutomate == AUTOMATE_RELIGION || eAutomate == AUTOMATE_CORPORATION_ABROAD || eAutomate == AUTOMATE_HAPPY_GARRISON) &&
+		pTarget != NULL && pTarget != plot() && kOwner.isAirliftUse(AIRLIFT_USE_AUTOMATED);
+}
+
+// Whether this unit takes its city's airlift now on an airlift route: it can airlift, and units of its team that wait
+// there for an airlift (isAirliftWaiting) go first.
+bool CvUnit::isAirliftTurn() const
+{
+	if (!canAirlift(plot()))
+	{
+		return false;
+	}
+	if (isAirliftWaiting())
+	{
+		return true;
+	}
+	int iWaiting = 0;
+	for (CLLNode<IDInfo>* pUnitNode = plot()->headUnitNode(); pUnitNode != NULL; pUnitNode = plot()->nextUnitNode(pUnitNode))
+	{
+		const CvUnit* pLoopUnit = ::getUnit(pUnitNode->m_data);
+		if (pLoopUnit != this && pLoopUnit->getTeam() == getTeam() && pLoopUnit->isAirliftWaiting())
+		{
+			iWaiting++;
+		}
+	}
+	const CvCity* pCity = plot()->getPlotCity();
+	return pCity->getCurrAirlift() + iWaiting < pCity->getMaxAirlift();
+}
+
+// This unit waited a turn in its city for an airlift and can't have it now (the player or a unit that waited longer
+// took it). Such a unit walks instead, so that it can't wait for ever.
+bool CvUnit::hasMissedAirlift() const
+{
+	return isAirliftWaiting() && !canAirlift(plot());
+}
+
 // The airport city this unit flies from on an airlift route, and the turn it flies (counted like path turns, 1 is this
-// turn). That is its own city if it can fly from there now. Otherwise it is whichever of the nearest airport cities of
-// its team on its landmass it reaches soonest, and it flies the turn after it gets there, since a unit that has moved
-// can't fly; that is also when it flies from its own city after moving, or when the city's airlift is used up.
-// MAX_INT when there is none.
+// turn). That is its own city if it can fly from there now (isAirliftTurn). Otherwise it is whichever of the nearest
+// airport cities of its team on its landmass it reaches soonest, and it flies the turn after it gets there, since a
+// unit that has moved can't fly; that is also when it flies from its own city after moving, or when the city's airlift
+// is taken. A city whose airlift of that turn other units already count on (CvPlayer::getAirliftClaims) doesn't count,
+// so a unit waits at most one turn for an airlift. MAX_INT when there is none, or when the unit has missed its airlift.
 int CvUnit::airliftDepartureTurn(int iFlags, CvCity*& pFrom) const
 {
 	pFrom = NULL;
-	if (canAirlift(plot()))
+	if (isAirliftTurn())
 	{
 		pFrom = plot()->getPlotCity();
 		return 1;
 	}
+	if (hasMissedAirlift())
+	{
+		return MAX_INT;
+	}
+	const CvPlayer& kOwner = GET_PLAYER(getOwnerINLINE());
 
 	std::vector<std::pair<int, int> > aCities; // (plot distance, plot index), nearest first
 	for (int iI = 0; iI < MAX_CIV_PLAYERS; iI++)
@@ -4206,6 +4272,10 @@ int CvUnit::airliftDepartureTurn(int iFlags, CvCity*& pFrom) const
 			iTurn = kPathFinder.GetPathTurns() + 1;
 		}
 		else
+		{
+			continue;
+		}
+		if (kOwner.getAirliftClaims(pCityPlot->getPlotCity(), iTurn, this) >= pCityPlot->getPlotCity()->getMaxAirlift())
 		{
 			continue;
 		}
@@ -4288,8 +4358,8 @@ int CvUnit::airliftLandingTurns(const CvPlot* pDest, int iFlags, const CvCity* p
 }
 
 // The turn this unit reaches pDest on its quickest airlift route (counted like path turns, 1 is this turn), with the
-// city it flies from and the one it lands in. MAX_INT when it has none.
-int CvUnit::airliftRouteTurns(const CvPlot* pDest, int iFlags, CvCity*& pFrom, CvCity*& pTo) const
+// city it flies from, the one it lands in and the turn it flies (piDepartTurn). MAX_INT when it has none.
+int CvUnit::airliftRouteTurns(const CvPlot* pDest, int iFlags, CvCity*& pFrom, CvCity*& pTo, int* piDepartTurn) const
 {
 	pFrom = NULL;
 	pTo = NULL;
@@ -4298,6 +4368,10 @@ int CvUnit::airliftRouteTurns(const CvPlot* pDest, int iFlags, CvCity*& pFrom, C
 		return MAX_INT;
 	}
 	int iDepartTurn = airliftDepartureTurn(iFlags, pFrom);
+	if (piDepartTurn != NULL)
+	{
+		*piDepartTurn = iDepartTurn;
+	}
 	if (iDepartTurn == MAX_INT)
 	{
 		return MAX_INT;
